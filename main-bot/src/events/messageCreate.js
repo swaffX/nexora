@@ -10,26 +10,23 @@ module.exports = {
         if (message.author.bot) return;
         if (!message.guild) return;
 
+        // Guild ayarlarını al
         const guildSettings = await Guild.findOrCreate(message.guild.id, message.guild.name);
 
         // Level sistemi
-        if (guildSettings.level.enabled) {
-            const levelSettings = guildSettings.level;
+        if (guildSettings.levelSystem?.enabled) {
+            const levelSettings = guildSettings.levelSystem;
 
-            // Ignored kontrolü
-            if (levelSettings.ignoredChannels.includes(message.channel.id)) return;
-            if (message.member.roles.cache.some(r => levelSettings.ignoredRoles.includes(r.id))) return;
-
-            // Cooldown kontrolü
+            // Cooldown kontrolü (default 60s)
             const cooldownKey = `${message.guild.id}-${message.author.id}`;
-            const cooldownRemaining = utils.checkCooldown(client.xpCooldowns, cooldownKey, levelSettings.xpCooldown);
+            const cooldownRemaining = utils.checkCooldown(client.xpCooldowns, cooldownKey, 60);
 
             if (cooldownRemaining === 0) {
                 try {
                     const userData = await User.findOrCreate(message.author.id, message.guild.id, message.author.username);
 
-                    // XP ekle
-                    const xpGain = utils.randomXP(levelSettings.xpMin, levelSettings.xpMax) * levelSettings.multiplier;
+                    // XP ekle (15-25 arası random * çarpan)
+                    const xpGain = utils.randomXP(15, 25) * (levelSettings.multiplier || 1);
                     const newLevel = await userData.addXP(xpGain);
 
                     // Mesaj sayısını artır
@@ -41,37 +38,24 @@ module.exports = {
 
                     // Level atladı mı?
                     if (newLevel) {
-                        // Level up mesajı
-                        if (levelSettings.channelId) {
-                            const levelChannel = message.guild.channels.cache.get(levelSettings.channelId);
-                            if (levelChannel) {
-                                levelChannel.send({
-                                    embeds: [embeds.levelUp(message.author, newLevel)]
-                                });
-                            }
-                        } else {
-                            message.channel.send({
-                                embeds: [embeds.levelUp(message.author, newLevel)]
-                            });
-                        }
+                        // Log kanalına veya mevcut kanala bildir
+                        const notifyChannelId = levelSettings.logChannelId;
+                        let notifyChannel = notifyChannelId ? message.guild.channels.cache.get(notifyChannelId) : message.channel;
 
-                        // Level rolü kontrolü
-                        for (const levelRole of levelSettings.levelRoles) {
-                            if (newLevel >= levelRole.level) {
-                                const role = message.guild.roles.cache.get(levelRole.roleId);
-                                if (role && !message.member.roles.cache.has(role.id)) {
-                                    await message.member.roles.add(role, `Level ${levelRole.level} rolü`);
-                                }
+                        // Kanal yoksa mevcut kanala at
+                        if (!notifyChannel) notifyChannel = message.channel;
 
-                                // Stack değilse eski rolleri kaldır
-                                if (!levelSettings.stackRoles) {
-                                    for (const oldRole of levelSettings.levelRoles) {
-                                        if (oldRole.level < levelRole.level) {
-                                            const oldRoleObj = message.guild.roles.cache.get(oldRole.roleId);
-                                            if (oldRoleObj && message.member.roles.cache.has(oldRoleObj.id)) {
-                                                await message.member.roles.remove(oldRoleObj, 'Level rolü güncellendi');
-                                            }
-                                        }
+                        notifyChannel.send({
+                            embeds: [embeds.levelUp(message.author, newLevel)]
+                        }).catch(() => { });
+
+                        // Rol ödülleri
+                        if (levelSettings.roleRewards && levelSettings.roleRewards.length > 0) {
+                            for (const reward of levelSettings.roleRewards) {
+                                if (newLevel >= reward.level) {
+                                    const role = message.guild.roles.cache.get(reward.roleId);
+                                    if (role && !message.member.roles.cache.has(role.id)) {
+                                        await message.member.roles.add(role, `Level ${reward.level} ödülü`);
                                     }
                                 }
                             }
@@ -85,7 +69,7 @@ module.exports = {
 
         // AFK kontrolü
         const userData = await User.findOne({ odasi: message.author.id, odaId: message.guild.id });
-        if (userData && userData.afk.enabled) {
+        if (userData && userData.afk && userData.afk.enabled) {
             userData.afk.enabled = false;
             userData.afk.reason = null;
             userData.afk.since = null;
@@ -99,13 +83,15 @@ module.exports = {
         }
 
         // Mention edilen AFK kullanıcılarını kontrol et
-        for (const [, mentioned] of message.mentions.users) {
-            const mentionedUser = await User.findOne({ odasi: mentioned.id, odaId: message.guild.id });
-            if (mentionedUser && mentionedUser.afk.enabled) {
-                await message.reply({
-                    content: `💤 **${mentioned.username}** AFK: ${mentionedUser.afk.reason || 'Sebep belirtilmedi'}`,
-                    allowedMentions: { repliedUser: false }
-                });
+        if (message.mentions.users.size > 0) {
+            for (const [, mentioned] of message.mentions.users) {
+                const mentionedUser = await User.findOne({ odasi: mentioned.id, odaId: message.guild.id });
+                if (mentionedUser && mentionedUser.afk && mentionedUser.afk.enabled) {
+                    await message.reply({
+                        content: `💤 **${mentioned.username}** AFK: ${mentionedUser.afk.reason || 'Sebep belirtilmedi'}`,
+                        allowedMentions: { repliedUser: false }
+                    });
+                }
             }
         }
     }

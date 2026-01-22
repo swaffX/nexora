@@ -5,7 +5,7 @@ const { sendLog } = require('../utils/logHelper');
 module.exports = {
     name: 'messageDelete',
     async execute(message, client) {
-        if (!message.guild || message.author?.bot) return;
+        if (!message.guild || !message.author || message.author.bot) return;
 
         const embed = new EmbedBuilder()
             .setColor(0xED4245) // Red
