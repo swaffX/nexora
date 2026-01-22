@@ -148,5 +148,40 @@ module.exports = {
                 .setTimestamp();
             await sendLog(client, guildId, 'voice', embed);
         }
+
+        // 4. Durum Değişikliği (Mute/Deaf/Stream/Cam)
+        if (oldState.channelId === newState.channelId && oldState.channelId) {
+            const changes = [];
+
+            // Server Mute
+            if (oldState.serverMute !== newState.serverMute) changes.push(`**Server Mute:** ${newState.serverMute ? '🔇 Susturuldu' : '🔊 Açıldı'}`);
+            // Server Deaf
+            if (oldState.serverDeaf !== newState.serverDeaf) changes.push(`**Server Deaf:** ${newState.serverDeaf ? '🔇 Sağırlaştırıldı' : '🔊 Açıldı'}`);
+            // Self Mute
+            if (oldState.selfMute !== newState.selfMute) changes.push(`**Mikrofon:** ${newState.selfMute ? '🔴 Kapattı' : '🟢 Açtı'}`);
+            // Self Deaf
+            if (oldState.selfDeaf !== newState.selfDeaf) changes.push(`**Kulaklık:** ${newState.selfDeaf ? '🔴 Kapattı' : '🟢 Açtı'}`);
+            // Streaming
+            if (oldState.streaming !== newState.streaming) changes.push(`**Yayın:** ${newState.streaming ? '📺 Başlattı' : '⏹️ Bitirdi'}`);
+            // Camera
+            if (oldState.selfVideo !== newState.selfVideo) changes.push(`**Kamera:** ${newState.selfVideo ? '📷 Açtı' : '⏹️ Kapattı'}`);
+
+            if (changes.length > 0) {
+                const { EmbedBuilder } = require('discord.js');
+                const { sendLog } = require('../utils/logHelper');
+
+                const embed = new EmbedBuilder()
+                    .setColor(0xFEE75C) // Yellow
+                    .setAuthor({ name: 'Ses Durumu Güncellendi', iconURL: member.user.displayAvatarURL() })
+                    .setDescription(`<@${member.id}> (${member.user.tag}) durumunu güncelledi.`)
+                    .addFields(
+                        { name: 'Kanal', value: `<#${newState.channelId}>`, inline: false },
+                        { name: 'Değişiklikler', value: changes.join('\n'), inline: false }
+                    )
+                    .setTimestamp();
+
+                await sendLog(client, guildId, 'voice', embed);
+            }
+        }
     }
 };
