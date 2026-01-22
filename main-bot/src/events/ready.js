@@ -9,16 +9,18 @@ module.exports = {
     async execute(client) {
         logger.success(`⚙️ Ana Yönetim Botu hazır! ${client.user.tag}`);
 
-                client.user.setPresence({
-            activities: [{ 
-                name: 'made by swaff', 
-                type: 1, 
-                url: 'https://www.twitch.tv/swaffxedits' 
+        client.user.setPresence({
+            activities: [{
+                name: 'made by swaff',
+                type: 1,
+                url: 'https://www.twitch.tv/swaffxedits'
             }],
             status: 'online'
         });
 
-        // Auto Join Voice
+        // Auto Join Voice - DEVRE DIŞI (DAVE protocol hatası nedeniyle)
+        // Gerekirse tekrar aktif edilebilir, ancak @snazzah/davey paketi gerektirir
+        /*
         try {
             const { joinVoiceChannel } = require('@discordjs/voice');
             const channel = client.channels.cache.get('1463921161925558485');
@@ -29,11 +31,12 @@ module.exports = {
                     adapterCreator: channel.guild.voiceAdapterCreator,
                     selfDeaf: true
                 });
-                console.log('🔊 Bot ses kanalına giriş yaptı.');
+                logger.info('🔊 Bot ses kanalına giriş yaptı.');
             }
         } catch (e) {
-            console.log('Ses bağlantı hatası (Modül eksik olabilir):', e.message);
+            logger.error('Ses bağlantı hatası:', e.message);
         }
+        */
 
 
         // Voice Session Restore (Bot açıldığında seste olanları kaydet)
