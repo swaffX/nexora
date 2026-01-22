@@ -73,6 +73,26 @@ const guildSchema = new mongoose.Schema({
         antiInvite: { type: Boolean, default: true }
     },
 
+    // Anti-Raid (Guard 1)
+    antiRaid: {
+        enabled: { type: Boolean, default: true },
+        logChannelId: { type: String, default: null },
+        joinLimit: { type: Number, default: 5 }, // X saniyede Y giriş
+        joinTime: { type: Number, default: 10000 }, // 10 saniye
+        minAccountAge: { type: Number, default: 3 }, // 3 gün
+        action: { type: String, default: 'kick' }, // kick, ban, lockdown
+        whitelistedUsers: [{ type: String }]
+    },
+
+    // Anti-Nuke (Guard 3) - Kanal/Rol Silme Koruması
+    antiNuke: {
+        enabled: { type: Boolean, default: true },
+        logChannelId: { type: String, default: null },
+        action: { type: String, default: 'ban' }, // ban, kick, remove_roles
+        whitelistedUsers: [{ type: String }],
+        recover: { type: Boolean, default: true } // Silinenleri geri getir
+    },
+
     // Otorol
     autoRole: {
         enabled: { type: Boolean, default: false },

@@ -84,7 +84,7 @@ module.exports = {
     async execute(channel, client) {
         const guildSettings = await Guild.findOrCreate(channel.guild.id, channel.guild.name);
 
-        if (!guildSettings.antiNuke.enabled) return;
+        if (!guildSettings.antiNuke?.enabled) return;
 
         const antiNuke = guildSettings.antiNuke;
 
