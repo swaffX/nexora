@@ -1,5 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
 
+const AUTHORIZED_ROLE_ID = '1463875325019557920'; // Match yönetim rolü
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('setup-match')
@@ -7,6 +9,14 @@ module.exports = {
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
     async execute(interaction) {
         try {
+            // Rol kontrolü - Sadece belirli role sahip kişiler kullanabilir
+            if (!interaction.member.roles.cache.has(AUTHORIZED_ROLE_ID)) {
+                return interaction.reply({
+                    content: '❌ Bu komutu kullanmak için gerekli yetkiye sahip değilsiniz!',
+                    ephemeral: true
+                });
+            }
+
             // Önce botun yanıt verme süresini uzat
             await interaction.deferReply({ ephemeral: true });
 

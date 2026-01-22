@@ -19,6 +19,20 @@ module.exports = {
         // 1. Katıldı
         if (!oldState.channelId && newState.channelId) {
             client.voiceSessions.set(sessionKey, Date.now());
+
+            // Log
+            const { EmbedBuilder } = require('discord.js');
+            const { sendLog } = require('../utils/logHelper');
+            const embed = new EmbedBuilder()
+                .setColor(0x57F287) // Green
+                .setAuthor({ name: 'Ses Kanalına Katıldı', iconURL: member.user.displayAvatarURL() })
+                .setDescription(`<@${member.id}> bir ses kanalına katıldı.`)
+                .addFields(
+                    { name: 'Kullanıcı', value: `${member.user.tag}`, inline: true },
+                    { name: 'Kanal', value: `<#${newState.channelId}>`, inline: true }
+                )
+                .setTimestamp();
+            await sendLog(client, guildId, 'voice', embed);
         }
 
         // 2. Ayrıldı
@@ -26,8 +40,11 @@ module.exports = {
             const joinTime = client.voiceSessions.get(sessionKey);
 
             if (joinTime && guildSettings.levelSystem?.enabled) {
-                const duration = Math.floor((Date.now() - joinTime) / 60000); // Dakika
-
+                // ... XP Logic (Mevcut kod) ...
+                const duration = Math.floor((Date.now() - joinTime) / 60000);
+                // XP hesaplama kodu burada kalmalı, silmiyorum, sadece log ekliyorum. 
+                // Ancak replace_file_content ile tüm içeriği değiştirmek zorundayım çünkü araya kod ekliyorum.
+                // XP kodunu tekrar yazıyorum:
                 if (duration > 0) {
                     try {
                         const userData = await User.findOrCreate(odasi, guildId, member.user.username);
@@ -42,8 +59,7 @@ module.exports = {
                         // Level Check
                         const nextLevelXp = 5 * Math.pow(userData.level, 2) + 50 * userData.level + 100;
                         if (userData.xp >= nextLevelXp) {
-                            userData.level += 1;
-
+                            userData.level += 1; // Basit level up
                             if (guildSettings.levelSystem.logChannelId) {
                                 const logChannel = oldState.guild.channels.cache.get(guildSettings.levelSystem.logChannelId);
                                 if (logChannel) {
@@ -55,7 +71,6 @@ module.exports = {
                                 }
                             }
                         }
-
                         await userData.save();
                     } catch (error) {
                         logger.error('Voice XP hatası:', error.message);
@@ -63,6 +78,20 @@ module.exports = {
                 }
             }
             client.voiceSessions.delete(sessionKey);
+
+            // Log
+            const { EmbedBuilder } = require('discord.js');
+            const { sendLog } = require('../utils/logHelper');
+            const embed = new EmbedBuilder()
+                .setColor(0xED4245) // Red
+                .setAuthor({ name: 'Ses Kanalından Ayrıldı', iconURL: member.user.displayAvatarURL() })
+                .setDescription(`<@${member.id}> ses kanalından ayrıldı.`)
+                .addFields(
+                    { name: 'Kullanıcı', value: `${member.user.tag}`, inline: true },
+                    { name: 'Kanal', value: `<#${oldState.channelId}>`, inline: true }
+                )
+                .setTimestamp();
+            await sendLog(client, guildId, 'voice', embed);
         }
 
         // 3. Kanal Değiştirdi
@@ -71,19 +100,17 @@ module.exports = {
 
             if (joinTime && guildSettings.levelSystem?.enabled) {
                 const duration = Math.floor((Date.now() - joinTime) / 60000);
-
+                // XP Kodunu tekrar yazıyorum...
                 if (duration > 0) {
                     try {
                         const userData = await User.findOrCreate(odasi, guildId, member.user.username);
                         const xpGain = duration * (guildSettings.levelSystem.voiceXpPerMinute || 5);
-
                         userData.xp += xpGain;
                         userData.totalVoiceMinutes += duration;
                         userData.dailyVoice += duration;
                         userData.weeklyVoice += duration;
                         userData.monthlyVoice += duration;
 
-                        // Level Check
                         const nextLevelXp = 5 * Math.pow(userData.level, 2) + 50 * userData.level + 100;
                         if (userData.xp >= nextLevelXp) {
                             userData.level += 1;
@@ -105,6 +132,21 @@ module.exports = {
                 }
             }
             client.voiceSessions.set(sessionKey, Date.now());
+
+            // Log
+            const { EmbedBuilder } = require('discord.js');
+            const { sendLog } = require('../utils/logHelper');
+            const embed = new EmbedBuilder()
+                .setColor(0xFEE75C) // Yellow
+                .setAuthor({ name: 'Ses Kanalı Değiştirdi', iconURL: member.user.displayAvatarURL() })
+                .setDescription(`<@${member.id}> ses kanalı değiştirdi.`)
+                .addFields(
+                    { name: 'Kullanıcı', value: `${member.user.tag}`, inline: true },
+                    { name: 'Eski Kanal', value: `<#${oldState.channelId}>`, inline: true },
+                    { name: 'Yeni Kanal', value: `<#${newState.channelId}>`, inline: true }
+                )
+                .setTimestamp();
+            await sendLog(client, guildId, 'voice', embed);
         }
     }
 };
