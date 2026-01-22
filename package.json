@@ -18,7 +18,6 @@
     "delete": "pm2 delete all",
     "logs": "pm2 logs",
     "dashboard": "pm2 monit",
-    "postinstall": "npm run install:all",
     "install:all": "cd shared && npm install && cd ../guard-bot-1 && npm install && cd ../guard-bot-2 && npm install && cd ../guard-bot-3 && npm install && cd ../main-bot && npm install && cd ../backup-bot && npm install"
   },
   "devDependencies": {
