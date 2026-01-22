@@ -18,9 +18,7 @@ module.exports = {
             status: 'online'
         });
 
-        // Auto Join Voice - DEVRE DIŞI (DAVE protocol hatası nedeniyle)
-        // Gerekirse tekrar aktif edilebilir, ancak @snazzah/davey paketi gerektirir
-        /*
+        // Auto Join Voice
         try {
             const { joinVoiceChannel } = require('@discordjs/voice');
             const channel = client.channels.cache.get('1463921161925558485');
@@ -36,7 +34,6 @@ module.exports = {
         } catch (e) {
             logger.error('Ses bağlantı hatası:', e.message);
         }
-        */
 
 
         // Voice Session Restore (Bot açıldığında seste olanları kaydet)
