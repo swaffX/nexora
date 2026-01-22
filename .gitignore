@@ -1,0 +1,53 @@
+# Environment Variables (DO NOT COMMIT)
+*.env
+.env
+.env.*
+
+# Node Modules
+node_modules/
+*/node_modules/
+
+# PM2 Logs and Runtime Files
+.pm2/
+*.log
+logs/
+*.pid
+
+# Database Files (if using local MongoDB)
+*.db
+*.sqlite
+*.sqlite3
+data/
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build Output
+dist/
+build/
+*.tsbuildinfo
+
+# Temporary Files
+tmp/
+temp/
+*.tmp
+
+# Debug Files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Package Manager Lock Files (optional, uncomment if needed)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml

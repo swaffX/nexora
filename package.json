@@ -1,0 +1,36 @@
+{
+  "name": "nexora-discord-bots",
+  "version": "1.0.0",
+  "description": "Nexora Discord Bot Sistemi - 5 Bot (3 Guard + 1 Main + 1 Backup)",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "guard-bot-1",
+    "guard-bot-2",
+    "guard-bot-3",
+    "main-bot",
+    "backup-bot"
+  ],
+  "scripts": {
+    "start": "pm2 start ecosystem.config.js",
+    "stop": "pm2 stop all",
+    "restart": "pm2 restart all --update-env",
+    "delete": "pm2 delete all",
+    "logs": "pm2 logs",
+    "dashboard": "pm2 monit",
+    "postinstall": "npm run install:all",
+    "install:all": "cd shared && npm install && cd ../guard-bot-1 && npm install && cd ../guard-bot-2 && npm install && cd ../guard-bot-3 && npm install && cd ../main-bot && npm install && cd ../backup-bot && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "pm2": "^6.0.14"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@discordjs/voice": "^0.19.0",
+    "axios": "^1.13.2",
+    "libsodium-wrappers": "^0.8.1"
+  }
+}

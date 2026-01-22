@@ -1,0 +1,39 @@
+module.exports = {
+    apps: [
+        {
+            name: "Main_Bot",
+            cwd: "./main-bot",
+            script: "./src/index.js",
+            watch: ["src"],
+            ignore_watch: ["node_modules", ".env"],
+        },
+        {
+            name: "Guard_1_AntiRaid",
+            cwd: "./guard-bot-1",
+            script: "./src/index.js",
+            watch: ["src"],
+            ignore_watch: ["node_modules", ".env"],
+        },
+        {
+            name: "Guard_2_AntiSpam",
+            cwd: "./guard-bot-2",
+            script: "./src/index.js",
+            watch: ["src"],
+            ignore_watch: ["node_modules", ".env"],
+        },
+        {
+            name: "Guard_3_AntiNuke",
+            cwd: "./guard-bot-3",
+            script: "./src/index.js",
+            watch: ["src"],
+            ignore_watch: ["node_modules", ".env"],
+        },
+        {
+            name: "Backup_Bot",
+            cwd: "./backup-bot",
+            script: "./src/index.js",
+            watch: ["src"],
+            ignore_watch: ["node_modules", ".env"],
+        }
+    ]
+};
