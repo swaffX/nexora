@@ -19,7 +19,7 @@ module.exports = {
         const guildSettings = await Guild.findOrCreate(guildId, message.guild.name);
 
         // Anti-spam kapalıysa çık
-        if (!guildSettings.antiSpam.enabled) return;
+        if (!guildSettings.antiSpam?.enabled) return;
 
         const antiSpam = guildSettings.antiSpam;
 
