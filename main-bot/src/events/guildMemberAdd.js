@@ -9,6 +9,20 @@ module.exports = {
         const guild = member.guild;
         const channelId = '1464206305853177917'; // Kayıt/Hoşgeldin Kanalı
 
+        // --- OTO ROL (Hardcoded) ---
+        const autoRoleId = '1463875341553635553';
+        try {
+            const role = guild.roles.cache.get(autoRoleId);
+            if (role) {
+                await member.roles.add(role);
+            } else {
+                console.warn(`[OtoRol] Rol bulunamadı: ${autoRoleId}`);
+            }
+        } catch (error) {
+            console.error(`[OtoRol] Hata (${member.user.tag}):`, error);
+        }
+        // ---------------------------
+
         // 1. Yeni davetleri çek
         const newInvites = await guild.invites.fetch();
 
@@ -58,28 +72,37 @@ module.exports = {
             inviteCount = inviterUser.getTotalInvites ? inviterUser.getTotalInvites() : (inviterUser.invites.regular + inviterUser.invites.bonus - inviterUser.invites.fake - inviterUser.invites.left);
         }
 
-        // 3. Mesajı Gönder (Resimli ve Sade Format)
+        // 3. Mesajı Gönder (Embed Formatı)
         const channel = guild.channels.cache.get(channelId);
         if (channel) {
-            let msgContent = '';
 
-            // Eğer inviter varsa mesaj metni
-            if (inviter) {
-                msgContent = `<:giris:1246429678567428170> <@${member.id}> Katıldı, Davet eden <@${inviter.id}> (**${inviteCount}** davet)`;
-            } else {
-                msgContent = `<:giris:1246429678567428170> <@${member.id}> Katıldı (Özel Link / Bot)`;
-            }
+            // Hesap Tarihi Hesaplama
+            const createdTimestamp = Math.floor(member.user.createdTimestamp / 1000);
+            const joinedTimestamp = Math.floor(member.joinedTimestamp / 1000);
 
-            // Canvas Resmini Üret
-            const { createWelcomeImage } = require('../utils/canvasHelper');
-            try {
-                const attachment = await createWelcomeImage(member);
-                await channel.send({ content: msgContent, files: [attachment] });
-            } catch (err) {
-                console.error('Canvas hatası:', err);
-                // Hata olursa sadece yazıyı at
-                await channel.send(msgContent);
-            }
+            // Üye Sırası (Yaklaşık)
+            const memberCount = guild.memberCount;
+
+            const welcomeEmbed = new EmbedBuilder()
+                .setColor('#2ecc71') // Yeşil (Giriş)
+                .setTitle('Nexora Sunucusuna Hoş Geldin!')
+                .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 512 }))
+                .setDescription(
+                    `👋 **Hey ${member.user.username}!**\n\n` +
+                    `Topluluğumuza katıldığın için teşekkürler.\n` +
+                    `Kuralları okumayı ve keyfine bakmayı unutma!\n\n` +
+                    (inviter ? `Davet Eden: <@${inviter.id}> (**${inviteCount}** davet)` : `(Özel Bağlantı ile katıldı)`)
+                )
+                .addFields(
+                    { name: '👤 Üye', value: `<@${member.id}>\n\`${member.user.tag}\``, inline: true },
+                    { name: '🎂 Hesap Tarihi', value: `<t:${createdTimestamp}:R>`, inline: true }, // "1 yıl önce" formatı
+                    { name: '📊 Üye Sayısı', value: `#${memberCount}`, inline: true }
+                )
+                .setImage('https://i.imgur.com/example-banner.png') // İstersen buraya hoşgeldin şeridi koyabilirsin veya boş bırak
+                .setFooter({ text: `Üye #${memberCount} • Sunucuya katıldı`, iconURL: guild.iconURL() })
+                .setTimestamp();
+
+            await channel.send({ content: `<@${member.id}>`, embeds: [welcomeEmbed] });
         }
     }
 };

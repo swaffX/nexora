@@ -41,7 +41,34 @@ module.exports = {
                 }
 
                 try {
-                    await channel.send(msgContent);
+                    // Embed Hazırlığı
+                    const { EmbedBuilder } = require('discord.js');
+
+                    const leaveEmbed = new EmbedBuilder()
+                        .setColor('#e74c3c') // Kırmızı (Çıkış)
+                        .setTitle('Üye Ayrıldı')
+                        .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 512 }))
+                        .setDescription(
+                            `👋 **Görüşürüz, ${member.user.username}!**\n\n` +
+                            `Gittiğine üzüldük.\n` +
+                            `Umarım seni tekrar görürüz!`
+                        )
+                        .addFields(
+                            { name: '👤 Üye', value: `<@${member.id}>\n\`${member.user.tag}\``, inline: true },
+                            { name: '📊 Kalan Üye', value: `${guild.memberCount}`, inline: true }
+                        )
+                        .setFooter({ text: `Şu an ${guild.memberCount} kişiyiz`, iconURL: guild.iconURL() })
+                        .setTimestamp();
+
+                    // Invite Tracker Mesajını, Embed'in yanına veya içine ekleyebiliriz.
+                    // Resimde görünmediği için sadece Embed atıyorum.
+                    // Eğer davet eden bilgisini de istiyorsan embed.description'a ekleyebilirim.
+
+                    // msgContent şu an sadece log için kullanılıyor veya opsiyonel metin olarak atılabilir.
+                    // Görselde sadece embed var.
+
+                    await channel.send({ embeds: [leaveEmbed] });
+
                 } catch (e) {
                     console.error("Leave msg send error:", e);
                 }
