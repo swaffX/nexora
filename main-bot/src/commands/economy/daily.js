@@ -27,7 +27,12 @@ module.exports = {
 
         user.balance += DAILY_REWARD;
         user.lastDaily = now;
+        user.lastDaily = now;
         await user.save();
+
+        // Quest Update
+        const { updateQuestProgress } = require('../../utils/questManager');
+        await updateQuestProgress(user, 'daily', 1);
 
         const embed = new EmbedBuilder()
             .setColor('#2ecc71')

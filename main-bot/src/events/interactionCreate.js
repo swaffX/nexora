@@ -92,6 +92,9 @@ module.exports = {
                         '`/career work` - Çalış ve maaş/XP kazan\n' +
                         '`/career info` - Kariyer durumunu ve terfi bilgisini gör\n' +
                         '`/daily` - Günlük ödülünü al\n\n' +
+                        '__Görevler & Başarımlar__\n' +
+                        '`/quests daily` - Günlük görevlerini gör ve yap (YENİ!)\n' +
+                        '`/quests achievements` - Kazandığın başarım ve rozetleri gör (YENİ!)\n\n' +
                         '__Finans & Borsa__\n' +
                         '`/crypto market` - Kripto piyasasını gör\n' +
                         '`/crypto chart` - Canlı grafik analizi yap (YENİ!)\n' +

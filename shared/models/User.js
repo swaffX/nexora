@@ -76,6 +76,31 @@ const userSchema = new mongoose.Schema({
         totalEarnings: { type: Number, default: 0 }
     },
 
+    // Görev Sistemi
+    quests: [{
+        questId: { type: String },
+        progress: { type: Number, default: 0 },
+        target: { type: Number },
+        isCompleted: { type: Boolean, default: false },
+        isClaimed: { type: Boolean, default: false } // Ödül alındı mı?
+    }],
+    lastQuestReset: { type: Date, default: null },
+
+    // Başarım Sistemi
+    achievements: [{
+        id: { type: String },
+        unlockedAt: { type: Date, default: Date.now }
+    }],
+
+    // Detaylı İstatistikler (Başarımlar için)
+    stats: {
+        totalBets: { type: Number, default: 0 },
+        totalWins: { type: Number, default: 0 },
+        totalWork: { type: Number, default: 0 },
+        totalDuelsWon: { type: Number, default: 0 },
+        totalPetUpgrades: { type: Number, default: 0 }
+    },
+
     // Profil Özelleştirme
     reputation: { type: Number, default: 0 },
     bio: { type: String, default: 'Hakkımda bir şey yazılmamış.' },
