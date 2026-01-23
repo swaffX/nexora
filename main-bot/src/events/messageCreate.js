@@ -3,6 +3,7 @@ const { Guild, User } = require(path.join(__dirname, '..', '..', '..', 'shared',
 const { embeds } = require(path.join(__dirname, '..', '..', '..', 'shared', 'embeds'));
 const logger = require(path.join(__dirname, '..', '..', '..', 'shared', 'logger'));
 const utils = require(path.join(__dirname, '..', '..', '..', 'shared', 'utils'));
+const aiHandler = require('../handlers/aiHandler');
 
 module.exports = {
     name: 'messageCreate',
@@ -12,6 +13,9 @@ module.exports = {
 
         // Guild ayarlarını al
         const guildSettings = await Guild.findOrCreate(message.guild.id, message.guild.name);
+
+        // 🧠 Nexora Brain (AI)
+        await aiHandler.handleMessage(message);
 
         // Level sistemi
         if (guildSettings.levelSystem?.enabled) {

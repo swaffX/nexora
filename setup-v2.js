@@ -22,7 +22,7 @@ async function setupV2() {
                     // 1. Temizlik (Eski modülleri kapat)
                     'goodbye.enabled': false,
                     'stats.memberCountChannelId': null,
-                    'ticket.enabled': false,
+
 
                     // 2. Welcome Ayarı (Kayıt Kanalına Mesaj)
                     'welcome.enabled': true,

@@ -57,7 +57,7 @@ async function setupV3() {
             {
                 $set: {
                     // Ticket Sistemi İPTAL
-                    'ticket.enabled': false,
+
 
                     // Kayıt Sistemi (Butonlu)
                     'register.enabled': true,

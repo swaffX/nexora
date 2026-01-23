@@ -1,10 +1,11 @@
+const { Events } = require('discord.js');
 const path = require('path');
 const logger = require(path.join(__dirname, '..', '..', '..', 'shared', 'logger'));
 const { Guild, User } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
 const { embeds } = require(path.join(__dirname, '..', '..', '..', 'shared', 'embeds'));
 
 module.exports = {
-    name: 'ready',
+    name: Events.ClientReady,
     once: true,
     async execute(client) {
         logger.success(`⚙️ Ana Yönetim Botu hazır! ${client.user.tag}`);

@@ -9,8 +9,7 @@ class Database {
     async connect(uri) {
         try {
             this.connection = await mongoose.connect(uri, {
-                useNewUrlParser: true,
-                useUnifiedTopology: true,
+
             });
             logger.success('MongoDB bağlantısı başarılı!');
             return this.connection;

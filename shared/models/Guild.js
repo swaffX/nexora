@@ -119,20 +119,7 @@ const guildSchema = new mongoose.Schema({
         }]
     },
 
-    // Ticket Ayarları
-    ticket: {
-        enabled: { type: Boolean, default: false },
-        categoryId: { type: String, default: null },
-        logChannelId: { type: String, default: null },
-        count: { type: Number, default: 0 }, // Ticket sayacı
-        supportRoles: [{ type: String }],
-        welcomeMessage: { type: String, default: 'Merhaba! Destek talebiniz oluşturuldu. Lütfen sorununuzu açıklayın.' },
-        categories: [{
-            name: { type: String },
-            emoji: { type: String },
-            roles: [{ type: String }]
-        }]
-    },
+
 
     // Valorant Rank-Rol Eşleşmeleri
     valorantRoles: {
@@ -145,6 +132,14 @@ const guildSchema = new mongoose.Schema({
         Ascendant: { type: String, default: null },
         Immortal: { type: String, default: null },
         Radiant: { type: String, default: null }
+    },
+
+    // Starboard Ayarları
+    starboard: {
+        enabled: { type: Boolean, default: false },
+        channelId: { type: String, default: null },
+        emoji: { type: String, default: '⭐' },
+        threshold: { type: Number, default: 3 }
     },
 
     // Log Kanalları (YENİ EKLENDİ)

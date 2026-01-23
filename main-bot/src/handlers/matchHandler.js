@@ -119,8 +119,13 @@ module.exports = {
         const embed = EmbedBuilder.from(interaction.message.embeds[0]);
         const captainName = (await interaction.guild.members.fetch(selectedId)).displayName;
 
-        if (team === 'A') embed.fields[0].value = `<@${selectedId}>`;
-        else embed.fields[1].value = `<@${selectedId}>`;
+        // DJS v14 EmbedBuilder fields access fix
+        const fields = embed.data.fields;
+        if (fields) {
+            if (team === 'A') fields[0].value = `<@${selectedId}>`;
+            else fields[1].value = `<@${selectedId}>`;
+            embed.setFields(fields);
+        }
 
         // İkisi de seçildiyse "Draft Modu"na geç
         if (matchData.captainA && matchData.captainB) {

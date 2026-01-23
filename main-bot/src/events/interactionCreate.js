@@ -28,11 +28,6 @@ module.exports = {
             try {
                 const [action, ...args] = interaction.customId.split('_');
 
-                if (action === 'ticket') {
-                    const ticketHandler = require('../handlers/ticketHandler');
-                    await ticketHandler.handleButton(interaction, args, client);
-                }
-
                 if (action === 'giveaway') {
                     const giveawayHandler = require('../handlers/giveawayHandler');
                     await giveawayHandler.handleButton(interaction, args, client);
@@ -49,6 +44,12 @@ module.exports = {
                     const matchHandler = require('../handlers/matchHandler');
                     await matchHandler.handleInteraction(interaction, client);
                 }
+
+                // voice_lock_123 -> action=voice
+                if (action === 'voice') {
+                    const voiceMasterHandler = require('../handlers/voiceMasterHandler');
+                    await voiceMasterHandler.handleInteraction(interaction, client);
+                }
             } catch (error) {
                 logger.error('Button interaction hatası:', error);
                 const errorMsg = { content: '❌ Bir hata oluştu. Lütfen tekrar deneyin.', ephemeral: true };
@@ -64,11 +65,6 @@ module.exports = {
         if (interaction.isAnySelectMenu()) {
             try {
                 const [action, ...args] = interaction.customId.split('_');
-
-                if (action === 'ticketcategory') {
-                    const ticketHandler = require('../handlers/ticketHandler');
-                    await ticketHandler.handleSelect(interaction, args, client);
-                }
 
                 if (action === 'reactionrole') {
                     const reactionRoleHandler = require('../handlers/reactionRoleHandler');
@@ -89,6 +85,35 @@ module.exports = {
                     await interaction.reply(errorMsg).catch(() => { });
                 }
             }
+        }
+
+        // Modal Submit
+        if (interaction.isModalSubmit()) {
+            try {
+                if (interaction.customId.startsWith('modal_voice_')) {
+                    const voiceMasterHandler = require('../handlers/voiceMasterHandler');
+                    await voiceMasterHandler.handleModal(interaction);
+                }
+
+                if (interaction.customId === 'modal_tournament_create') {
+                    const tournamentHandler = require('../handlers/tournamentHandler');
+                    await tournamentHandler.handleSetup(interaction);
+                }
+            } catch (error) {
+                logger.error('Modal interaction hatası:', error);
+            }
+        }
+
+        // Tournament Button Handler (Extra check since we are inside button block mostly)
+        // Note: Better to move this into the main isButton block, but adding here for safety if missed
+        if (interaction.isButton() && interaction.customId.startsWith('tour_')) {
+            try {
+                const tournamentHandler = require('../handlers/tournamentHandler');
+                const [action, type, tourId] = interaction.customId.split('_'); // tour_join_ID
+
+                if (type === 'join') await tournamentHandler.handleJoin(interaction, tourId);
+                if (type === 'leave') await tournamentHandler.handleLeave(interaction, tourId);
+            } catch (e) { console.error(e); }
         }
     }
 };

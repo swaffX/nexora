@@ -1,18 +1,19 @@
+const { Events } = require('discord.js');
 const path = require('path');
 const logger = require(path.join(__dirname, '..', '..', '..', 'shared', 'logger'));
 
 module.exports = {
-    name: 'ready',
+    name: Events.ClientReady,
     once: true,
     execute(client) {
         logger.success(`🛡️ Guard Bot 1 (Anti-Raid) hazır! ${client.user.tag}`);
         logger.info(`${client.guilds.cache.size} sunucuya bağlı`);
 
-                client.user.setPresence({
-            activities: [{ 
-                name: 'made by swaff', 
-                type: 1, 
-                url: 'https://www.twitch.tv/swaffxedits' 
+        client.user.setPresence({
+            activities: [{
+                name: 'made by swaff',
+                type: 1,
+                url: 'https://www.twitch.tv/swaffxedits'
             }],
             status: 'online'
         });

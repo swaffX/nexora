@@ -37,6 +37,8 @@ client.giveaways = new Map();
 const commandFolders = fs.readdirSync(path.join(__dirname, 'commands'));
 const commands = [];
 
+logger.info(`Taranan klasörler: ${commandFolders.join(', ')}`);
+
 for (const folder of commandFolders) {
     const commandsPath = path.join(__dirname, 'commands', folder);
     const stat = fs.statSync(commandsPath);
@@ -45,10 +47,17 @@ for (const folder of commandFolders) {
         const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
         for (const file of commandFiles) {
             const filePath = path.join(commandsPath, file);
-            const command = require(filePath);
-            if ('data' in command && 'execute' in command) {
-                client.commands.set(command.data.name, command);
-                commands.push(command.data.toJSON());
+            try {
+                const command = require(filePath);
+                if ('data' in command && 'execute' in command) {
+                    client.commands.set(command.data.name, command);
+                    commands.push(command.data.toJSON());
+                    // logger.info(`Yüklendi: ${folder}/${file}`);
+                } else {
+                    logger.warn(`⚠️ [EKSİK] ${folder}/${file} komutunda data veya execute yok.`);
+                }
+            } catch (e) {
+                logger.error(`❌ [HATA] ${folder}/${file} yüklenemedi: ${e.message}`);
             }
         }
     } else if (commandsPath.endsWith('.js')) {
@@ -83,40 +92,22 @@ async function start() {
 
         logger.info(`${commands.length} slash komut yükleniyor...`);
 
-        
-                if (process.env.GUILD_ID) {
-            // Çift komut oluşumunu engellemek için önce Global komutları temizle
-            await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: [] });
+
+        if (process.env.GUILD_ID) {
+            // Çift komut oluşumunu engellemek için önce Global komutları temizle (isteğe bağlı, development için iyi)
+            // await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: [] });
 
             await rest.put(
                 Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
                 { body: commands }
             );
-            logger.success('Slash komutlar SUNUCU modunda yüklendi (Global temizlendi)!');
-        } else {
-            
-        if (process.env.GUILD_ID) {
-            await rest.put(
-                Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
-                { body: commands }
-            );
-            logger.success('Slash komutlar SUNUCU modunda yüklendi (Anında Erişim)!');
-        } else {
-            
-        if (process.env.GUILD_ID) {
-            await rest.put(
-                Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
-                { body: commands }
-            );
-            logger.success('Slash komutlar SUNUCU modunda yüklendi (Anında Erişim)!');
+            logger.success(`Slash komutlar SUNUCU modunda yüklendi! (Toplam: ${commands.length})`);
         } else {
             await rest.put(
                 Routes.applicationCommands(process.env.CLIENT_ID),
                 { body: commands }
             );
-            logger.success('Slash komutlar GLOBAL modda yüklendi (Önbellek süresi olabilir)!');
-        }
-        }
+            logger.success(`Slash komutlar GLOBAL modda yüklendi! (Toplam: ${commands.length})`);
         }
 
         await client.login(process.env.TOKEN);
