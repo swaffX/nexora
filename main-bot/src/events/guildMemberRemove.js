@@ -1,51 +1,45 @@
+const { Events } = require('discord.js');
 const path = require('path');
-const { Guild, User } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
-const { embeds } = require(path.join(__dirname, '..', '..', '..', 'shared', 'embeds'));
-const { EmbedBuilder } = require('discord.js');
-const logger = require(path.join(__dirname, '..', '..', '..', 'shared', 'logger'));
+const { User } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
 
 module.exports = {
-    name: 'guildMemberRemove',
-    async execute(member, client) {
-        const guildSettings = await Guild.findOrCreate(member.guild.id, member.guild.name);
+    name: Events.GuildMemberRemove,
+    async execute(member) {
+        const guild = member.guild;
+        const channelId = '1464206305853177917'; // Kayıt/Hoşgeldin Kanalı
 
-        // 1. Goodbye embedi (Eğer enabled ise)
-        // Kullanıcı setup-v2'de goodbye'ı kapattırdı ama SS attı "goodbye kanalı ayarla" dedi (Step 794).
-        // Demek ki goodbye tekrar aktif olacak.
-        // Hangi kanala atılacak? Log/Goodbye kanalı yoksa Register kanalına mı? Veya log kanalına mı?
-        // SS'te ayrı bir mesaj var. 
-        // setup-final.js scriptinde GOODBYE kanalını ayarlayacağım.
+        // 1. Veritabanından çıkan kişinin bilgisini çek
+        const memberData = await User.findOne({ odasi: member.id, odaId: guild.id });
 
-        if (guildSettings.goodbye.enabled && guildSettings.goodbye.channelId) {
-            const goodbyeChannel = member.guild.channels.cache.get(guildSettings.goodbye.channelId);
-            if (goodbyeChannel) {
-                // embeds.js'deki goodbye fonksiyonunu kullan
-                await goodbyeChannel.send({
-                    embeds: [embeds.goodbye(member, guildSettings.goodbye.message)]
-                });
-            }
-        }
+        if (channelId) {
+            const channel = guild.channels.cache.get(channelId);
+            if (channel) {
+                let msgContent = `<:leave:1330926528766115931> <@${member.id}> Ayrıldı.`;
 
-        // 2. Member Log (Çıkış Logu) -> member-logs
-        if (guildSettings.logs && guildSettings.logs.member) {
-            const logChannel = member.guild.channels.cache.get(guildSettings.logs.member);
-            if (logChannel) {
-                try {
-                    const embed = new EmbedBuilder()
-                        .setColor(0xED4245) // Red
-                        .setAuthor({ name: 'Üye Ayrıldı', iconURL: member.user.displayAvatarURL() })
-                        .setDescription(`<@${member.id}> sunucudan ayrıldı.`)
-                        .addFields(
-                            { name: 'Kullanıcı', value: `${member.user.tag}`, inline: true },
-                            { name: 'Kalan Üye', value: `${member.guild.memberCount}`, inline: true }
-                        )
-                        .setTimestamp()
-                        .setFooter({ text: `ID: ${member.id}` });
+                if (memberData && memberData.invitedBy) {
+                    const inviterId = memberData.invitedBy;
 
-                    await logChannel.send({ embeds: [embed] });
-                } catch (error) {
-                    logger.error('Member log (leave) hatası:', error);
+                    // Davet edeni bul ve güncelle
+                    const inviterData = await User.findOne({ odasi: inviterId, odaId: guild.id });
+
+                    if (inviterData) {
+                        if (!inviterData.invites) inviterData.invites = { regular: 0, bonus: 0, fake: 0, left: 0 };
+
+                        inviterData.invites.left += 1;
+                        await inviterData.save();
+
+                        // Yeni Toplam Hesapla (Regular + Bonus - Fake - Left)
+                        const totalInvites = (inviterData.invites.regular || 0) + (inviterData.invites.bonus || 0) - (inviterData.invites.fake || 0) - (inviterData.invites.left || 0);
+
+                        msgContent += ` <@${inviterId}> tarafından davet edildi. **Kalan Davet ${totalInvites}**`;
+                    } else {
+                        msgContent += ` Davet eden bulunamadı (Veri yok).`;
+                    }
+                } else {
+                    msgContent += ` Davet eden bulunamadı.`;
                 }
+
+                await channel.send(msgContent);
             }
         }
     }
