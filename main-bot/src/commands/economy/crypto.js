@@ -69,17 +69,16 @@ module.exports = {
 
         if (subcommand === 'buy') {
             const symbol = interaction.options.getString('coin').toUpperCase();
-            const amount = interaction.options.getInteger('amount'); // Tutar olarak (kaç liralık)
+            const amount = interaction.options.getInteger('amount');
 
             if (!['BTC', 'ETH', 'DOGE'].includes(symbol)) {
-                return interaction.reply({ content: '❌ Geçersiz coin! Sadece BTC, ETH, DOGE alınabilir.', ephemeral: true });
+                return interaction.reply({ content: '❌ Geçersiz coin! Sadece BTC, ETH, DOGE alınabilir.', flags: 64 });
             }
 
             const coin = await Crypto.findOne({ symbol });
-            if (!coin) return interaction.reply({ content: '❌ Borsa verisi alınamadı.', ephemeral: true });
+            if (!coin) return interaction.reply({ content: '❌ Borsa verisi alınamadı.', flags: 64 });
 
             // Atomik Satın Alma
-            // Önce para var mı?
             const user = await User.findOneAndUpdate(
                 { odasi: userId, odaId: guildId, balance: { $gte: amount } },
                 { $inc: { balance: -amount } },
@@ -87,13 +86,13 @@ module.exports = {
             );
 
             if (!user) {
-                return interaction.reply({ content: '❌ Yetersiz bakiye!', ephemeral: true });
+                return interaction.reply({ content: '❌ Yetersiz bakiye!', flags: 64 });
             }
 
-            // Coin ekle
+            // Coin Miktarı
             const coinAmount = amount / coin.price;
 
-            // Map kullanımı
+            // Cüzdan Güncelle
             const fieldMap = { 'BTC': 'bitcoin', 'ETH': 'ethereum', 'DOGE': 'dogecoin' };
             const walletField = `cryptoWallet.${fieldMap[symbol]}`;
 
@@ -107,37 +106,37 @@ module.exports = {
 
         if (subcommand === 'sell') {
             const symbol = interaction.options.getString('coin').toUpperCase();
-            const amount = interaction.options.getInteger('amount'); // ADET olarak sat
+            const amount = interaction.options.getInteger('amount'); // ADET
 
             if (!['BTC', 'ETH', 'DOGE'].includes(symbol)) {
-                return interaction.reply({ content: '❌ Geçersiz coin!', ephemeral: true });
+                return interaction.reply({ content: '❌ Geçersiz coin!', flags: 64 });
             }
 
             const coin = await Crypto.findOne({ symbol });
+            if (!coin) return interaction.reply({ content: '❌ Borsa verisi alınamadı.', flags: 64 });
+
             const fieldMap = { 'BTC': 'bitcoin', 'ETH': 'ethereum', 'DOGE': 'dogecoin' };
             const walletField = `cryptoWallet.${fieldMap[symbol]}`;
 
-            // Coin var mı?
-            // MongoDB sorgusuyla: { 'cryptoWallet.bitcoin': { $gte: amount } }
+            // Coin Kontrolü (Önce adet var mı?)
             const query = { odasi: userId, odaId: guildId };
             query[walletField] = { $gte: amount };
 
-            const user = await User.findOne(query);
-            if (!user) {
-                return interaction.reply({ content: `❌ Hesabında satacak kadar **${symbol}** yok!`, ephemeral: true });
+            const userCheck = await User.findOne(query);
+            if (!userCheck) {
+                return interaction.reply({ content: `❌ Hesabında satacak kadar **${symbol}** yok!`, flags: 64 });
             }
 
             // Satış Değeri
             const totalValue = amount * coin.price;
 
-            // Atomik Satış
-            // 1. Coini düş
+            // Atomik Satış: Coin Düş
             await User.findOneAndUpdate(
                 { odasi: userId, odaId: guildId },
                 { $inc: { [walletField]: -amount } }
             );
 
-            // 2. Parayı ekle
+            // Para Ekle
             await User.findOneAndUpdate(
                 { odasi: userId, odaId: guildId },
                 { $inc: { balance: totalValue } }

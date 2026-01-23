@@ -69,7 +69,7 @@ module.exports = {
             .setDescription(generateTrack())
             .setFooter({ text: `Bahsin: ${amount} coin -> ${selectedHorse.name}` });
 
-        const msg = await interaction.reply({ embeds: [embed], fetchReply: true });
+        const msg = await interaction.reply({ embeds: [embed], withResponse: true });
 
         // Yarış Döngüsü
         const interval = setInterval(async () => {
