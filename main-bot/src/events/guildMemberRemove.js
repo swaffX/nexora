@@ -14,7 +14,8 @@ module.exports = {
         if (channelId) {
             const channel = guild.channels.cache.get(channelId);
             if (channel) {
-                let msgContent = `<:leave:1330926528766115931> <@${member.id}> Ayrıldı.`;
+                // İstenen Emoji: <:cikis:1246429697231814717>
+                let msgContent = `<:cikis:1246429697231814717> <@${member.id}> sunucudan ayrıldı.`;
 
                 if (memberData && memberData.invitedBy) {
                     const inviterId = memberData.invitedBy;
@@ -31,15 +32,19 @@ module.exports = {
                         // Yeni Toplam Hesapla (Regular + Bonus - Fake - Left)
                         const totalInvites = (inviterData.invites.regular || 0) + (inviterData.invites.bonus || 0) - (inviterData.invites.fake || 0) - (inviterData.invites.left || 0);
 
-                        msgContent += ` <@${inviterId}> tarafından davet edildi. **Kalan Davet ${totalInvites}**`;
+                        msgContent += ` Davet eden: <@${inviterId}> (**${totalInvites}** davet)`;
                     } else {
-                        msgContent += ` Davet eden bulunamadı (Veri yok).`;
+                        msgContent += ` (Davet eden bilgisi güncellenemedi)`;
                     }
                 } else {
-                    msgContent += ` Davet eden bulunamadı.`;
+                    msgContent += ` (Davet eden bulunamadı)`;
                 }
 
-                await channel.send(msgContent);
+                try {
+                    await channel.send(msgContent);
+                } catch (e) {
+                    console.error("Leave msg send error:", e);
+                }
             }
         }
     }

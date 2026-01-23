@@ -11,6 +11,7 @@ const Starboard = require('./Starboard');
 const ValorantUser = require('./ValorantUser');
 const Match = require('./Match');
 const Tournament = require('./Tournament');
+const Ticket = require('./Ticket');
 
 module.exports = {
     User,
@@ -25,5 +26,6 @@ module.exports = {
     Starboard,
     ValorantUser,
     Match,
-    Tournament
+    Tournament,
+    Ticket
 };

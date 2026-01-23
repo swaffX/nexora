@@ -12,7 +12,7 @@ const {
 } = require('discord.js');
 const path = require('path');
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
-const { Match } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
+const { Match, User } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
 
 // Font Kaydı
 GlobalFonts.registerFromPath(path.join(__dirname, '..', '..', 'assets', 'fonts', 'Valorant.ttf'), 'VALORANT');
@@ -477,14 +477,15 @@ module.exports = {
 
         // Eğer İptal değilse Raporla
         if (winner !== 'CANCEL') {
-            await this.generateResultCard(interaction.guild, match, winner);
+            const betReport = await this.processBets(interaction.guild, match, winner);
+            await this.generateResultCard(interaction.guild, match, winner, betReport);
         }
 
         // Temizlik Başlat
         await this.cleanupMatch(interaction.guild, match);
     },
 
-    async generateResultCard(guild, match, winnerTeam) {
+    async generateResultCard(guild, match, winnerTeam, betReport = null) {
         try {
             // Sonuç Kanalını Bul veya Oluştur
             let resultChannel = guild.channels.cache.find(c => c.name === 'maç-sonuçları');
@@ -574,11 +575,44 @@ module.exports = {
                 .setImage('attachment://match-result.png')
                 .setFooter({ text: `Match ID: ${match.matchId}` });
 
+            if (betReport) {
+                embed.addFields({ name: '📈 Bahis Durumu', value: betReport.length > 1024 ? betReport.substring(0, 1021) + '...' : betReport });
+            }
+
             await resultChannel.send({ embeds: [embed], files: [attachment] });
 
         } catch (error) {
             console.error('Result Card Error:', error);
         }
+    },
+
+    async processBets(guild, match, winnerTeam) {
+        if (!match.bets || match.bets.length === 0) return null;
+
+        let winners = [];
+
+        for (const bet of match.bets) {
+            if (bet.team === winnerTeam && !bet.claimed) {
+                const winAmount = bet.amount * 2;
+                try {
+                    const user = await User.findOne({ odasi: bet.userId, odaId: guild.id });
+                    if (user) {
+                        user.balance += winAmount;
+                        await user.save();
+                        winners.push(`<@${bet.userId}> (+${winAmount})`);
+                        bet.claimed = true;
+                    }
+                } catch (e) {
+                    console.error('Bahis ödeme hatası:', e);
+                }
+            }
+        }
+        await match.save();
+
+        if (winners.length > 0) {
+            return `💰 **Bahis Kazananları:**\n${winners.join(', ')}`;
+        }
+        return "💰 **Bahis:** Bu maça bahis oynayanlardan kazanan çıkmadı.";
     },
 
     async cleanupMatch(guild, match) {

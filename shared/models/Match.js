@@ -33,6 +33,14 @@ const matchSchema = new mongoose.Schema({
     // Kanallar
     createdChannelIds: [{ type: String }],
 
+    // Bahis Sistemi
+    bets: [{
+        userId: { type: String },
+        team: { type: String, enum: ['A', 'B'] },
+        amount: { type: Number },
+        claimed: { type: Boolean, default: false } // Kazananlar ödülünü aldı mı?
+    }],
+
     createdAt: { type: Date, default: Date.now }
 });
 

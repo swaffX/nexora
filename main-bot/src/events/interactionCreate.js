@@ -45,10 +45,15 @@ module.exports = {
                     await matchHandler.handleInteraction(interaction, client);
                 }
 
-                // voice_lock_123 -> action=voice
                 if (action === 'voice') {
                     const voiceMasterHandler = require('../handlers/voiceMasterHandler');
                     await voiceMasterHandler.handleInteraction(interaction, client);
+                }
+
+                // ticket_create_support -> action=ticket
+                if (action === 'ticket') {
+                    const ticketHandler = require('../handlers/ticketHandler');
+                    await ticketHandler.handleInteraction(interaction);
                 }
             } catch (error) {
                 logger.error('Button interaction hatası:', error);
@@ -75,6 +80,19 @@ module.exports = {
                 if (action === 'match') {
                     const matchHandler = require('../handlers/matchHandler');
                     await matchHandler.handleInteraction(interaction, client);
+                }
+
+                if (interaction.customId === 'help_menu') {
+                    const selected = interaction.values[0];
+                    let content = '';
+
+                    if (selected === 'main_commands') content = '🏠 **Ana Komutlar:**\n`/help` - Yardım menüsü\n`/ping` - Bot gecikmesi';
+                    if (selected === 'economy_commands') content = '💰 **Ekonomi Sistemi:**\n`/daily` - Günlük ödül\n`/work` - Çalış ve para kazan\n`/slots` - Slot oyunu\n`/coinflip` - Yazı tura\n`/balance` - Bakiyeni gör\n`/transfer` - Para gönder\n`/deposit` - Bankaya yatır\n`/withdraw` - Bankadan çek';
+                    if (selected === 'match_commands') content = '⚔️ **5v5 & Turnuva:**\n`/setup-match` - Maç paneli (Admin)\n`/bet` - Maç bahsi yap\n`/tournament` - Turnuva işlemleri';
+                    if (selected === 'level_commands') content = '📈 **Seviye Sistemi:**\n`/profile` - Profilini gör\n`/leaderboard` - Sıralama';
+                    if (selected === 'user_commands') content = '👤 **Kullanıcı:**\n`/avatar` - Avatarını gör\n`/banner` - Bannerını gör\n`/profil` - Gelişmiş profil';
+
+                    await interaction.reply({ content: content, ephemeral: true });
                 }
             } catch (error) {
                 logger.error('Select menu interaction hatası:', error);

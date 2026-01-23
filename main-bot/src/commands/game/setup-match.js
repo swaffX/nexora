@@ -34,7 +34,7 @@ Sistem ses kanalındaki oyuncuları otomatik algılar ve seçim yapmanızı sağ
 > **4️⃣ Harita Yasakla & Başla**
 > Haritaları eleyin, tarafınızı seçin ve savaş başlasın!
 
-⚠️ *Maç oluşturmak için <#1463922466467483801> kanalında olmalısınız.*
+⚠️ *Maç oluşturmak için <#1463922466467483801> kanalında olmalısınız.*\n⚠️ *Maç başlatmak için <@&1463875325019557920> rolüne sahip olmalısınız.*
             `)
             .setImage('https://cdn.discordapp.com/attachments/531892263652032522/1464235225818075147/standard_2.gif?ex=6974bad2&is=69736952&hm=16b14c0c7fa6d91ad8528683d2876891b5833d4d516ef5891cd91bc4b8c9804d&')
             .setFooter({ text: 'Nexora 5v5 System • Powered by Swaff' })
