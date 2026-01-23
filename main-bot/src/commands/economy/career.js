@@ -148,15 +148,17 @@ module.exports = {
                 promoteMsg = `\n🆙 **TERFİ ALDIN!** Yeni seviyen: **${user.career.level}**. Yeni maaşın: **${newSalary}** coin!`;
             }
 
-            await user.save(); // Önce kariyer bilgilerini kaydet
-
-            // Quest Update (Kaydedilmiş veri üzerinden işlem yapması için sonra çağırıyoruz)
+            // Quest Update (Save etmeden çağır, çünkü aşağıda toplu save var)
             const { updateQuestProgress } = require('../../utils/questManager');
-            const newAchievements = await updateQuestProgress({ odasi: userId, odaId: guildId }, 'work', 1);
+            // user nesnesini direkt gönderiyoruz, shouldSave = false
+            const newAchievements = await updateQuestProgress(user, 'work', 1, false);
 
             if (newAchievements.length > 0) {
                 promoteMsg += `\n🏆 **YENİ BAŞARIM:** ${newAchievements.join(', ')}`;
             }
+
+            // Hepsini tek seferde kaydet
+            await user.save();
 
             const job = JOBS[user.career.job];
             const workEmbed = new EmbedBuilder()
