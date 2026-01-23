@@ -9,6 +9,8 @@ module.exports = {
     once: true,
     async execute(client) {
         logger.success(`⚙️ Ana Yönetim Botu hazır! ${client.user.tag}`);
+        // Webhook Testi: Eğer webhook ayarlıysa bu discord'a düşmeli
+        logger.warn(`🟢 Sistem Başlatıldı: ${client.user.tag}`);
 
         client.user.setPresence({
             activities: [{
