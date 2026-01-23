@@ -16,17 +16,22 @@ module.exports = {
 
     async execute(interaction) {
         const bet = interaction.options.getInteger('bahis');
-        const userData = await User.findOrCreate(interaction.user.id, interaction.guild.id, interaction.user.username);
+        const userId = interaction.user.id;
+        const guildId = interaction.guild.id;
 
-        if (userData.balance < bet) {
+        // 1. Bakiye Kontrol ve Düşüm (Atomik)
+        const userData = await User.findOneAndUpdate(
+            { odasi: userId, odaId: guildId, balance: { $gte: bet } },
+            { $inc: { balance: -bet } },
+            { new: true }
+        );
+
+        if (!userData) {
+            const current = await User.findOne({ odasi: userId, odaId: guildId });
             return interaction.reply({
-                embeds: [embeds.error('Yetersiz Bakiye', `Bu bahis için **${(bet - userData.balance).toLocaleString()} NexCoin** eksiğiniz var.`)]
+                embeds: [embeds.error('Yetersiz Bakiye', `Bu bahis için **${(bet - (current?.balance || 0)).toLocaleString()} NexCoin** eksiğiniz var.`)]
             });
         }
-
-        // Önce parayı düş
-        userData.balance -= bet;
-        await userData.save();
 
         // Slot emojileri
         const slots = ['🍒', '🍋', '🍇', '🍉', '🍓', '💎', '7️⃣'];
@@ -47,25 +52,22 @@ module.exports = {
         // Kazanma Kontrolü
         let winnings = 0;
         let message = '';
-        let color = 0xE74C3C; // Kayıp rengi (Kırmızı)
+        let color = 0xE74C3C; // Kayıp (Kırmızı)
 
         // 3'ü aynı
         if (result1 === result2 && result2 === result3) {
             if (result1 === '7️⃣') {
-                // JACKPOT (7-7-7)
                 winnings = bet * 10;
                 message = `**JACKPOT!** Muhteşem! **${winnings.toLocaleString()} NexCoin** kazandınız!`;
-                color = 0xF1C40F; // Altın
+                color = 0xF1C40F;
             } else if (result1 === '💎') {
-                // Diamond (5x)
                 winnings = bet * 5;
                 message = `**BÜYÜK KAZANÇ!** **${winnings.toLocaleString()} NexCoin** kazandınız!`;
-                color = 0x3498DB; // Mavi
+                color = 0x3498DB;
             } else {
-                // Diğer 3'lüler (3x)
                 winnings = bet * 3;
                 message = `**TEBRİKLER!** **${winnings.toLocaleString()} NexCoin** kazandınız!`;
-                color = 0x2ECC71; // Yeşil
+                color = 0x2ECC71;
             }
         }
         // 2'si aynı (2x)
@@ -79,9 +81,16 @@ module.exports = {
             message = `Kaybettiniz... **${bet.toLocaleString()} NexCoin** gitti.`;
         }
 
+        let finalBalance = userData.balance;
+
         if (winnings > 0) {
-            userData.balance += winnings;
-            await userData.save();
+            // Ödülü Ver (Atomik)
+            const updatedUser = await User.findOneAndUpdate(
+                { odasi: userId, odaId: guildId },
+                { $inc: { balance: winnings } },
+                { new: true }
+            );
+            finalBalance = updatedUser.balance;
         }
 
         // Sonucu düzenle
@@ -91,14 +100,14 @@ module.exports = {
                 title: '🎰 Slot Machine',
                 description: `**[ ${result1} | ${result2} | ${result3} ]**\n\n${message}`,
                 color: color,
-                footer: { text: `Bakiye: ${userData.balance.toLocaleString()} NexCoin` }
+                footer: { text: `Bakiye: ${finalBalance.toLocaleString()} NexCoin` }
             }]
         });
 
         // Quest Update
         try {
             const { updateQuestProgress } = require('../../utils/questManager');
-            await updateQuestProgress({ odasi: interaction.user.id, odaId: interaction.guild.id }, 'gamble', 1);
+            await updateQuestProgress({ odasi: userId, odaId: guildId }, 'gamble', 1);
         } catch (e) { console.error(e); }
     }
 };

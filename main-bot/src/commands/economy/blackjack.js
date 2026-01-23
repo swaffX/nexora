@@ -57,18 +57,22 @@ module.exports = {
 
     async execute(interaction) {
         const bet = interaction.options.getInteger('bahis');
-        const userData = await User.findOrCreate(interaction.user.id, interaction.guild.id, interaction.user.username);
+        const userId = interaction.user.id;
+        const guildId = interaction.guild.id;
 
-        if (userData.balance < bet) {
+        // 1. Bakiye Kontrol ve Düşüm (Atomik)
+        const userData = await User.findOneAndUpdate(
+            { odasi: userId, odaId: guildId, balance: { $gte: bet } },
+            { $inc: { balance: -bet } },
+            { new: true }
+        );
+
+        if (!userData) {
+            const current = await User.findOne({ odasi: userId, odaId: guildId });
             return interaction.reply({
-                embeds: [embeds.error('Yetersiz Bakiye', `Bu bahis için **${(bet - userData.balance).toLocaleString()} NexCoin** eksiğiniz var.`)],
-                ephemeral: true
+                embeds: [embeds.error('Yetersiz Bakiye', `Bu bahis için **${(bet - (current?.balance || 0)).toLocaleString()} NexCoin** eksiğiniz var.`)]
             });
         }
-
-        // Bahsi düş
-        userData.balance -= bet;
-        await userData.save();
 
         const deck = createDeck();
         const playerHand = [deck.pop(), deck.pop()];
@@ -131,14 +135,18 @@ module.exports = {
 
         // Blackjack kontrolü (İlk elden)
         if (playerScore === 21) {
-            const winAmount = Math.floor(bet * 2.5); // Blackjack 3:2 öder (burada 2.5x toplam)
-            userData.balance += winAmount;
-            await userData.save();
+            const winAmount = Math.floor(bet * 2.5); // Blackjack 3:2 öder (burada 2.5x)
+
+            // Ödülü Ver (Atomik)
+            await User.findOneAndUpdate(
+                { odasi: userId, odaId: guildId },
+                { $inc: { balance: winAmount } }
+            );
 
             // Quest Update
             try {
                 const { updateQuestProgress } = require('../../utils/questManager');
-                await updateQuestProgress({ odasi: interaction.user.id, odaId: interaction.guild.id }, 'gamble', 1);
+                await updateQuestProgress({ odasi: userId, odaId: guildId }, 'gamble', 1);
             } catch (e) { }
 
             return interaction.editReply({
@@ -187,24 +195,25 @@ module.exports = {
             let winAmount = 0;
 
             if (finalPlayerScore > 21) {
-                // Kayıp (Zaten düşüldü)
+                // Kayıp
             } else if (finalDealerScore > 21 || finalPlayerScore > finalDealerScore) {
-                // Kazanma (2x)
                 winAmount = bet * 2;
             } else if (finalPlayerScore === finalDealerScore) {
-                // Beraberlik (İade)
                 winAmount = bet;
             }
 
             if (winAmount > 0) {
-                userData.balance += winAmount;
-                await userData.save();
+                // Ödülü Ver (Atomik)
+                await User.findOneAndUpdate(
+                    { odasi: userId, odaId: guildId },
+                    { $inc: { balance: winAmount } }
+                );
             }
 
             // Quest Update
             try {
                 const { updateQuestProgress } = require('../../utils/questManager');
-                await updateQuestProgress({ odasi: interaction.user.id, odaId: interaction.guild.id }, 'gamble', 1);
+                await updateQuestProgress({ odasi: userId, odaId: guildId }, 'gamble', 1);
             } catch (e) { }
 
             await interaction.editReply({
