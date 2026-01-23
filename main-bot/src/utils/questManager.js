@@ -20,37 +20,65 @@ const ACHIEVEMENTS = {
     'pet_lover': { name: '🐾 Hayvan Dostu', description: 'Petini 5. seviyeye yükselt.', condition: (stats) => stats.totalPetUpgrades >= 5 }
 };
 
+// Rastgele 3 Görev Seç
+function generateDailyQuests() {
+    const keys = Object.keys(QUESTS);
+    const shuffled = keys.sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, 3).map(id => ({
+        questId: id,
+        progress: 0,
+        target: QUESTS[id].target,
+        isCompleted: false,
+        isClaimed: false
+    }));
+}
+
 // Görev İlerlemesi Güncelleme Helper
-async function updateQuestProgress(userParam, type, amount = 1) {
+async function updateQuestProgress(userOrData, type, amount = 1, shouldSave = true) {
     try {
-        // En güncel veriyi veritabanından çek (Sync sorununu önler)
-        const user = await User.findOne({ odasi: userParam.odasi, odaId: userParam.odaId });
+        let user;
+
+        // 1. Instance mı ID mi?
+        if (userOrData.odasi && typeof userOrData.save === 'function') {
+            user = userOrData;
+        } else {
+            user = await User.findOne({ odasi: userOrData.odasi, odaId: userOrData.odaId });
+        }
+
         if (!user) return [];
 
-        let updated = false;
+        // 2. OTOMATİK GÖREV OLUŞTURMA (Lazy Loading)
+        const NOW = new Date();
+        const lastReset = user.lastQuestReset ? new Date(user.lastQuestReset) : new Date(0);
 
-        // Quests array kontrolü
-        if (!user.quests) user.quests = [];
+        // Görev yoksa veya gün değişmişse oluştur
+        if (!user.quests || user.quests.length === 0 || NOW.toDateString() !== lastReset.toDateString()) {
+            user.quests = generateDailyQuests();
+            user.lastQuestReset = NOW;
+        }
+
         if (!user.stats) user.stats = {};
         if (!user.achievements) user.achievements = [];
 
-        // Görevleri Güncelle
-        user.quests.forEach(quest => {
-            const qDef = QUESTS[quest.questId];
-            if (qDef && qDef.type === type && !quest.isCompleted) {
-                quest.progress += amount;
-                if (quest.progress >= quest.target) {
-                    quest.progress = quest.target;
-                    quest.isCompleted = true;
+        // 3. Görevleri Güncelle
+        if (user.quests) {
+            for (const quest of user.quests) {
+                const qDef = QUESTS[quest.questId];
+                if (qDef && qDef.type === type && !quest.isCompleted) {
+                    quest.progress += amount;
 
-                    // Ödülü otomatik ver
-                    user.balance += qDef.reward;
-                    updated = true;
+                    if (quest.progress >= quest.target) {
+                        quest.progress = quest.target;
+                        quest.isCompleted = true;
+
+                        // Ödülü otomatik ver
+                        user.balance += qDef.reward;
+                    }
                 }
             }
-        });
+        }
 
-        // İstatistik Güncelleme
+        // İstatistik Güncelleme (Basit map)
         if (type === 'work') user.stats.totalWork = (user.stats.totalWork || 0) + amount;
         if (type === 'gamble') user.stats.totalBets = (user.stats.totalBets || 0) + amount;
         if (type === 'duel_win') user.stats.totalDuelsWon = (user.stats.totalDuelsWon || 0) + amount;
@@ -77,25 +105,16 @@ async function updateQuestProgress(userParam, type, amount = 1) {
         user.markModified('stats');
         user.markModified('achievements');
 
-        await user.save();
+        // 4. Kaydet (İsteğe bağlı)
+        if (shouldSave) {
+            await user.save();
+        }
+
         return newAchievements;
     } catch (error) {
         console.error('Quest Update Error:', error);
         return [];
     }
-}
-
-// Rastgele 3 Görev Seç
-function generateDailyQuests() {
-    const keys = Object.keys(QUESTS);
-    const shuffled = keys.sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, 3).map(id => ({
-        questId: id,
-        progress: 0,
-        target: QUESTS[id].target,
-        isCompleted: false,
-        isClaimed: false
-    }));
 }
 
 module.exports = { QUESTS, ACHIEVEMENTS, updateQuestProgress, generateDailyQuests };

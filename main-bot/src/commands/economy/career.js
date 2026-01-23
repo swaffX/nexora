@@ -119,7 +119,7 @@ module.exports = {
 
             // Cooldown Kontrolü (1 Saat)
             const NOW = Date.now();
-            const COOLDOWN = 3600 * 1000;
+            const COOLDOWN = 10 * 1000; // TEST İÇİN 10 SANİYE (Normalde 3600 * 1000)
             const lastWork = user.career.lastWorkTime ? new Date(user.career.lastWorkTime).getTime() : 0;
 
             if (NOW - lastWork < COOLDOWN) {
