@@ -1,3 +1,6 @@
+const path = require('path');
+const User = require(path.join(__dirname, '..', '..', '..', 'shared', 'models', 'User'));
+
 // GÖREV TANIMLARI
 const QUESTS = {
     'work_2': { description: '2 kere çalış', target: 2, reward: 500, type: 'work' },
@@ -18,46 +21,68 @@ const ACHIEVEMENTS = {
 };
 
 // Görev İlerlemesi Güncelleme Helper
-async function updateQuestProgress(user, type, amount = 1) {
-    let updated = false;
-    user.quests.forEach(quest => {
-        const qDef = QUESTS[quest.questId];
-        if (qDef && qDef.type === type && !quest.isCompleted) {
-            quest.progress += amount;
-            if (quest.progress >= quest.target) {
-                quest.progress = quest.target;
-                quest.isCompleted = true;
-                // Ödül burada verilmiyor, /quests claim ile verilecek veya otomatik verilebilir.
-                // Otomatik verelim:
-                user.balance += qDef.reward;
-                updated = true; // Bildirim verilebilir
+async function updateQuestProgress(userParam, type, amount = 1) {
+    try {
+        // En güncel veriyi veritabanından çek (Sync sorununu önler)
+        const user = await User.findOne({ odasi: userParam.odasi, odaId: userParam.odaId });
+        if (!user) return [];
+
+        let updated = false;
+
+        // Quests array kontrolü
+        if (!user.quests) user.quests = [];
+        if (!user.stats) user.stats = {};
+        if (!user.achievements) user.achievements = [];
+
+        // Görevleri Güncelle
+        user.quests.forEach(quest => {
+            const qDef = QUESTS[quest.questId];
+            if (qDef && qDef.type === type && !quest.isCompleted) {
+                quest.progress += amount;
+                if (quest.progress >= quest.target) {
+                    quest.progress = quest.target;
+                    quest.isCompleted = true;
+
+                    // Ödülü otomatik ver
+                    user.balance += qDef.reward;
+                    updated = true;
+                }
+            }
+        });
+
+        // İstatistik Güncelleme
+        if (type === 'work') user.stats.totalWork = (user.stats.totalWork || 0) + amount;
+        if (type === 'gamble') user.stats.totalBets = (user.stats.totalBets || 0) + amount;
+        if (type === 'duel_win') user.stats.totalDuelsWon = (user.stats.totalDuelsWon || 0) + amount;
+        if (type === 'buy') user.stats.totalPetUpgrades = (user.stats.totalPetUpgrades || 0) + amount;
+        if (type === 'voice') user.stats.totalVoiceMinutes = (user.stats.totalVoiceMinutes || 0) + amount;
+
+        // Başarım Kontrolü
+        const newAchievements = [];
+        for (const [id, ach] of Object.entries(ACHIEVEMENTS)) {
+            if (!user.achievements.some(a => a.id === id)) {
+                // Güvenlik için fallback değerler
+                const stats = user.stats || {};
+                const bal = user.balance || 0;
+
+                if (ach.condition(stats, bal)) {
+                    user.achievements.push({ id, unlockedAt: new Date() });
+                    newAchievements.push(ach.name);
+                }
             }
         }
-    });
 
-    // İstatistik Güncelleme (Basit map)
-    if (type === 'work') user.stats.totalWork += amount;
-    if (type === 'gamble') user.stats.totalBets += amount;
-    if (type === 'duel_win') user.stats.totalDuelsWon += amount;
-    if (type === 'buy') user.stats.totalPetUpgrades += amount; // Örnek
+        // Mongoose'a değişiklikleri bildir
+        user.markModified('quests');
+        user.markModified('stats');
+        user.markModified('achievements');
 
-    // Başarım Kontrolü
-    const newAchievements = [];
-    for (const [id, ach] of Object.entries(ACHIEVEMENTS)) {
-        if (!user.achievements.some(a => a.id === id)) {
-            if (ach.condition(user.stats, user.balance)) {
-                user.achievements.push({ id });
-                newAchievements.push(ach.name);
-            }
-        }
+        await user.save();
+        return newAchievements;
+    } catch (error) {
+        console.error('Quest Update Error:', error);
+        return [];
     }
-
-    user.markModified('quests');
-    user.markModified('stats');
-    user.markModified('achievements');
-
-    await user.save();
-    return newAchievements; // Yeni kazanılan başarımları döndür
 }
 
 // Rastgele 3 Görev Seç
