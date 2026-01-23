@@ -131,9 +131,10 @@ module.exports = {
             }
         };
 
-        // 10 saniye sonra çalıştır
-        setTimeout(updateLeaderboard, 10000);
-        // 5 dakikada bir çalıştır
+        // Leaderboard Update Döngüsü (Her 5 dakikada bir)
+        updateLeaderboard(); // İlk açılışta çalıştır
+        setInterval(updateLeaderboard, 300000); // 5 dakikada bir tekrarla
+
         // Jail Timer Kontrolü (Dakikada bir)
         setInterval(async () => {
             const now = new Date();
