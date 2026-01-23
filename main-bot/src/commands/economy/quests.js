@@ -98,7 +98,28 @@ module.exports = {
     createProgressBar(percent) {
         const total = 10;
         const filled = Math.round((percent / 100) * total);
-        const empty = total - filled;
-        return '🟩'.repeat(filled) + '⬜'.repeat(empty);
+
+        const emojies = {
+            start_fill: '<a:fillstart:1246429695529058374>',
+            mid_fill: '<a:fill:1246429692571943014>',
+            end_fill: '<a:fillend:1246429703145918516>',
+            mid_empty: '<:empty:1246429688134373407>',
+            end_empty: '<:emptyend:1246429710137954397>'
+        };
+
+        if (filled === 0) {
+            return emojies.mid_empty.repeat(9) + emojies.end_empty;
+        }
+
+        if (filled === 10) {
+            return emojies.start_fill + emojies.mid_fill.repeat(8) + emojies.end_fill;
+        }
+
+        const start = emojies.start_fill;
+        const midFilled = emojies.mid_fill.repeat(Math.max(0, filled - 1));
+        const midEmpty = emojies.mid_empty.repeat(Math.max(0, total - filled - 1));
+        const end = emojies.end_empty;
+
+        return `${start}${midFilled}${midEmpty}${end}`;
     }
 };

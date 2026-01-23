@@ -52,6 +52,10 @@ async function updateQuestProgress(user, type, amount = 1) {
         }
     }
 
+    user.markModified('quests');
+    user.markModified('stats');
+    user.markModified('achievements');
+
     await user.save();
     return newAchievements; // Yeni kazanılan başarımları döndür
 }
