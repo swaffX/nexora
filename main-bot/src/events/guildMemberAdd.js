@@ -85,7 +85,7 @@ module.exports = {
 
             const welcomeEmbed = new EmbedBuilder()
                 .setColor('#2ecc71') // Yeşil (Giriş)
-                .setTitle('Nexora Sunucusuna Hoş Geldin!')
+                .setTitle('<:giris:1246429678567428170> Nexora Sunucusuna Hoş Geldin!')
                 .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 512 }))
                 .setDescription(
                     `👋 **Hey ${member.user.username}!**\n\n` +
@@ -98,7 +98,6 @@ module.exports = {
                     { name: '🎂 Hesap Tarihi', value: `<t:${createdTimestamp}:R>`, inline: true }, // "1 yıl önce" formatı
                     { name: '📊 Üye Sayısı', value: `#${memberCount}`, inline: true }
                 )
-                .setImage('https://i.imgur.com/example-banner.png') // İstersen buraya hoşgeldin şeridi koyabilirsin veya boş bırak
                 .setFooter({ text: `Üye #${memberCount} • Sunucuya katıldı`, iconURL: guild.iconURL() })
                 .setTimestamp();
 

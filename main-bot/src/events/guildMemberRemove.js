@@ -46,7 +46,7 @@ module.exports = {
 
                     const leaveEmbed = new EmbedBuilder()
                         .setColor('#e74c3c') // Kırmızı (Çıkış)
-                        .setTitle('Üye Ayrıldı')
+                        .setTitle('<:cikis:1246429697231814717> Üye Ayrıldı')
                         .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 512 }))
                         .setDescription(
                             `👋 **Görüşürüz, ${member.user.username}!**\n\n` +
