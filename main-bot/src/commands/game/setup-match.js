@@ -28,8 +28,8 @@ module.exports = {
                 .addFields(
                     { name: 'Nasıl Çalışır?', value: 'Sistem ses kanalındaki oyuncuları otomatik algılar ve seçim yapmanızı sağlar.', inline: false },
                     { name: '1️⃣ Maçı Başlat', value: '**Maç Oluştur** butonuna tıklayın.', inline: true },
-                    { name: '2️⃣ Takımları Seç', value: 'Menüden **Takım A** ve **Takım B** oyuncularını belirleyin.', inline: true },
-                    { name: '3️⃣ Otomatik Kurulum', value: 'Sistem odaları açar, oyuncuları taşır ve maçı başlatır.', inline: true }
+                    { name: '2️⃣ Kaptanları Seç', value: 'Takım A ve Takım B kaptanlarını belirleyin.', inline: true },
+                    { name: '3️⃣ Oyuncu Seçimi (Draft)', value: 'Kaptanlar sırayla ses kanalındaki oyuncuları seçer.', inline: true }
                 )
                 .setFooter({ text: 'Nexora Competitive • Powered by Swaff', iconURL: interaction.client.user.displayAvatarURL() })
                 .setTimestamp();
