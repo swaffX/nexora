@@ -148,14 +148,15 @@ module.exports = {
                 promoteMsg = `\n🆙 **TERFİ ALDIN!** Yeni seviyen: **${user.career.level}**. Yeni maaşın: **${newSalary}** coin!`;
             }
 
-            // Quest Update
+            await user.save(); // Önce kariyer bilgilerini kaydet
+
+            // Quest Update (Kaydedilmiş veri üzerinden işlem yapması için sonra çağırıyoruz)
             const { updateQuestProgress } = require('../../utils/questManager');
-            const newAchievements = await updateQuestProgress(user, 'work', 1);
+            const newAchievements = await updateQuestProgress({ odasi: userId, odaId: guildId }, 'work', 1);
+
             if (newAchievements.length > 0) {
                 promoteMsg += `\n🏆 **YENİ BAŞARIM:** ${newAchievements.join(', ')}`;
             }
-
-            await user.save();
 
             const job = JOBS[user.career.job];
             const workEmbed = new EmbedBuilder()

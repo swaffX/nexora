@@ -7,7 +7,7 @@ const QUESTS = {
     'gamble_5': { description: '5 kere kumar oyna (Coinflip/Slot)', target: 5, reward: 750, type: 'gamble' },
     'win_duel_1': { description: '1 Düello kazan', target: 1, reward: 1000, type: 'duel_win' },
     'buy_item_3': { description: 'Marketten 3 eşya al', target: 3, reward: 400, type: 'buy' },
-    'voice_30': { description: 'Ses kanalında 30 dk dur', target: 30, reward: 600, type: 'voice' }, // Dakika bazlı değil, count bazlı şimdilik
+    'voice_30': { description: 'Ses kanalında 30 dk dur', target: 1800, reward: 600, type: 'voice' }, // Saniye bazlı (30dk * 60)
     'daily_1': { description: 'Günlük ödülü al', target: 1, reward: 200, type: 'daily' }
 };
 

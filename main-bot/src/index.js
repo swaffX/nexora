@@ -113,7 +113,31 @@ async function start() {
         await client.login(process.env.TOKEN);
 
         // Kripto Döngüsünü Başlat
+        // Kripto Döngüsünü Başlat
         require('./handlers/cryptoHandler').start();
+
+        // Gece 00:00 Görev Sıfırlama Döngüsü
+        setInterval(async () => {
+            const now = new Date();
+            // Sunucu saati ile 00:00 kontrolü (Basit Cron)
+            // Daha kesin olması için dakika değişikliğini takip edebiliriz ama 60sn interval yeterli.
+            if (now.getHours() === 0 && now.getMinutes() === 0) {
+                logger.info('🌙 Gece 00:00 -> Günlük görevler sıfırlanıyor...');
+                const User = require(path.join(sharedPath, 'models', 'User'));
+
+                // Tüm kullanıcıların görevlerini sil (Lazy Loading için)
+                // Kullanıcı herhangi bir komut kullandığında yeni görevler atanacak.
+                try {
+                    await User.updateMany({}, {
+                        quests: [],
+                        lastQuestReset: null // Null yap ki "Tarih değişikliği" algılansın
+                    });
+                    logger.success('✅ Tüm kullanıcıların görevleri temizlendi. Giriş yaptıkça yenilenecek.');
+                } catch (err) {
+                    logger.error('Görev sıfırlama hatası:', err);
+                }
+            }
+        }, 60000); // Her dakika 1 kere çalışır
 
     } catch (error) {
         logger.error('Bot başlatılırken hata:', error);

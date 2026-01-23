@@ -88,25 +88,26 @@ async function processVoiceSession(user, guild, client) {
     const leftAt = new Date();
     const durationMs = leftAt - joinedAt;
     const durationMinutes = Math.floor(durationMs / 1000 / 60);
+    const durationSeconds = Math.floor(durationMs / 1000);
 
     // Veriyi sıfırla
     user.voiceJoinedAt = null;
     user.currentVoiceChannel = null;
 
-    // Eğer 1 dakikadan azsa kaydetme (db yazma tasarrufu)
-    if (durationMinutes < 1) {
+    // Eğer 10 saniyeden azsa kaydetme (db tasarrufu)
+    if (durationSeconds < 10) {
         await user.save();
         return;
     }
 
-    // İstatistikleri Güncelle
-    user.totalVoiceMinutes += durationMinutes;
+    // İstatistikleri Güncelle (Dakika olarak)
+    user.totalVoiceMinutes += durationMinutes; // Dakika bazlı kalsın (genel istatistik)
     user.dailyVoice += durationMinutes;
     user.weeklyVoice += durationMinutes;
     user.monthlyVoice += durationMinutes;
 
     // XP Kazanımı
-    const xpEarned = durationMinutes * XP_PER_MINUTE;
+    const xpEarned = durationMinutes > 0 ? durationMinutes * XP_PER_MINUTE : 1; // En az 1 XP
     const newLevel = await user.addXP(xpEarned);
 
     // Level Atladıysa Bildir
@@ -130,18 +131,18 @@ async function processVoiceSession(user, guild, client) {
         .setDescription(`<@${user.odasi}> ses kanalından ayrıldı.`)
         .addFields(
             { name: 'Kanal', value: `${guild.channels.cache.get(user.currentVoiceChannel)?.name || 'Bilinmiyor'}`, inline: true },
-            { name: 'Süre', value: `⏱️ ${durationMinutes} dakika`, inline: true },
-            { name: 'Kazanılan XP', value: `✨ ${durationMinutes * XP_PER_MINUTE} XP`, inline: true }
+            { name: 'Süre', value: `⏱️ ${durationMinutes} dakika (${durationSeconds} sn)`, inline: true },
+            { name: 'Kazanılan XP', value: `✨ ${xpEarned} XP`, inline: true }
         )
         .setTimestamp();
 
     const { sendLog } = require('../utils/logHelper');
     await sendLog(client, guild.id, 'voice', voiceLogEmbed);
 
-    // Quest Update
+    // Quest Update (Saniye olarak gönder)
     try {
         const { updateQuestProgress } = require('../utils/questManager');
-        await updateQuestProgress(user, 'voice', durationMinutes);
+        await updateQuestProgress(user, 'voice', durationSeconds);
     } catch (e) { console.error('Voice Quest Error:', e); }
 
     await user.save();
