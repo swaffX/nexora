@@ -123,6 +123,57 @@ module.exports = {
         // 10 saniye sonra çalıştır
         setTimeout(updateLeaderboard, 10000);
         // 5 dakikada bir çalıştır
-        setInterval(updateLeaderboard, 60000 * 5);
+        // Jail Timer Kontrolü (Dakikada bir)
+        setInterval(async () => {
+            const now = new Date();
+            const expiredJails = await User.find({
+                'jail.isJailed': true,
+                'jail.jailedUntil': { $ne: null, $lte: now }
+            });
+
+            for (const userData of expiredJails) {
+                const guild = client.guilds.cache.get(userData.odaId);
+                if (!guild) continue;
+
+                const member = await guild.members.fetch(userData.odasi).catch(() => null);
+                if (!member) continue;
+
+                const guildSettings = await Guild.findOne({ odaId: guild.id });
+                if (!guildSettings?.jailSystem?.roleId) continue;
+
+                try {
+                    const jailRoleId = guildSettings.jailSystem.roleId;
+                    const rolesToRestore = userData.jail.roles || [];
+
+                    await member.roles.remove(jailRoleId);
+                    if (rolesToRestore.length > 0) await member.roles.add(rolesToRestore);
+
+                    // DB Güncelle
+                    userData.jail.isJailed = false;
+                    userData.jail.roles = [];
+                    userData.jail.jailedAt = null;
+                    userData.jail.jailedUntil = null;
+                    await userData.save();
+
+                    // Bildirim
+                    const cellChannel = guild.channels.cache.get(guildSettings.jailSystem.channelId);
+                    if (cellChannel) {
+                        cellChannel.send({
+                            content: `<@${member.id}>`,
+                            embeds: [{
+                                color: 0x2ECC71,
+                                description: `⏰ **Süre Doldu!** <@${member.id}> otomatik tahliye edildi.`
+                            }]
+                        });
+                    }
+
+                    logger.info(`Otomatik tahliye: ${member.user.tag} (${guild.name})`);
+
+                } catch (err) {
+                    logger.error(`Otomatik tahliye hatası (${member.user.tag}):`, err);
+                }
+            }
+        }, 60000); // 1 dakikada bir kontrol
+
     }
 };

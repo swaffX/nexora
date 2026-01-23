@@ -69,6 +69,7 @@ const userSchema = new mongoose.Schema({
         isJailed: { type: Boolean, default: false },
         roles: [{ type: String }], // Silinen rollerin ID'leri
         jailedAt: { type: Date, default: null },
+        jailedUntil: { type: Date, default: null }, // Tahliye tarihi
         reason: { type: String, default: null }
     }
 

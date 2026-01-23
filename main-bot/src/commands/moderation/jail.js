@@ -2,6 +2,7 @@ const path = require('path');
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const { User, Guild } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const { embeds } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'embeds'));
+const ms = require('ms');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -15,6 +16,9 @@ module.exports = {
                     opt.setName('kullanıcı')
                         .setDescription('Hapse atılacak kullanıcı')
                         .setRequired(true))
+                .addStringOption(opt =>
+                    opt.setName('süre')
+                        .setDescription('Hapis süresi (örn: 1h, 30m, 1d) - Boş bırakılırsa süresiz'))
                 .addStringOption(opt =>
                     opt.setName('sebep')
                         .setDescription('Hapis sebebi')))
@@ -30,6 +34,7 @@ module.exports = {
         const subcommand = interaction.options.getSubcommand();
         const targetUser = interaction.options.getUser('kullanıcı');
         const reason = interaction.options.getString('sebep') || 'Sebep Belirtilmedi';
+        const durationInput = interaction.options.getString('süre');
 
         const guildSettings = await Guild.findOne({ odaId: interaction.guild.id });
         if (!guildSettings || !guildSettings.jailSystem?.roleId) {
@@ -40,6 +45,8 @@ module.exports = {
         }
 
         const jailRoleId = guildSettings.jailSystem.roleId;
+        const cellChannelId = guildSettings.jailSystem.channelId;
+        const cellChannel = interaction.guild.channels.cache.get(cellChannelId);
 
         // Üyeyi bul
         const member = await interaction.guild.members.fetch(targetUser.id).catch(() => null);
@@ -70,6 +77,23 @@ module.exports = {
                 });
             }
 
+            // Süre Hesaplama
+            let jailedUntil = null;
+            let durationText = 'Süresiz';
+
+            if (durationInput) {
+                const milliseconds = ms(durationInput);
+                if (milliseconds) {
+                    jailedUntil = new Date(Date.now() + milliseconds);
+                    durationText = durationInput;
+                } else {
+                    return interaction.reply({
+                        embeds: [embeds.error('Hata', 'Geçersiz süre formatı. Örnek: 1h, 30m, 1d')],
+                        ephemeral: true
+                    });
+                }
+            }
+
             // Rolleri kaydet (Bot rolleri ve @everyone hariç)
             const oldRoles = member.roles.cache
                 .filter(r => !r.managed && r.name !== '@everyone' && r.id !== jailRoleId)
@@ -79,6 +103,7 @@ module.exports = {
                 isJailed: true,
                 roles: oldRoles,
                 jailedAt: new Date(),
+                jailedUntil: jailedUntil,
                 reason: reason
             };
             await userData.save();
@@ -96,15 +121,37 @@ module.exports = {
                 // DM Bilgilendirme
                 try {
                     await targetUser.send({
-                        embeds: [embeds.error('Hapse Atıldınız', `**${interaction.guild.name}** sunucusunda hapse atıldınız.\n**Sebep:** ${reason}\n\nSadece hücre kanalını görebilirsiniz.`)]
+                        embeds: [embeds.error('Hapse Atıldınız',
+                            `**${interaction.guild.name}** sunucusunda hapse atıldınız.\n` +
+                            `**Süre:** ${durationText}\n` +
+                            `**Sebep:** ${reason}\n\n` +
+                            `Sadece hücre kanalını görebilirsiniz.`
+                        )]
                     });
                 } catch (e) { }
 
-                // Log kanalına mesaj atabilirsin (opsiyonel)
+                // HÜCRE KANALINA BİLDİRİM
+                if (cellChannel) {
+                    cellChannel.send({
+                        content: `<@${targetUser.id}>`,
+                        embeds: [{
+                            color: 0xE74C3C,
+                            title: '⛓️ HAPİSHANEYE HOŞ GELDİN',
+                            description: `Cezalı: <@${targetUser.id}>\nYetkili: <@${interaction.user.id}>`,
+                            fields: [
+                                { name: 'Süre', value: durationText, inline: true },
+                                { name: 'Tahliye', value: jailedUntil ? `<t:${Math.floor(jailedUntil.getTime() / 1000)}:R>` : 'Belirsiz', inline: true },
+                                { name: 'Sebep', value: reason, inline: false }
+                            ],
+                            thumbnail: { url: targetUser.displayAvatarURL({ dynamic: true }) }
+                        }]
+                    });
+                }
 
                 return interaction.reply({
                     embeds: [embeds.success('Kullanıcı Hapse Atıldı',
-                        `🚫 **${targetUser.tag}** başarıyla hapse atıldı.\n` +
+                        `🚫 **${targetUser.tag}** hapse atıldı.\n` +
+                        `⏱️ **Süre:** ${durationText}\n` +
                         `📋 **Sebep:** ${reason}\n` +
                         `🔒 **Alınan Roller:** ${oldRoles.length} adet`
                     )]
@@ -133,6 +180,7 @@ module.exports = {
                 isJailed: false,
                 roles: [],
                 jailedAt: null,
+                jailedUntil: null,
                 reason: null
             };
             await userData.save();
@@ -143,6 +191,15 @@ module.exports = {
                 // Rolleri geri ver
                 if (rolesToRestore.length > 0) {
                     await member.roles.add(rolesToRestore);
+                }
+
+                if (cellChannel) {
+                    cellChannel.send({
+                        embeds: [{
+                            color: 0x2ECC71,
+                            description: `🔓 <@${targetUser.id}> serbest bırakıldı.`
+                        }]
+                    });
                 }
 
                 return interaction.reply({
