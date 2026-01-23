@@ -78,13 +78,13 @@ module.exports = {
                         if (!channel) continue;
 
                         // 1. Top XP (All Time)
-                        const topXp = await User.find({ odaId: guildId }).sort({ xp: -1 }).limit(5).lean();
+                        const topXp = await User.find({ odaId: guildId }).sort({ xp: -1 }).limit(10).lean();
 
                         // 2. Top Chatters
-                        const topMsg = await User.find({ odaId: guildId, totalMessages: { $gt: 0 } }).sort({ totalMessages: -1 }).limit(5).lean();
+                        const topMsg = await User.find({ odaId: guildId, totalMessages: { $gt: 0 } }).sort({ totalMessages: -1 }).limit(10).lean();
 
                         // 3. Voice Champions
-                        const topVoice = await User.find({ odaId: guildId, totalVoiceMinutes: { $gt: 0 } }).sort({ totalVoiceMinutes: -1 }).limit(5).lean();
+                        const topVoice = await User.find({ odaId: guildId, totalVoiceMinutes: { $gt: 0 } }).sort({ totalVoiceMinutes: -1 }).limit(10).lean();
 
                         // 4. Global Stats (Aggregate daha performanslı ama basit loop yeterli şimdilik)
                         const allUsers = await User.find({ odaId: guildId }, 'totalMessages totalVoiceMinutes');
