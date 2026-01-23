@@ -25,16 +25,17 @@ module.exports = {
         const ticketNu = String(ticketId).padStart(4, '0');
 
         // Kategori ID'leri (Ayarlanabilir olmalı, şimdilik varsa Support kategorisi yoksa oluştur)
-        // Basitlik için: "TICKETS" kategorisi altına açalım
-        let category = guild.channels.cache.find(c => c.name === 'TICKETS' && c.type === ChannelType.GuildCategory);
+        // Kategori ID'leri
+        const CATEGORY_NAME = '🎫 | Destek Talepleri';
+        let category = guild.channels.cache.find(c => c.name === CATEGORY_NAME && c.type === ChannelType.GuildCategory);
         if (!category) {
             category = await guild.channels.create({
-                name: 'TICKETS',
+                name: CATEGORY_NAME,
                 type: ChannelType.GuildCategory
             });
         }
 
-        const channelName = `${type}-${ticketNu}`;
+        const channelName = `${TICKET_CATEGORIES[type].emoji}-${type}-${ticketNu}`;
 
         try {
             const channel = await guild.channels.create({
