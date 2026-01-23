@@ -106,7 +106,7 @@ ${formatList(data.voice, 'voice')}
 💬 **Toplam Mesaj:** ${data.stats.totalMessages.toLocaleString()}
 🎙️ **Toplam Ses:** ${Math.floor(data.stats.totalVoice / 60)}s ${data.stats.totalVoice % 60}dk
             `)
-            .setFooter({ text: `Son Güncelleme • Bugün saat ${new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`, iconURL: guildIcon });
+            .setFooter({ text: `Son Güncelleme • Bugün saat ${new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Istanbul' })}`, iconURL: guildIcon });
 
         if (guildIcon) embed.setThumbnail(guildIcon);
 
