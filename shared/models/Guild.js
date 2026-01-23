@@ -163,7 +163,14 @@ const guildSchema = new mongoose.Schema({
     customCommands: [{
         trigger: { type: String, required: true },
         response: { type: String, required: true }
-    }]
+    }],
+
+    // Jail Sistemi Ayarları
+    jailSystem: {
+        roleId: { type: String, default: null },
+        channelId: { type: String, default: null },
+        categoryId: { type: String, default: null }
+    }
 
 }, { timestamps: true });
 

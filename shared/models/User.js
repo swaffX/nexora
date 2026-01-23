@@ -62,7 +62,15 @@ const userSchema = new mongoose.Schema({
 
     // Ses kanalı takibi
     voiceJoinedAt: { type: Date, default: null },
-    currentVoiceChannel: { type: String, default: null }
+    currentVoiceChannel: { type: String, default: null },
+
+    // Jail Sistemi
+    jail: {
+        isJailed: { type: Boolean, default: false },
+        roles: [{ type: String }], // Silinen rollerin ID'leri
+        jailedAt: { type: Date, default: null },
+        reason: { type: String, default: null }
+    }
 
 }, { timestamps: true });
 
