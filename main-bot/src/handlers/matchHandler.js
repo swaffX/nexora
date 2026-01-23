@@ -7,9 +7,11 @@ const {
     PermissionsBitField,
     StringSelectMenuBuilder,
     UserSelectMenuBuilder,
-    ComponentType
+    ComponentType,
+    AttachmentBuilder
 } = require('discord.js');
 const path = require('path');
+const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const { Match } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
 
 // VALORANT Harita Havuzu (Güncel)
@@ -34,7 +36,7 @@ module.exports = {
         const { customId } = interaction;
         const parts = customId.split('_');
         const action = parts[1];
-        // Actions: create, captainA, captainB, randomcap, pick, refresh, vetoban, sidepick, endmatch, deletelobby
+        // Actions: create, captainA, captainB, randomcap, pick, refresh, vetoban, sidepick, endmatch, deletelobby, winner
 
         try {
             if (action === 'create') await this.createLobby(interaction);
@@ -46,6 +48,7 @@ module.exports = {
             else if (action === 'vetoban') await this.handleMapBan(interaction);
             else if (action === 'sidepick') await this.handleSidePick(interaction);
             else if (action === 'endmatch') await this.endMatch(interaction);
+            else if (action === 'winner') await this.handleMatchResult(interaction);
         } catch (error) {
             console.error(`Match Handler Error [${action}]:`, error);
             if (!interaction.replied && !interaction.deferred) await interaction.reply({ content: '❌ İşlem sırasında hata!', ephemeral: true });
@@ -54,6 +57,23 @@ module.exports = {
 
     // 1. LOBBY CREATE
     async createLobby(interaction) {
+        // Güvenlik Kontrolleri
+        const REQUIRED_ROLE_ID = '1463875325019557920';
+        const REQUIRED_VOICE_ID = '1463922466467483801';
+
+        // 1. Rol Kontrolü
+        if (!interaction.member.roles.cache.has(REQUIRED_ROLE_ID)) {
+            return interaction.reply({ content: '❌ Bu işlemi yapmak için **Match Admin** yetkisine sahip değilsiniz!', ephemeral: true });
+        }
+
+        // 2. Özel Ses Kanalı Kontrolü
+        if (interaction.member.voice.channelId !== REQUIRED_VOICE_ID) {
+            return interaction.reply({
+                content: `❌ Maç oluşturmak için <#${REQUIRED_VOICE_ID}> ses kanalında olmanız gerekmektedir!`,
+                ephemeral: true
+            });
+        }
+
         // DB ve Kategori Kontrol
         let category = interaction.guild.channels.cache.get(MATCH_CATEGORY_ID);
         if (!category) {
@@ -422,20 +442,143 @@ module.exports = {
         });
     },
 
-    // 7. CLEANUP
+    // 7. MAÇ SONLANDIRMA (YENİ SİSTEM)
     async endMatch(interaction) {
         const matchId = interaction.customId.split('_')[2];
         const match = await Match.findOne({ matchId });
 
-        if (!match) {
-            // Veri yoksa bile kanalı sil
-            if (interaction.channel) await interaction.channel.delete();
-            return;
+        if (!match) return interaction.reply({ content: 'Maç bulunamadı.', ephemeral: true });
+
+        // Admin'e Kazananı Sor
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId(`match_winner_${matchId}_A`).setLabel('🏆 Team A Kazandı').setStyle(ButtonStyle.Primary),
+            new ButtonBuilder().setCustomId(`match_winner_${matchId}_B`).setLabel('🏆 Team B Kazandı').setStyle(ButtonStyle.Danger),
+            new ButtonBuilder().setCustomId(`match_winner_${matchId}_CANCEL`).setLabel('❌ İptal / Sonuçsuz').setStyle(ButtonStyle.Secondary)
+        );
+
+        await interaction.reply({
+            content: '🏁 **Maç Sonucu:** Lütfen kazanan takımı seçin.\n*(Seçimden sonra kanallar silinecek ve sonuç loglanacaktır)*',
+            components: [row],
+            ephemeral: true
+        });
+    },
+
+    // 8. WINNER SELECTION & LOGGING
+    async handleMatchResult(interaction) {
+        const [_, __, matchId, winner] = interaction.customId.split('_');
+        const match = await Match.findOne({ matchId });
+
+        if (!match) return interaction.update({ content: 'Maç verisi yok.', components: [] });
+
+        await interaction.update({ content: '⏳ **Sonuç işleniyor...** Resim oluşturuluyor ve kanallar temizleniyor.', components: [] });
+
+        // Eğer İptal değilse Raporla
+        if (winner !== 'CANCEL') {
+            await this.generateResultCard(interaction.guild, match, winner);
         }
 
-        await interaction.reply('⏳ **Maç bitiyor...** Lobiye dönülüyor...');
+        // Temizlik Başlat
+        await this.cleanupMatch(interaction.guild, match);
+    },
 
-        const guild = interaction.guild;
+    async generateResultCard(guild, match, winnerTeam) {
+        try {
+            // Sonuç Kanalını Bul veya Oluştur
+            let resultChannel = guild.channels.cache.find(c => c.name === 'maç-sonuçları');
+            if (!resultChannel) {
+                resultChannel = await guild.channels.create({
+                    name: 'maç-sonuçları',
+                    type: ChannelType.GuildText,
+                    permissionOverwrites: [{ id: guild.roles.everyone.id, deny: [PermissionsBitField.Flags.SendMessages] }]
+                });
+            }
+
+            // Kazanan Takım Verileri
+            const winningTeamIds = winnerTeam === 'A' ? match.teamA : match.teamB;
+            const teamName = winnerTeam === 'A' ? 'TEAM A' : 'TEAM B';
+            const color = winnerTeam === 'A' ? '#5865F2' : '#ED4245'; // Mavi veya Kırmızı
+
+            // CANVAS
+            const canvas = createCanvas(800, 450);
+            const ctx = canvas.getContext('2d');
+
+            // 1. Arkaplan (Map Resmi)
+            const mapData = MAPS.find(m => m.name === match.selectedMap) || MAPS[0];
+            try {
+                const bg = await loadImage(mapData.img);
+                ctx.drawImage(bg, 0, 0, 800, 450);
+
+                // Karartma
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, 800, 450);
+            } catch (e) {
+                ctx.fillStyle = '#1a1a1a';
+                ctx.fillRect(0, 0, 800, 450);
+            }
+
+            // 2. Başlıklar
+            ctx.textAlign = 'center';
+
+            ctx.font = 'bold 80px Arial';
+            ctx.fillStyle = color;
+            ctx.shadowColor = "black";
+            ctx.shadowBlur = 10;
+            ctx.fillText('VICTORY', 400, 100);
+
+            ctx.font = 'bold 40px Arial';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(`${teamName} WON`, 400, 150);
+
+            // 3. Oyuncu Avatarları
+            for (let i = 0; i < winningTeamIds.length; i++) {
+                const userId = winningTeamIds[i];
+                try {
+                    const member = await guild.members.fetch(userId);
+                    const avatarURL = member.user.displayAvatarURL({ extension: 'png', size: 128, forceStatic: true });
+                    const avatar = await loadImage(avatarURL);
+
+                    const x = 100 + (i * 130);
+                    const y = 220;
+
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(x + 50, y + 50, 50, 0, Math.PI * 2, true);
+                    ctx.closePath();
+                    ctx.clip();
+                    ctx.drawImage(avatar, x, y, 100, 100);
+                    ctx.restore();
+
+                    ctx.font = 'bold 18px Arial';
+                    ctx.fillStyle = 'white';
+                    ctx.fillText(member.displayName.substring(0, 12), x + 50, y + 130);
+                } catch (e) { }
+            }
+
+            ctx.font = '20px Arial';
+            ctx.fillStyle = '#aaaaaa';
+            ctx.fillText(`Map: ${match.selectedMap} • ${new Date().toLocaleDateString('tr-TR')}`, 400, 420);
+
+            const attachment = new AttachmentBuilder(await canvas.encode('png'), { name: 'match-result.png' });
+
+            const embed = new EmbedBuilder()
+                .setColor(winnerTeam === 'A' ? 0x5865F2 : 0xED4245)
+                .setTitle(`🏆 Maç Sonucu: ${teamName} Kazandı!`)
+                .setDescription(`🗓️ **Tarih:** <t:${Math.floor(Date.now() / 1000)}:f>\n🗺️ **Harita:** ${match.selectedMap}`)
+                .addFields(
+                    { name: '🔵 Team A', value: match.teamA.map(id => `<@${id}>`).join(', '), inline: true },
+                    { name: '🔴 Team B', value: match.teamB.map(id => `<@${id}>`).join(', '), inline: true }
+                )
+                .setImage('attachment://match-result.png')
+                .setFooter({ text: `Match ID: ${match.matchId}` });
+
+            await resultChannel.send({ embeds: [embed], files: [attachment] });
+
+        } catch (error) {
+            console.error('Result Card Error:', error);
+        }
+    },
+
+    async cleanupMatch(guild, match) {
         if (match.lobbyVoiceId) {
             const allPlayers = [...match.teamA, ...match.teamB];
             for (const id of allPlayers) {
@@ -455,6 +598,6 @@ module.exports = {
             }
             match.status = 'FINISHED';
             await match.save();
-        }, 4000);
+        }, 3000);
     }
 };
