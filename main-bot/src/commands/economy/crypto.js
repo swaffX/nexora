@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const User = require('../../../../shared/models/User');
-const Crypto = require('../../../../shared/models/Crypto');
+const path = require('path');
+const User = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models', 'User'));
+const Crypto = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models', 'Crypto'));
 
 module.exports = {
     data: new SlashCommandBuilder()

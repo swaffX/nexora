@@ -1,5 +1,6 @@
 const CronJob = require('cron').CronJob;
-const Crypto = require('../../../../shared/models/Crypto');
+const path = require('path');
+const Crypto = require(path.join(__dirname, '..', '..', '..', 'shared', 'models', 'Crypto'));
 
 module.exports = {
     start: () => {
