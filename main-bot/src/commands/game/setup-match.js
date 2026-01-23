@@ -20,9 +20,9 @@ module.exports = {
 Aşağıdaki butonu kullanarak lobideki oyuncularla hızlıca **Takım A** ve **Takım B** oluşturup maça başlayabilirsiniz.
 
 **📍 Nasıl Çalışır?**
-Sistem ses kanalındaki (`.src / commands / game / setup - match.js` gibi) oyuncuları otomatik algılar.
+Sistem ses kanalındaki oyuncuları otomatik algılar ve seçim yapmanızı sağlar.
 
-> **1️⃣ Maçı Kur**
+> **1️⃣ Maçı Başlat**
 > "Maç Oluştur" butonuna tıklayarak draft ekranını açın.
 >
 > **2️⃣ Kaptanları Belirle**
@@ -36,8 +36,8 @@ Sistem ses kanalındaki (`.src / commands / game / setup - match.js` gibi) oyunc
 
 ⚠️ *Maç oluşturmak için <#1463922466467483801> kanalında olmalısınız.*
             `)
-            .setImage('https://cdn.dribbble.com/users/2340260/screenshots/15664947/media/252b415664152062fe87265be0095107.jpg?resize=800x600&vertical=center') // Şık bir Valorant Banner
-            .setThumbnail('https://cdn-icons-png.flaticon.com/512/8267/8267989.png') // Kılıç ikonu veya Valo logosu
+            .setImage('https://cdn.dribbble.com/users/2340260/screenshots/15664947/media/252b415664152062fe87265be0095107.jpg?resize=800x600&vertical=center')
+            .setThumbnail('https://cdn-icons-png.flaticon.com/512/8267/8267989.png')
             .setFooter({ text: 'Nexora Competitive • Powered by Swaff' })
             .setTimestamp();
 
@@ -46,7 +46,6 @@ Sistem ses kanalındaki (`.src / commands / game / setup - match.js` gibi) oyunc
                 .setCustomId('match_create')
                 .setLabel('🎮 Maç Oluştur')
                 .setStyle(ButtonStyle.Success)
-                .setEmoji('1330926526757048402') // Özel emoji varsa kullan, yoksa standart
         );
 
         // Hedef kanalı ve mesajı bulmaya çalış
