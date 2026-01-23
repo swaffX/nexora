@@ -119,6 +119,12 @@ module.exports = {
                 embed.addFields({ name: 'Sonuç', value: resultText });
                 await interaction.editReply({ embeds: [embed] });
 
+                // Quest Update
+                try {
+                    const { updateQuestProgress } = require('../../utils/questManager');
+                    await updateQuestProgress({ odasi: interaction.user.id, odaId: interaction.guild.id }, 'gamble', 1);
+                } catch (e) { console.error(e); }
+
             } else {
                 await interaction.editReply({ embeds: [embed] });
             }

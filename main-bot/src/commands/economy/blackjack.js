@@ -135,6 +135,12 @@ module.exports = {
             userData.balance += winAmount;
             await userData.save();
 
+            // Quest Update
+            try {
+                const { updateQuestProgress } = require('../../utils/questManager');
+                await updateQuestProgress({ odasi: interaction.user.id, odaId: interaction.guild.id }, 'gamble', 1);
+            } catch (e) { }
+
             return interaction.editReply({
                 embeds: [{
                     title: '🃏 Blackjack! 🔥',
@@ -194,6 +200,12 @@ module.exports = {
                 userData.balance += winAmount;
                 await userData.save();
             }
+
+            // Quest Update
+            try {
+                const { updateQuestProgress } = require('../../utils/questManager');
+                await updateQuestProgress({ odasi: interaction.user.id, odaId: interaction.guild.id }, 'gamble', 1);
+            } catch (e) { }
 
             await interaction.editReply({
                 embeds: [generateEmbed(true)],

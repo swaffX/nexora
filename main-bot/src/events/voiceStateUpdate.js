@@ -138,5 +138,11 @@ async function processVoiceSession(user, guild, client) {
     const { sendLog } = require('../utils/logHelper');
     await sendLog(client, guild.id, 'voice', voiceLogEmbed);
 
+    // Quest Update
+    try {
+        const { updateQuestProgress } = require('../utils/questManager');
+        await updateQuestProgress(user, 'voice', durationMinutes);
+    } catch (e) { console.error('Voice Quest Error:', e); }
+
     await user.save();
 }

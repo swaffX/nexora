@@ -116,6 +116,12 @@ module.exports = {
             resultMsg += `Kalan Bakiye: **${user.balance}**`;
         }
 
+        // Quest Update
+        try {
+            const { updateQuestProgress } = require('../../utils/questManager');
+            await updateQuestProgress({ odasi: userId, odaId: guildId }, 'gamble', 1);
+        } catch (e) { console.error(e); }
+
         return interaction.reply({ content: resultMsg });
     }
 };

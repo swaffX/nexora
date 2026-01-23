@@ -94,5 +94,11 @@ module.exports = {
                 footer: { text: `Bakiye: ${userData.balance.toLocaleString()} NexCoin` }
             }]
         });
+
+        // Quest Update
+        try {
+            const { updateQuestProgress } = require('../../utils/questManager');
+            await updateQuestProgress({ odasi: interaction.user.id, odaId: interaction.guild.id }, 'gamble', 1);
+        } catch (e) { console.error(e); }
     }
 };

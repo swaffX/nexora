@@ -97,6 +97,12 @@ module.exports = {
 
             await interaction.editReply({ embeds: [resultEmbed] });
 
+            // Quest Update
+            try {
+                const { updateQuestProgress } = require('../../utils/questManager');
+                await updateQuestProgress({ odasi: userId, odaId: guildId }, 'gamble', 1);
+            } catch (e) { console.error(e); }
+
         }, 2000);
     }
 };
