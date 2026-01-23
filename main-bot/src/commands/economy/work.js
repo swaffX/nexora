@@ -56,12 +56,31 @@ module.exports = {
 
         user.balance += earnings;
         user.lastWork = now;
+
+        // %10 Şansla Kutu Düşürme
+        let droppedBox = null;
+        if (Math.random() < 0.10) {
+            droppedBox = 'wooden_box';
+            // Inventory init check
+            if (!user.inventory) user.inventory = [];
+
+            const existing = user.inventory.find(i => i.itemId === droppedBox);
+            if (existing) existing.amount++;
+            else user.inventory.push({ itemId: droppedBox, amount: 1 });
+        }
+
         await user.save();
+
+        let description = `${job.emoji} Bugün **${job.text}** tam olarak **${earnings} NexCoin** kazandın!\n\n💰 **Cüzdan:** ${user.balance.toLocaleString()}`;
+
+        if (droppedBox) {
+            description += `\n\n🎁 **Şanslı Günün!** Çalışırken yerlerde bir **Ahşap Kutu** 📦 buldun!\nÇantanı kontrol et: \`/inventory\``;
+        }
 
         const embed = new EmbedBuilder()
             .setColor('#3498db')
             .setAuthor({ name: `${interaction.user.username} işe gitti`, iconURL: interaction.user.displayAvatarURL() })
-            .setDescription(`${job.emoji} Bugün **${job.text}** tam olarak **${earnings} NexCoin** kazandın!\n\n💰 **Cüzdan:** ${user.balance.toLocaleString()}`)
+            .setDescription(description)
             .setFooter({ text: 'Tekrar çalışmak için 5 dakika bekle.' });
 
         await interaction.reply({ embeds: [embed] });

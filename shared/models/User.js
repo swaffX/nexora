@@ -47,6 +47,11 @@ const userSchema = new mongoose.Schema({
     bank: { type: Number, default: 0 },
     lastDaily: { type: Date, default: null },
     lastWork: { type: Date, default: null },
+    inventory: [{
+        itemId: { type: String, required: true },
+        amount: { type: Number, default: 1 }
+    }],
+    activePet: { type: String, default: null }, // Takılı olan Pet ID
 
     // AFK
     afk: {
