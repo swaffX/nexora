@@ -60,6 +60,13 @@ const userSchema = new mongoose.Schema({
         since: { type: Date, default: null }
     },
 
+    // Sanal Borsa
+    cryptoWallet: {
+        bitcoin: { type: Number, default: 0 },
+        ethereum: { type: Number, default: 0 },
+        dogecoin: { type: Number, default: 0 }
+    },
+
     // Profil Özelleştirme
     reputation: { type: Number, default: 0 },
     bio: { type: String, default: 'Hakkımda bir şey yazılmamış.' },

@@ -13,6 +13,12 @@ module.exports = {
         if (message.author.bot) return;
         if (!message.guild) return;
 
+        // 🛑 GUARD: SPAM KONTROLÜ
+        try {
+            const isSpam = await require('../handlers/guardHandler').checkSpam(message);
+            if (isSpam) return; // Spam ise işlemi durdur
+        } catch (e) { console.error('Guard Error:', e); }
+
         // Guild ayarlarını al
         const guildSettings = await Guild.findOrCreate(message.guild.id, message.guild.name);
 

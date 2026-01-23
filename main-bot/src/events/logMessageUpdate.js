@@ -14,15 +14,14 @@ module.exports = {
             .addFields(
                 { name: 'Kullanıcı', value: `<@${oldMessage.author.id}>`, inline: true },
                 { name: 'Kanal', value: `<#${oldMessage.channel.id}>`, inline: true },
-                { name: 'Eski Mesaj', value: oldMessage.content ? oldMessage.content.substring(0, 1024) : '*Yok*' },
-                { name: 'Yeni Mesaj', value: newMessage.content ? newMessage.content.substring(0, 1024) : '*Yok*' }
+                { name: 'Eski Mesaj', value: `\`\`\`${oldMessage.content ? oldMessage.content.substring(0, 1000) : '*Yok*'}\`\`\`` },
+                { name: 'Yeni Mesaj', value: `\`\`\`${newMessage.content ? newMessage.content.substring(0, 1000) : '*Yok*'}\`\`\`` }
             )
             .setTimestamp()
             .setFooter({ text: `Mesaj ID: ${oldMessage.id}` });
 
-        // Link eklendi:
         const jumpLink = `https://discord.com/channels/${oldMessage.guild.id}/${oldMessage.channel.id}/${newMessage.id}`;
-        embed.addFields({ name: 'Mesaja Git', value: `[Tıkla](${jumpLink})` });
+        embed.addFields({ name: '🔗 Bağlantı', value: `[Mesaja Git](${jumpLink})` });
 
         await sendLog(client, oldMessage.guild.id, 'message', embed);
     }

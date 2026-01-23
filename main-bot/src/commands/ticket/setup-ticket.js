@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ChannelType } = require('discord.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -7,6 +7,20 @@ module.exports = {
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
     async execute(interaction) {
+        // Kontrol: Kategori var mı?
+        const CATEGORY_NAME = '🎫 | Destek Talepleri';
+        let category = interaction.guild.channels.cache.find(c => c.name === CATEGORY_NAME && c.type === ChannelType.GuildCategory);
+        if (!category) {
+            try {
+                category = await interaction.guild.channels.create({
+                    name: CATEGORY_NAME,
+                    type: ChannelType.GuildCategory
+                });
+            } catch (e) {
+                console.error("Kategori oluşturma hatası:", e);
+                // Devam et, belki sadece panel isteniyordur veya yetki hatası
+            }
+        }
         // Embed Setup
         const embed = new EmbedBuilder()
             .setTitle('NEXORA Destek Sistemi')

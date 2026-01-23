@@ -112,6 +112,9 @@ async function start() {
 
         await client.login(process.env.TOKEN);
 
+        // Kripto Döngüsünü Başlat
+        require('./handlers/cryptoHandler').start();
+
     } catch (error) {
         logger.error('Bot başlatılırken hata:', error);
         process.exit(1);

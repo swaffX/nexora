@@ -15,22 +15,25 @@ module.exports = {
         if (target.id === interaction.user.id) return interaction.reply({ content: 'Kendine para atamazsın.', ephemeral: true });
         if (target.bot) return interaction.reply({ content: 'Botlara para atamazsın.', ephemeral: true });
 
-        const sender = await User.findOne({ odasi: interaction.user.id, odaId: interaction.guild.id });
-        if (!sender || sender.balance < amount) {
-            return interaction.reply({ content: '❌ Yetersiz bakiye.', ephemeral: true });
+        // ATOMİK İŞLEM: Gönderenden düş
+        const sender = await User.findOneAndUpdate(
+            { odasi: interaction.user.id, odaId: interaction.guild.id, balance: { $gte: amount } },
+            { $inc: { balance: -amount } },
+            { new: true }
+        );
+
+        if (!sender) {
+            return interaction.reply({ content: '❌ Yetersiz bakiye veya hesap bulunamadı.', ephemeral: true });
         }
 
-        // Gönderenden düş
-        sender.balance -= amount;
-        await sender.save();
-
-        // Alıcıya ekle
-        let receiver = await User.findOne({ odasi: target.id, odaId: interaction.guild.id });
-        if (!receiver) {
-            receiver = await User.create({ odasi: target.id, odaId: interaction.guild.id, username: target.username });
-        }
-        receiver.balance += amount;
-        await receiver.save();
+        // ATOMİK İŞLEM: Alıcıya ekle
+        // Alıcı DB'de yoksa findQrUpdate (upsert: true) kullanılabilir ancak model yapımızda findOrCreate mantığı var.
+        // Basitlik için upsert: true kullanacağız.
+        await User.findOneAndUpdate(
+            { odasi: target.id, odaId: interaction.guild.id },
+            { $inc: { balance: amount }, $setOnInsert: { username: target.username } }, // Username'i sadece yeni oluşursa yaz
+            { upsert: true, new: true }
+        );
 
         const embed = new EmbedBuilder()
             .setColor('#3498db')

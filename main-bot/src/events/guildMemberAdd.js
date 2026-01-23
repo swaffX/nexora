@@ -58,21 +58,28 @@ module.exports = {
             inviteCount = inviterUser.getTotalInvites ? inviterUser.getTotalInvites() : (inviterUser.invites.regular + inviterUser.invites.bonus - inviterUser.invites.fake - inviterUser.invites.left);
         }
 
-        // 3. Mesajı Gönder (Sade Format)
+        // 3. Mesajı Gönder (Resimli ve Sade Format)
         const channel = guild.channels.cache.get(channelId);
         if (channel) {
             let msgContent = '';
 
+            // Eğer inviter varsa mesaj metni
             if (inviter) {
-                msgContent = `<:join:1330926526757048402> <@${member.id}> Katıldı, Davet eden <@${inviter.id}>\n**Toplam ${inviteCount} daveti oldu!**`;
+                msgContent = `<:giris:1246429678567428170> <@${member.id}> Katıldı, Davet eden <@${inviter.id}> (**${inviteCount}** davet)`;
             } else {
-                msgContent = `<:join:1330926526757048402> <@${member.id}> Katıldı (Özel Link / Bot)`;
+                msgContent = `<:giris:1246429678567428170> <@${member.id}> Katıldı (Özel Link / Bot)`;
             }
 
-            // Emoji ID'sini kafadan attım (SS'teki sarı tik emojisi için), sunucudakini kullanmak gerekebilir.
-            // Şimdilik standart bir emoji ile değiştirilebilir veya ID doğrulanabilir.
-
-            await channel.send(msgContent);
+            // Canvas Resmini Üret
+            const { createWelcomeImage } = require('../utils/canvasHelper');
+            try {
+                const attachment = await createWelcomeImage(member);
+                await channel.send({ content: msgContent, files: [attachment] });
+            } catch (err) {
+                console.error('Canvas hatası:', err);
+                // Hata olursa sadece yazıyı at
+                await channel.send(msgContent);
+            }
         }
     }
 };

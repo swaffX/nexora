@@ -116,12 +116,27 @@ async function processVoiceSession(user, guild, client) {
             const logChannel = client.channels.cache.get(guildSettings.levelSystem.logChannelId);
             if (logChannel) {
                 const embed = new EmbedBuilder()
-                    .setColor('#00FF00') // Green
+                    .setColor('#00FF00')
                     .setDescription(`🎉 <@${user.odasi}> tebrikler! **Level ${newLevel}** oldun! 🔊 (Ses Aktifliği)`);
                 logChannel.send({ embeds: [embed] }).catch(() => { });
             }
         }
     }
+
+    // SES LOGU GÖNDER (MODLOG)
+    const voiceLogEmbed = new EmbedBuilder()
+        .setColor('#3498db')
+        .setTitle('🔊 Ses Oturumu Sonlandı')
+        .setDescription(`<@${user.odasi}> ses kanalından ayrıldı.`)
+        .addFields(
+            { name: 'Kanal', value: `${guild.channels.cache.get(user.currentVoiceChannel)?.name || 'Bilinmiyor'}`, inline: true },
+            { name: 'Süre', value: `⏱️ ${durationMinutes} dakika`, inline: true },
+            { name: 'Kazanılan XP', value: `✨ ${durationMinutes * XP_PER_MINUTE} XP`, inline: true }
+        )
+        .setTimestamp();
+
+    const { sendLog } = require('../utils/logHelper');
+    await sendLog(client, guild.id, 'voice', voiceLogEmbed);
 
     await user.save();
 }

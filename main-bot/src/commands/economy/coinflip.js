@@ -9,7 +9,7 @@ const TAILS_IMG = 'https://i.imgur.com/M6v1nUf.png'; // Placeholder or Emoji
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('coinflip')
-        .setDescription('Bahisli Yazı Tura! (OwO Stili)')
+        .setDescription('Bahisli Yazı Tura Oyunu')
         .addIntegerOption(option =>
             option.setName('miktar')
                 .setDescription('Bahis miktarı')
@@ -28,19 +28,23 @@ module.exports = {
         const guildId = interaction.guild.id;
 
         // 1. Bakiye Kontrolü
-        let user = await User.findOne({ odasi: userId, odaId: guildId });
-        if (!user) user = new User({ odasi: userId, odaId: guildId });
+        // 1. & 2. ATOMİK İŞLEM (Bakiye Kontrol + Düşüm)
+        let user = await User.findOneAndUpdate(
+            { odasi: userId, odaId: guildId, balance: { $gte: amount } },
+            { $inc: { balance: -amount } },
+            { new: true }
+        );
 
-        if (user.balance < amount) {
+        if (!user) {
+            // User yoksa oluştur (Balance 0) veya yetersiz bakiye
+            // Eğer user hiç yoksa findOneAndUpdate null döner, bu durumda create edip tekrar kontrol etmek yerine
+            // direkt hata dönmek daha güvenli. Oyun oynamak için önce para kazanmalı.
+            const checkUser = await User.findOne({ odasi: userId, odaId: guildId });
             return interaction.reply({
-                content: `🚫 **Yetersiz Bakiye!**\nMevcut paran: **${user.balance.toLocaleString()}** NexCoin\nGereken: **${amount.toLocaleString()}** NexCoin`,
+                content: `🚫 **Yetersiz Bakiye!**\nMevcut paran: **${checkUser ? checkUser.balance.toLocaleString() : 0}** NexCoin\nGereken: **${amount.toLocaleString()}** NexCoin`,
                 ephemeral: true
             });
         }
-
-        // 2. Bahsi Al
-        user.balance -= amount;
-        await user.save();
 
         // 3. Animasyonlu Başlangıç Embedi
         const startEmbed = new EmbedBuilder()
@@ -64,8 +68,12 @@ module.exports = {
 
             if (isWin) {
                 const winAmount = amount * 2;
-                user.balance += winAmount;
-                await user.save();
+                // ATOMİK İŞLEM: Ödül
+                await User.findOneAndUpdate(
+                    { odasi: userId, odaId: guildId },
+                    { $inc: { balance: winAmount } }
+                );
+                user.balance += winAmount; // Gösterim için
 
                 endTitle = '🎉 KAZANDIN!';
                 endDesc = `Para yere düştü ve **${result === 'yazi' ? '🟡 YAZI' : '⚪ TURA'}** geldi!\n\n💰 **Kazanılan:** ${winAmount.toLocaleString()} NexCoin\n🏦 **Yeni Bakiye:** ${user.balance.toLocaleString()} NexCoin`;
@@ -81,13 +89,11 @@ module.exports = {
                 .setColor(endColor)
                 .setTitle(endTitle)
                 .setDescription(endDesc)
-                .setThumbnail(isHeads ? 'https://em-content.zobj.net/source/microsoft-teams/363/soft-ice-cream_1f366.png' : 'https://em-content.zobj.net/source/microsoft-teams/363/soft-ice-cream_1f366.png') // Placeholder images can be improved
+                .setThumbnail(isHeads ? 'https://em-content.zobj.net/source/microsoft-teams/363/soft-ice-cream_1f366.png' : 'https://em-content.zobj.net/source/microsoft-teams/363/soft-ice-cream_1f366.png')
                 .setFooter({ text: 'Nexora Casino 🎰', iconURL: interaction.client.user.displayAvatarURL() });
 
-            // Thumbnail logic cleanup:
-            // Sadece emojiyi metin içinde kullanmak daha temiz OwO stili için.
-            if (result === 'yazi') resultEmbed.setThumbnail('https://cdn-icons-png.flaticon.com/512/217/217853.png'); // Gold coin
-            else resultEmbed.setThumbnail('https://cdn-icons-png.flaticon.com/512/217/217859.png'); // Silver/Tails coin like
+            if (result === 'yazi') resultEmbed.setThumbnail('https://cdn-icons-png.flaticon.com/512/217/217853.png');
+            else resultEmbed.setThumbnail('https://cdn-icons-png.flaticon.com/512/217/217859.png');
 
             await interaction.editReply({ embeds: [resultEmbed] });
 

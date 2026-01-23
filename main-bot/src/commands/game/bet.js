@@ -52,10 +52,17 @@ module.exports = {
             return interaction.reply({ content: `⚠️ Zaten bu maça **${existingBet.amount}** coin bahis yaptın (Team ${existingBet.team}).`, ephemeral: true });
         }
 
-        // 3. İşlem
-        // Parayı düş
-        user.balance -= amount;
-        await user.save();
+        // 3. İşlem (ATOMİK)
+        // Parayı atomik olarak düş
+        const updatedUser = await User.findOneAndUpdate(
+            { odasi: userId, odaId: guildId, balance: { $gte: amount } },
+            { $inc: { balance: -amount } },
+            { new: true }
+        );
+
+        if (!updatedUser) {
+            return interaction.reply({ content: `❌ Yetersiz bakiye! İşlem sırasında paranız yetersiz kaldı.`, ephemeral: true });
+        }
 
         // Bahsi kaydet
         match.bets.push({
