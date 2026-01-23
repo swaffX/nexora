@@ -88,10 +88,10 @@ module.exports = {
                 .setTitle('<:giris:1246429678567428170> Nexora Sunucusuna Hoş Geldin!')
                 .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 512 }))
                 .setDescription(
-                    `👋 **Hey ${member.user.username}!**\n\n` +
+                    `<a:Hello:1246429715158274058> **Hey ${member.user.username}!**\n\n` +
                     `Topluluğumuza katıldığın için teşekkürler.\n` +
                     `Kuralları okumayı ve keyfine bakmayı unutma!\n\n` +
-                    (inviter ? `Davet Eden: <@${inviter.id}> (**${inviteCount}** davet)` : `(Özel Bağlantı ile katıldı)`)
+                    (inviter ? `<a:tik:1242549144887754853> Davet Eden: <@${inviter.id}> (**${inviteCount}** davet)` : `(Özel Bağlantı ile katıldı)`)
                 )
                 .addFields(
                     { name: '👤 Üye', value: `<@${member.id}>\n\`${member.user.tag}\``, inline: true },

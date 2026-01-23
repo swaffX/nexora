@@ -49,7 +49,7 @@ module.exports = {
                         .setTitle('<:cikis:1246429697231814717> Üye Ayrıldı')
                         .setThumbnail(member.user.displayAvatarURL({ dynamic: true, size: 512 }))
                         .setDescription(
-                            `👋 **Görüşürüz, ${member.user.username}!**\n\n` +
+                            `<a:Hello:1246429715158274058> **Görüşürüz, ${member.user.username}!**\n\n` +
                             `Gittiğine üzüldük.\n` +
                             `Umarım seni tekrar görürüz!`
                         )
