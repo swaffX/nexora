@@ -112,10 +112,10 @@ module.exports = {
                 }
 
                 embed.addFields({ name: 'Sonuç', value: resultText });
-                await msg.edit({ embeds: [embed] });
+                await interaction.editReply({ embeds: [embed] });
 
             } else {
-                await msg.edit({ embeds: [embed] });
+                await interaction.editReply({ embeds: [embed] });
             }
         }, 1500); // 1.5 saniyede bir güncelle
     }
