@@ -1,54 +1,68 @@
-const { SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
-
-const AUTHORIZED_ROLE_ID = '1463875325019557920'; // Match yönetim rolü
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField } = require('discord.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('setup-match')
-        .setDescription('5v5 Maç Lobi Sistemini Kurar')
-        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+        .setDescription('5v5 Maç Oluşturma Panelini Kurar/Günceller (Admin)'),
     async execute(interaction) {
+        if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            return interaction.reply({ content: 'Yetkin yok!', ephemeral: true });
+        }
+
+        const TARGET_CHANNEL_ID = '1464222855398166612';
+        const TARGET_MESSAGE_ID = '1464222898846957598';
+
+        const embed = new EmbedBuilder()
+            .setColor(0xFF4655) // Valorant Red
+            .setTitle('⚔️ VALORANT 5v5 SCRIM')
+            .setDescription(`
+**Hoşgeldiniz Ajanlar!** 
+Aşağıdaki butonu kullanarak lobideki oyuncularla hızlıca **Takım A** ve **Takım B** oluşturup maça başlayabilirsiniz.
+
+**📍 Nasıl Çalışır?**
+Sistem ses kanalındaki (`.src / commands / game / setup - match.js` gibi) oyuncuları otomatik algılar.
+
+> **1️⃣ Maçı Kur**
+> "Maç Oluştur" butonuna tıklayarak draft ekranını açın.
+>
+> **2️⃣ Kaptanları Belirle**
+> İki takım kaptanını seçin veya **Rastgele** atayın.
+> 
+> **3️⃣ Takımını Kur**
+> Kaptanlar sırayla ses kanalındaki oyuncuları seçer (Draft).
+>
+> **4️⃣ Harita Yasakla & Başla**
+> Haritaları eleyin, tarafınızı seçin ve savaş başlasın!
+
+⚠️ *Maç oluşturmak için <#1463922466467483801> kanalında olmalısınız.*
+            `)
+            .setImage('https://cdn.dribbble.com/users/2340260/screenshots/15664947/media/252b415664152062fe87265be0095107.jpg?resize=800x600&vertical=center') // Şık bir Valorant Banner
+            .setThumbnail('https://cdn-icons-png.flaticon.com/512/8267/8267989.png') // Kılıç ikonu veya Valo logosu
+            .setFooter({ text: 'Nexora Competitive • Powered by Swaff' })
+            .setTimestamp();
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('match_create')
+                .setLabel('🎮 Maç Oluştur')
+                .setStyle(ButtonStyle.Success)
+                .setEmoji('1330926526757048402') // Özel emoji varsa kullan, yoksa standart
+        );
+
+        // Hedef kanalı ve mesajı bulmaya çalış
+        const channel = interaction.guild.channels.cache.get(TARGET_CHANNEL_ID);
+        if (!channel) return interaction.reply({ content: '❌ Hedef kanal bulunamadı!', ephemeral: true });
+
         try {
-            // Rol kontrolü - Sadece belirli role sahip kişiler kullanabilir
-            if (!interaction.member.roles.cache.has(AUTHORIZED_ROLE_ID)) {
-                return interaction.reply({
-                    content: '❌ Bu komutu kullanmak için gerekli yetkiye sahip değilsiniz!',
-                    ephemeral: true
-                });
+            const msg = await channel.messages.fetch(TARGET_MESSAGE_ID);
+            if (msg) {
+                await msg.edit({ embeds: [embed], components: [row] });
+                return interaction.reply({ content: '✅ Maç Paneli başarıyla güncellendi!', ephemeral: true });
             }
-
-            // Önce botun yanıt verme süresini uzat
-            await interaction.deferReply({ ephemeral: true });
-
-            const embed = new EmbedBuilder()
-                .setColor(0x5865F2) // Blurple (Discord Brand Color)
-                .setTitle('⚔️ 5v5 Scrim & Match System')
-                .setDescription('Aşağıdaki paneli kullanarak lobideki oyuncularla hızlıca **Takım A** ve **Takım B** oluşturun.')
-                .setThumbnail(interaction.guild.iconURL({ dynamic: true, size: 512 }))
-                .addFields(
-                    { name: 'Nasıl Çalışır?', value: 'Sistem ses kanalındaki oyuncuları otomatik algılar ve seçim yapmanızı sağlar.', inline: false },
-                    { name: '1️⃣ Maçı Başlat', value: '**Maç Oluştur** butonuna tıklayın.', inline: true },
-                    { name: '2️⃣ Kaptanları Seç', value: 'Takım A ve Takım B kaptanlarını belirleyin.', inline: true },
-                    { name: '3️⃣ Oyuncu Seçimi (Draft)', value: 'Kaptanlar sırayla ses kanalındaki oyuncuları seçer.', inline: true }
-                )
-                .setFooter({ text: 'Nexora Competitive • Powered by Swaff', iconURL: interaction.client.user.displayAvatarURL() })
-                .setTimestamp();
-
-            const row = new ActionRowBuilder()
-                .addComponents(
-                    new ButtonBuilder()
-                        .setCustomId('match_create')
-                        .setLabel('Maç Oluştur')
-                        .setStyle(ButtonStyle.Success) // Green button for "Start" action
-                        .setEmoji('🎮')
-                );
-
-            await interaction.channel.send({ embeds: [embed], components: [row] });
-            await interaction.editReply({ content: '✅ Maç paneli başarıyla kuruldu.' });
-
         } catch (error) {
-            console.error('Setup-Match Hatası:', error);
-            await interaction.editReply({ content: '❌ Paneli oluştururken bir hata meydana geldi (Botun mesaj gönderme yetkisi olduğundan emin olun).' });
+            // Mesaj bulunamazsa yeni at
+            await channel.send({ embeds: [embed], components: [row] });
+            return interaction.reply({ content: '⚠️ Sabit mesaj bulunamadı, yeni bir tane oluşturuldu. (Lütfen ID\'yi güncelle)', ephemeral: true });
         }
     }
 };
