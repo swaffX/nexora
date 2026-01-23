@@ -11,8 +11,11 @@ const {
     AttachmentBuilder
 } = require('discord.js');
 const path = require('path');
-const { createCanvas, loadImage } = require('@napi-rs/canvas');
+const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const { Match } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
+
+// Font Kaydı
+GlobalFonts.registerFromPath(path.join(__dirname, '..', '..', 'assets', 'fonts', 'Valorant.ttf'), 'VALORANT');
 
 // VALORANT Harita Havuzu (Güncel)
 const MAPS = [
@@ -519,13 +522,13 @@ module.exports = {
             // 2. Başlıklar
             ctx.textAlign = 'center';
 
-            ctx.font = 'bold 80px Arial';
+            ctx.font = '80px VALORANT';
             ctx.fillStyle = color;
             ctx.shadowColor = "black";
             ctx.shadowBlur = 10;
             ctx.fillText('VICTORY', 400, 100);
 
-            ctx.font = 'bold 40px Arial';
+            ctx.font = '40px VALORANT';
             ctx.fillStyle = '#ffffff';
             ctx.fillText(`${teamName} WON`, 400, 150);
 
@@ -548,7 +551,7 @@ module.exports = {
                     ctx.drawImage(avatar, x, y, 100, 100);
                     ctx.restore();
 
-                    ctx.font = 'bold 18px Arial';
+                    ctx.font = '18px VALORANT';
                     ctx.fillStyle = 'white';
                     ctx.fillText(member.displayName.substring(0, 12), x + 50, y + 130);
                 } catch (e) { }
