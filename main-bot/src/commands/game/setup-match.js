@@ -36,8 +36,7 @@ Sistem ses kanalındaki oyuncuları otomatik algılar ve seçim yapmanızı sağ
 
 ⚠️ *Maç oluşturmak için <#1463922466467483801> kanalında olmalısınız.*
             `)
-            .setImage('https://cdn.dribbble.com/users/2340260/screenshots/15664947/media/252b415664152062fe87265be0095107.jpg?resize=800x600&vertical=center')
-            .setThumbnail('https://cdn-icons-png.flaticon.com/512/8267/8267989.png')
+            .setImage('https://cdn.discordapp.com/attachments/531892263652032522/1464235225818075147/standard_2.gif?ex=6974bad2&is=69736952&hm=16b14c0c7fa6d91ad8528683d2876891b5833d4d516ef5891cd91bc4b8c9804d&')
             .setFooter({ text: 'Nexora Competitive • Powered by Swaff' })
             .setTimestamp();
 
