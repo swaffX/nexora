@@ -3,6 +3,7 @@ const path = require('path');
 const logger = require(path.join(__dirname, '..', '..', '..', 'shared', 'logger'));
 const { Guild, User } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
 const { embeds } = require(path.join(__dirname, '..', '..', '..', 'shared', 'embeds'));
+const inviteCache = require('../utils/inviteCache');
 
 module.exports = {
     name: Events.ClientReady,
@@ -11,6 +12,16 @@ module.exports = {
         logger.success(`⚙️ Ana Yönetim Botu hazır! ${client.user.tag}`);
         // Webhook Testi: Eğer webhook ayarlıysa bu discord'a düşmeli
         logger.warn(`🟢 Sistem Başlatıldı: ${client.user.tag}`);
+
+        // Cache Davetleri
+        for (const [id, guild] of client.guilds.cache) {
+            try {
+                await inviteCache.fetchInvites(guild);
+                logger.info(`Davetler önbelleğe alındı: ${guild.name}`);
+            } catch (err) {
+                logger.error(`Davet cache hatası (${guild.name}): ${err.message}`);
+            }
+        }
 
         client.user.setPresence({
             activities: [{

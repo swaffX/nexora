@@ -1,132 +1,78 @@
+const { Events, EmbedBuilder } = require('discord.js');
 const path = require('path');
-const { Guild } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
-const { AttachmentBuilder } = require('discord.js');
-const { createCanvas, loadImage } = require('@napi-rs/canvas');
-const logger = require(path.join(__dirname, '..', '..', '..', 'shared', 'logger'));
+const inviteCache = require('../utils/inviteCache');
+const { User } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
 
 module.exports = {
-    name: 'guildMemberAdd',
-    async execute(member, client) {
-        const guildSettings = await Guild.findOrCreate(member.guild.id, member.guild.name);
+    name: Events.GuildMemberAdd,
+    async execute(member) {
+        const guild = member.guild;
+        const channelId = '1464206305853177917'; // Kayıt/Hoşgeldin Kanalı
 
-        // 1. Resimli Hoşgeldin Mesajı
-        if (guildSettings.welcome.enabled && guildSettings.welcome.channelId) {
-            const welcomeChannel = member.guild.channels.cache.get(guildSettings.welcome.channelId);
+        // 1. Yeni davetleri çek
+        const newInvites = await guild.invites.fetch();
 
-            if (welcomeChannel) {
-                try {
-                    // Canvas oluştur (1024x500)
-                    const canvas = createCanvas(1024, 500);
-                    const ctx = canvas.getContext('2d');
+        // 2. Cache ile karşılaştırıp davet edeni bul
+        const cachedInvites = inviteCache.getInvites(guild.id);
 
-                    // Arkaplan Rengi (Koyu/Modern)
-                    ctx.fillStyle = '#101010';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+        let inviter = null;
+        let usedInvite = null;
 
-                    // Dekoratif Şekiller (Gradient)
-                    const gradient = ctx.createLinearGradient(0, 0, 1024, 500);
-                    gradient.addColorStop(0, '#00c6ff'); // Mavi
-                    gradient.addColorStop(1, '#0072ff'); // Koyu Mavi
-                    ctx.fillStyle = gradient;
-
-                    // Alt Bar (Footer gibi)
-                    ctx.fillRect(0, 480, 1024, 20);
-
-                    // Yuvarlak dekorlar
-                    ctx.beginPath();
-                    ctx.arc(512, 180, 140, 0, Math.PI * 2, true);
-                    ctx.fill();
-
-                    // Avatar Çemberi (Maskeleme)
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.arc(512, 180, 130, 0, Math.PI * 2, true);
-                    ctx.closePath();
-                    ctx.clip();
-
-                    // Avatar
-                    try {
-                        const avatarURL = member.user.displayAvatarURL({ extension: 'png', size: 512, forceStatic: true });
-                        const avatar = await loadImage(avatarURL);
-                        ctx.drawImage(avatar, 382, 50, 260, 260); // 130 radius * 2 = 260 width/height
-                    } catch (e) {
-                        // Avatar yoksa gri renk
-                        ctx.fillStyle = '#7289da';
-                        ctx.fillRect(382, 50, 260, 260);
-                    }
-                    ctx.restore();
-
-                    // Avatar Çerçevesi (Beyaz)
-                    ctx.strokeStyle = '#ffffff';
-                    ctx.lineWidth = 10;
-                    ctx.beginPath();
-                    ctx.arc(512, 180, 130, 0, Math.PI * 2, true);
-                    ctx.stroke();
-
-                    // Yazılar
-                    ctx.textAlign = 'center';
-
-                    // "BİR KİŞİ DAHA KATILDI"
-                    ctx.font = 'bold 30px Arial';
-                    ctx.fillStyle = '#cccccc';
-                    ctx.fillText('BİR KİŞİ DAHA KATILDI', 512, 360);
-
-                    // Kullanıcı Adı
-                    ctx.font = 'bold 60px Arial';
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillText(member.user.username.toUpperCase(), 512, 420);
-
-                    // Üye Sayısı
-                    ctx.font = '30px Arial';
-                    ctx.fillStyle = '#00c6ff';
-                    ctx.fillText(`#${member.guild.memberCount}. Üye`, 512, 460);
-
-                    const attachment = new AttachmentBuilder(await canvas.encode('png'), { name: 'welcome-image.png' });
-
-                    // Mesaj Metni (Ayarlanmışsa)
-                    let content = guildSettings.welcome.message
-                        .replace('{user}', `<@${member.id}>`)
-                        .replace('{username}', member.user.username)
-                        .replace('{server}', member.guild.name)
-                        .replace('{membercount}', member.guild.memberCount);
-
-                    await welcomeChannel.send({
-                        content: content,
-                        files: [attachment]
-                    });
-
-                } catch (error) {
-                    logger.error('Welcome Image Error:', error);
-                    // Hata olursa düz mesaj at (Fallback)
-                    await welcomeChannel.send(`Hoş geldin <@${member.id}>!`);
-                }
-            }
+        if (cachedInvites) {
+            usedInvite = newInvites.find(inv => {
+                const prevUses = cachedInvites.get(inv.code);
+                return prevUses !== undefined && inv.uses > prevUses;
+            });
         }
 
-        // 2. DM Mesajı
-        if (guildSettings.welcome.dmEnabled && guildSettings.welcome.dmMessage) {
-            try {
-                const dmContent = guildSettings.welcome.dmMessage
-                    .replace('{user}', member.user.username)
-                    .replace('{server}', member.guild.name)
-                    .replace('{membercount}', member.guild.memberCount);
+        // Cache'i güncelle (Her halükarda yeni durumu kaydet)
+        inviteCache.fetchInvites(guild);
 
-                await member.send(dmContent);
-            } catch (e) {
-                // DM kapalı olabilir, loglamaya gerek yok
+        let inviteCount = 0;
+        let inviterUser = null;
+
+        if (usedInvite && usedInvite.inviter) {
+            inviter = usedInvite.inviter;
+            inviterUser = await User.findOne({ odasi: inviter.id, odaId: guild.id });
+
+            // Eğer inviter DB'de yoksa oluştur
+            if (!inviterUser) {
+                inviterUser = await User.findOrCreate(inviter.id, guild.id, inviter.username);
             }
+
+            // DB Güncelle: Regular Invite +1
+            // Kendi kendini davet etme kontrolü (Opsiyonel ama iyi olur)
+            if (inviter.id !== member.id) {
+                if (!inviterUser.invites) inviterUser.invites = { regular: 0, bonus: 0, fake: 0, left: 0 };
+                inviterUser.invites.regular += 1;
+                await inviterUser.save();
+
+                // Gelen kişiye "invitedBy" işle
+                const memberData = await User.findOrCreate(member.id, guild.id, member.user.username);
+                memberData.invitedBy = inviter.id;
+                await memberData.save();
+
+                memberData.save(); // Promise beklemeye gerek yok
+            }
+
+            inviteCount = inviterUser.getTotalInvites ? inviterUser.getTotalInvites() : (inviterUser.invites.regular + inviterUser.invites.bonus - inviterUser.invites.fake - inviterUser.invites.left);
         }
 
-        // 3. Otorol
-        if (guildSettings.autoRole.enabled && guildSettings.autoRole.roleId) {
-            try {
-                const role = member.guild.roles.cache.get(guildSettings.autoRole.roleId);
-                if (role && !member.user.bot) {
-                    await member.roles.add(role);
-                }
-            } catch (e) {
-                logger.error('Autorole Hatası:', e.message);
+        // 3. Mesajı Gönder (Sade Format)
+        const channel = guild.channels.cache.get(channelId);
+        if (channel) {
+            let msgContent = '';
+
+            if (inviter) {
+                msgContent = `<:join:1330926526757048402> <@${member.id}> Katıldı, Davet eden <@${inviter.id}>\n**Toplam ${inviteCount} daveti oldu!**`;
+            } else {
+                msgContent = `<:join:1330926526757048402> <@${member.id}> Katıldı (Özel Link / Bot)`;
             }
+
+            // Emoji ID'sini kafadan attım (SS'teki sarı tik emojisi için), sunucudakini kullanmak gerekebilir.
+            // Şimdilik standart bir emoji ile değiştirilebilir veya ID doğrulanabilir.
+
+            await channel.send(msgContent);
         }
     }
 };
