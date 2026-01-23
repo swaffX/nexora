@@ -4,7 +4,7 @@ const { embeds } = require(path.join(__dirname, '..', '..', '..', '..', 'shared'
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('purge')
+        .setName('temizle')
         .setDescription('Toplu mesaj sil')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
         .addIntegerOption(opt =>
