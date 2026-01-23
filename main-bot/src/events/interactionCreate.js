@@ -87,25 +87,27 @@ module.exports = {
                     let content = '';
 
                     if (selected === 'main_commands') content = '🏠 **Ana Komutlar:**\n`/help` - Yardım menüsü\n`/ping` - Bot gecikmesi\n`/vote` - Bota oy ver';
-                    if (selected === 'economy_commands') content = '💰 **Ekonomi Sistemi (Tüm Komutlar):**\n' +
-                        '`/daily` - Günlük ödülünü al\n' +
-                        '`/work` - İş yap ve para kazan\n' +
-                        '`/hunt` - Ava çık ve eşya/para kazan\n' +
+                    if (selected === 'economy_commands') content = '💰 **Ekonomi Sistemi (Tüm Komutlar):**\n__Meslek & Kazanç__\n' +
+                        '`/career jobs` - İş ilanlarına bak ve meslek seç (YENİ!)\n' +
+                        '`/career work` - Çalış ve maaş/XP kazan\n' +
+                        '`/career info` - Kariyer durumunu ve terfi bilgisini gör\n' +
+                        '`/daily` - Günlük ödülünü al\n\n' +
+                        '__Finans & Borsa__\n' +
+                        '`/crypto market` - Kripto piyasasını gör\n' +
+                        '`/crypto chart` - Canlı grafik analizi yap (YENİ!)\n' +
+                        '`/crypto buy/sell` - Kripto al veya sat\n' +
                         '`/balance` - Cüzdanını ve banka hesabını gör\n' +
-                        '`/transfer` - Arkadaşına para gönder\n' +
-                        '`/deposit` - Bankaya para yatır\n' +
-                        '`/withdraw` - Bankadan para çek\n' +
+                        '`/transfer` - Arkadaşına para gönder\n\n' +
+                        '__Şans Oyunları & Kumar__\n' +
+                        '`/horserace` - At yarışı oyna (Canlı İzleme)\n' +
                         '`/coinflip` - Yazı tura at (2x)\n' +
-                        '`/slots` - Slot makinesini çevir (Bet)\n' +
-                        '`/blackjack` - Blackjack oyna (21)\n' +
                         '`/roulette` - Rulet oyna (Renk/Sayı)\n' +
-                        '`/horserace` - At yarışı oyna (x5 risk)\n' +
-                        '`/crypto` - Sanal Borsa (Al/Sat/Fiyat)\n' +
-                        '`/duel` - Başkasıyla bahisli düello at\n' +
-                        '`/market` - Eşya satın al\n' +
-                        '`/inventory` - Çantandaki eşyaları gör\n' +
-                        '`/sell` - Eşyalarını sat\n' +
-                        '`/use` - Eşya kullan veya pet tak\n' +
+                        '`/slots` - Slot makinesini çevir\n' +
+                        '`/blackjack` - Blackjack oyna (21)\n' +
+                        '`/duel` - Başkasıyla bahisli düello at\n\n' +
+                        '__Eşya & Yönetim__\n' +
+                        '`/market` - Marketten eşya/pet al\n' +
+                        '`/inventory` - Çantanı görüntüle\n' +
                         '`/pets` - Hayvanlarını yönet';
                     if (selected === 'match_commands') content = '⚔️ **5v5 & Turnuva:**\n`/setup-match` - Maç paneli (Admin)\n`/bet` - Maç bahsi yap\n`/tournament` - Turnuva işlemleri';
                     if (selected === 'level_commands') content = '📈 **Seviye Sistemi:**\n`/profile` - Profilini gör\n`/leaderboard` - Sıralama';

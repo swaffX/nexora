@@ -67,6 +67,15 @@ const userSchema = new mongoose.Schema({
         dogecoin: { type: Number, default: 0 }
     },
 
+    // Kariyer Sistemi
+    career: {
+        job: { type: String, default: null },
+        level: { type: Number, default: 1 },
+        xp: { type: Number, default: 0 },
+        lastWorkTime: { type: Date, default: null },
+        totalEarnings: { type: Number, default: 0 }
+    },
+
     // Profil Özelleştirme
     reputation: { type: Number, default: 0 },
     bio: { type: String, default: 'Hakkımda bir şey yazılmamış.' },

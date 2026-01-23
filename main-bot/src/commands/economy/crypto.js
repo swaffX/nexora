@@ -1,7 +1,8 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const path = require('path');
 const User = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models', 'User'));
 const Crypto = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models', 'Crypto'));
+const { createCryptoChart } = require('../../utils/cryptoChart');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -10,6 +11,10 @@ module.exports = {
         .addSubcommand(sub =>
             sub.setName('market')
                 .setDescription('Güncel kripto para fiyatlarını gör'))
+        .addSubcommand(sub =>
+            sub.setName('chart')
+                .setDescription('Kripto para grafiklerini gör')
+                .addStringOption(opt => opt.setName('coin').setDescription('Hangi coin? (BTC, ETH, DOGE)').setRequired(true)))
         .addSubcommand(sub =>
             sub.setName('buy')
                 .setDescription('Kripto para satın al')
@@ -52,7 +57,7 @@ module.exports = {
             const embed = new EmbedBuilder()
                 .setTitle('📈 Nexora Sanal Borsa')
                 .setColor('#3498db')
-                .setDescription('Her 10 dakikada bir fiyatlar güncellenir.')
+                .setDescription('Her 10 dakikada bir fiyatlar güncellenir. Detaylı analiz için `/crypto chart` kullanın.')
                 .setTimestamp();
 
             coins.forEach(coin => {
@@ -66,6 +71,42 @@ module.exports = {
             });
 
             return interaction.reply({ embeds: [embed] });
+        }
+
+        if (subcommand === 'chart') {
+            const symbol = interaction.options.getString('coin').toUpperCase();
+
+            if (!['BTC', 'ETH', 'DOGE'].includes(symbol)) {
+                return interaction.reply({ content: '❌ Geçersiz coin! Sadece BTC, ETH, DOGE destekleniyor.', flags: 64 });
+            }
+
+            await interaction.deferReply();
+
+            const coin = await Crypto.findOne({ symbol });
+            if (!coin) return interaction.editReply({ content: '❌ Veri bulunamadı.' });
+
+            try {
+                const imageBuffer = await createCryptoChart(symbol, coin.history, coin.price);
+                const attachment = new AttachmentBuilder(imageBuffer, { name: 'chart.png' });
+
+                const percent = coin.change !== undefined ? coin.change.toFixed(2) : 0;
+                const changeEmoji = coin.change >= 0 ? '🟢' : '🔴';
+
+                const embed = new EmbedBuilder()
+                    .setColor(coin.change >= 0 ? '#00ffa3' : '#ff4d4d')
+                    .setTitle(`📊 ${symbol} Fiyat Analizi`)
+                    .setDescription(`**Anlık Fiyat:** $${coin.price.toFixed(2)}\n**Değişim (24s):** ${changeEmoji} %${percent}`)
+                    .setImage('attachment://chart.png')
+                    .setFooter({ text: 'Nexora Crypto Market' })
+                    .setTimestamp();
+
+                await interaction.editReply({ embeds: [embed], files: [attachment] });
+
+            } catch (error) {
+                console.error('Chart Hatası:', error);
+                await interaction.editReply({ content: '❌ Grafik oluşturulurken bir hata oluştu.' });
+            }
+            return;
         }
 
         if (subcommand === 'buy') {

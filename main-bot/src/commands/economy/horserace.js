@@ -79,11 +79,16 @@ module.exports = {
             for (let i = 0; i < HORSES.length; i++) {
                 const move = Math.random() * (HORSES[i].speed.max - HORSES[i].speed.min) + HORSES[i].speed.min;
                 positions[i] += move / 2; // Hızı dengele
+            }
 
-                if (positions[i] >= trackLength && winnerIndex === -1) {
-                    winnerIndex = i;
-                    finished = true;
-                }
+            // Bitiş Kontrolü (Hepsini hareket ettirdikten sonra)
+            const finishers = positions.map((pos, index) => ({ pos, index })).filter(p => p.pos >= trackLength);
+
+            if (finishers.length > 0) {
+                // En uzağa gideni bul (Beraberlik çözümü)
+                const winner = finishers.sort((a, b) => b.pos - a.pos)[0]; // En yüksek pozisyon
+                winnerIndex = winner.index;
+                finished = true;
             }
 
             const newTrack = generateTrack();
@@ -93,7 +98,7 @@ module.exports = {
                 clearInterval(interval);
 
                 let resultText = '';
-                const winMultiplier = 5; // 5 At var, risk yüksek, x5 ödül.
+                const winMultiplier = 3; // 3x Ödül (Daha dengeli)
 
                 if (winnerIndex === horseIndex) {
                     const prize = amount * winMultiplier;
@@ -105,7 +110,7 @@ module.exports = {
                     user.balance += prize; // Görüntü
 
                     embed.setColor('#2ecc71'); // Green
-                    resultText = `🎉 **TEBRİKLER!** Senin atın **${HORSES[winnerIndex].name}** kazandı!\n💰 **Kazanılan:** ${prize} NexCoin`;
+                    resultText = `🎉 **TEBRİKLER!** Senin atın **${HORSES[winnerIndex].name}** kazandı!\n💰 **Kazanılan:** ${prize} NexCoin (x3)`;
                 } else {
                     embed.setColor('#e74c3c'); // Red
                     resultText = `❌ **KAYBETTİN...** Kazanan: **${HORSES[winnerIndex].name}**\nParan gitti...`;
