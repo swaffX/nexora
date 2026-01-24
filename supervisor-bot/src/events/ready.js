@@ -7,9 +7,9 @@ module.exports = {
     name: Events.ClientReady,
     once: true,
     execute(client) {
-        logger.success(`🕵️ Autoviser Bot Devrede: ${client.user.tag}`);
+        logger.success(`👁️ Nexora Supervisor Devrede: ${client.user.tag}`);
 
-        // Durum
+        // Branding
         client.user.setPresence({
             activities: [{
                 name: 'made by swaff',
@@ -29,8 +29,8 @@ module.exports = {
                     guildId: channel.guild.id,
                     adapterCreator: channel.guild.voiceAdapterCreator,
                     selfDeaf: true
-                }); // Adapter error vermemesi için discord.js event loop'unda bekletilebilir ama genellikle çalışır.
-                logger.info('🔊 Autoviser Bot ses kanalına giriş yaptı.');
+                });
+                logger.info('🔊 Supervisor ses kanalına giriş yaptı.');
             } else {
                 logger.warn(`⚠️ Ses kanalı bulunamadı (${VOICE_CHANNEL_ID}).`);
             }

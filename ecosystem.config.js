@@ -72,8 +72,8 @@ module.exports = {
             }
         },
         {
-            name: "autoviser-bot",
-            script: "./autoviser-bot/src/index.js",
+            name: "supervisor-bot",
+            script: "./supervisor-bot/src/index.js",
             watch: false,
             ignore_watch: ["node_modules", "logs"],
             env: {

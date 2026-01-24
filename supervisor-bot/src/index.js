@@ -53,9 +53,9 @@ if (fs.existsSync(eventsPath)) {
     if (mongoURI) await db.connect(mongoURI);
 
     // LOGIN
-    const token = process.env.AUTOVISER_BOT_TOKEN;
+    const token = process.env.SUPERVISOR_BOT_TOKEN;
     if (!token) {
-        logger.error('AUTOVISER_BOT_TOKEN bulunamadı! .env dosyasını kontrol et.');
+        logger.error('SUPERVISOR_BOT_TOKEN bulunamadı! .env dosyasını kontrol et.');
     } else {
         await client.login(token);
     }
