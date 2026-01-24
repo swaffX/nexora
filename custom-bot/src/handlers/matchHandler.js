@@ -109,7 +109,7 @@ module.exports = {
             new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`match_randomcap_${matchId}`).setLabel('🎲 Rastgele Kaptan').setStyle(ButtonStyle.Secondary))
         ];
 
-        await interaction.reply({ content: `Match ID: ${matchId}`, embeds: [embed], components: rows, ephemeral: true });
+        await interaction.reply({ content: `Match ID: ${matchId}`, embeds: [embed], components: rows, ephemeral: false });
     },
 
     async selectCaptain(interaction, team) {
@@ -157,6 +157,7 @@ module.exports = {
         if (match.captainA && match.captainB) {
             match.status = 'DRAFT';
             await match.save();
+            await interaction.message.delete().catch(() => { });
             await this.startDraftMode(interaction, match);
         } else {
             await interaction.update({ embeds: [embed] });
@@ -166,7 +167,7 @@ module.exports = {
     async startDraftMode(interaction, match) {
         const member = await interaction.guild.members.fetch(match.hostId).catch(() => null);
         const channel = member?.voice?.channel;
-        if (!channel) return interaction.update({ content: '❌ Host ses kanalında değil!', components: [] });
+        if (!channel) return interaction.channel.send({ content: '❌ Host ses kanalında değil!' }).then(m => setTimeout(() => m.delete(), 5000));
 
         if (!match.lobbyVoiceId) { match.lobbyVoiceId = channel.id; await match.save(); }
 
@@ -176,13 +177,13 @@ module.exports = {
 
         match.availablePlayerIds = players;
         await match.save();
-        return this.updateDraftUI(interaction, match);
+        return this.updateDraftUI(interaction, match, true);
     },
 
-    async updateDraftUI(interaction, match) {
-        // Otomatik Geçiş veya Manuel Bitiriş (Eğer herkes seçildiyse OYLAMA'ya geç)
+    async updateDraftUI(interaction, match, sendNew = false) {
         if ((match.teamA.length >= 5 && match.teamB.length >= 5) || match.availablePlayerIds.length === 0) {
-            return this.prepareVoting(interaction, match);
+            // Eğer yeni mesaj ise (direkt geçiş) silmeye gerek yok (zaten yok), ama update ise var.
+            return this.prepareVoting(interaction, match, !sendNew);
         }
 
         const currentTurnCaptain = match.pickTurn === 'A' ? match.captainA : match.captainB;
@@ -201,7 +202,7 @@ module.exports = {
             .addFields(
                 { name: `🔵 Team A (${match.teamA.length})`, value: match.teamA.map(id => `<@${id}>`).join('\n') || '-', inline: true },
                 { name: `🔴 Team B (${match.teamB.length})`, value: match.teamB.map(id => `<@${id}>`).join('\n') || '-', inline: true },
-                { name: '📍 Havuz', value: poolOptions.length > 0 ? poolOptions.map(p => p.label).join(', ') : 'Kimse kalmadı (Oylamaya Geçiliyor...)', inline: false }
+                { name: '📍 Havuz', value: poolOptions.length > 0 ? poolOptions.map(p => p.label).join(', ') : 'Kimse kalmadı', inline: false }
             );
 
         const components = [];
@@ -213,9 +214,8 @@ module.exports = {
                     .addOptions(poolOptions.slice(0, 25))
             ));
         } else {
-            // Butonla manuel geçiş (nadiren gerekir çünkü yukarıda otomatik geçiş var)
             components.push(new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId(`match_enddraft_${match.matchId}`).setLabel('Seçimi Bitir & Oylama').setStyle(ButtonStyle.Success)
+                new ButtonBuilder().setCustomId(`match_enddraft_${match.matchId}`).setLabel('Seçimi Bitir').setStyle(ButtonStyle.Success)
             ));
         }
 
@@ -223,8 +223,12 @@ module.exports = {
             new ButtonBuilder().setCustomId(`match_refresh_${match.matchId}`).setLabel('🔄 Yenile').setStyle(ButtonStyle.Secondary)
         ));
 
-        if (interaction.isMessageComponent()) await interaction.update({ content: `Match ID: ${match.matchId}`, embeds: [embed], components: components });
-        else await interaction.update({ content: `Match ID: ${match.matchId}`, embeds: [embed], components: components });
+        if (sendNew) {
+            await interaction.channel.send({ content: `Match ID: ${match.matchId}`, embeds: [embed], components: components });
+        } else {
+            if (interaction.isMessageComponent()) await interaction.update({ content: `Match ID: ${match.matchId}`, embeds: [embed], components: components });
+            else await interaction.update({ content: `Match ID: ${match.matchId}`, embeds: [embed], components: components });
+        }
     },
 
     async handlePlayerPick(interaction) {

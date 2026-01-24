@@ -24,6 +24,7 @@ async function trackAction(client, guildId, odasi, actionType, guildSettings) {
     return userActions[actionType].length;
 }
 
+// Ceza uygula
 async function punishUser(guild, odasi, reason, action, logChannelId) {
     try {
         const member = await guild.members.fetch(odasi).catch(() => null);
@@ -55,7 +56,7 @@ async function punishUser(guild, odasi, reason, action, logChannelId) {
                 logChannel.send({
                     embeds: [embeds.guard(
                         '🚨 Anti-Nuke Tetiklendi',
-                        `Tehlikeli aktivite tespit edildi ve engellendi.`,
+                        `Tehlikeli aktivite tespit edildi ve engelllendi.`,
                         [
                             { name: 'Kullanıcı', value: `<@${odasi}>`, inline: true },
                             { name: 'Sebep', value: reason, inline: true },
@@ -75,7 +76,7 @@ module.exports = {
     async execute(role, client) {
         const guildSettings = await Guild.findOrCreate(role.guild.id, role.guild.name);
 
-        if (!guildSettings.antiNuke.enabled) return;
+        if (!guildSettings.antiNuke?.enabled) return;
 
         const antiNuke = guildSettings.antiNuke;
 
@@ -89,7 +90,12 @@ module.exports = {
             if (!log) return;
 
             const executor = log.executor;
-            if (executor.bot) return;
+
+            // --- WHITELIST CHECK START ---
+            const SAFE_BOT_IDS = require(path.join(__dirname, '..', '..', '..', 'shared', 'safeBots'));
+            if (executor.bot || SAFE_BOT_IDS.includes(executor.id)) return;
+            // --- WHITELIST CHECK END ---
+
             if (antiNuke.whitelistedUsers.includes(executor.id)) return;
             if (executor.id === role.guild.ownerId) return;
 
