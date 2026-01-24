@@ -10,7 +10,7 @@ module.exports = {
         }
 
         const TARGET_CHANNEL_ID = '1464222855398166612';
-        const TARGET_MESSAGE_ID = '1464222898846957598';
+        const TARGET_MESSAGE_ID = '1464557643841405055';
 
         const embed = new EmbedBuilder()
             .setColor(0xFF4655) // Valorant Red
