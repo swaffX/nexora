@@ -43,6 +43,15 @@ module.exports = {
             env: {
                 NODE_ENV: "production"
             }
+        },
+        {
+            name: "welcome-bot",
+            script: "./welcome-bot/src/index.js",
+            watch: false,
+            ignore_watch: ["node_modules", "logs"],
+            env: {
+                NODE_ENV: "production"
+            }
         }
     ]
 };

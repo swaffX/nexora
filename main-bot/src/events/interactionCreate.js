@@ -33,6 +33,12 @@ module.exports = {
                     await giveawayHandler.handleButton(interaction, args, client);
                 }
 
+                // Control Center
+                if (action === 'ctrl') {
+                    const controlHandler = require('../handlers/controlHandler');
+                    await controlHandler.handleButton(interaction);
+                }
+
                 // verify_user -> action=verify
                 if (action === 'verify') {
                     const verifyHandler = require('../handlers/verifyHandler');

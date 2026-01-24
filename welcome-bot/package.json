@@ -1,0 +1,15 @@
+{
+    "name": "welcome-bot",
+    "version": "1.0.0",
+    "main": "src/index.js",
+    "scripts": {
+        "start": "node src/index.js"
+    },
+    "dependencies": {
+        "discord.js": "^14.14.1",
+        "dotenv": "^16.4.5",
+        "mongoose": "^8.2.0",
+        "@discordjs/voice": "^0.16.0",
+        "libsodium-wrappers": "^0.7.13"
+    }
+}
