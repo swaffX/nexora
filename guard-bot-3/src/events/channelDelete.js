@@ -1,4 +1,5 @@
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '..', '..', '.env') });
 const { AuditLogEvent } = require('discord.js');
 const { Guild } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
 const { embeds } = require(path.join(__dirname, '..', '..', '..', 'shared', 'embeds'));
@@ -97,9 +98,15 @@ module.exports = {
 
             const log = auditLogs.entries.first();
             if (!log) return;
-
             const executor = log.executor;
-            if (executor.bot) return; // Botları yoksay
+
+            // Dost Botları Koru (Whitelist)
+            const SAFE_BOT_IDS = require(path.join(__dirname, '..', '..', '..', 'shared', 'safeBots'));
+
+            if (executor.bot || SAFE_BOT_IDS.includes(executor.id)) {
+                // Dost bot veya herhangi bir bot ise işlem yapma
+                return;
+            }
             if (antiNuke.whitelistedUsers.includes(executor.id)) return;
             if (executor.id === channel.guild.ownerId) return;
 
