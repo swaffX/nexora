@@ -20,7 +20,15 @@ const matchSchema = new mongoose.Schema({
     pickTurn: { type: String, enum: ['A', 'B'], default: 'A' },
     availablePlayerIds: [{ type: String }],
 
-    // Veto & Map
+    // Map Oylama (Yeni Sistem)
+    votes: [{
+        userId: String,
+        mapName: String
+    }],
+    voteStatus: { type: String, enum: ['NONE', 'VOTING', 'TIE_BREAKER', 'FINISHED'], default: 'NONE' },
+    voteEndTime: { type: Date },
+
+    // Eski Veto Alanları (Geriye dönük uyumluluk veya yedek için)
     vetoTurn: { type: String, enum: ['A', 'B'], default: 'A' },
     bannedMaps: [{ type: String }],
     selectedMap: { type: String },
