@@ -11,5 +11,22 @@ module.exports = {
             activities: [{ name: 'Sunucu Düzenini', type: ActivityType.Watching }],
             status: 'dnd',
         });
+
+        // Ses Kanalına Gir
+        try {
+            const { joinVoiceChannel } = require('@discordjs/voice');
+            const channel = client.channels.cache.get('1463921161925558485');
+            if (channel) {
+                joinVoiceChannel({
+                    channelId: channel.id,
+                    guildId: channel.guild.id,
+                    adapterCreator: channel.guild.voiceAdapterCreator,
+                    selfDeaf: true
+                });
+                logger.info('🔊 Moderasyon Botu ses kanalına giriş yaptı.');
+            }
+        } catch (e) {
+            logger.error('Ses bağlantı hatası:', e.message);
+        }
     },
 };
