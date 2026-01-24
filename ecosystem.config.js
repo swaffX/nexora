@@ -52,6 +52,15 @@ module.exports = {
             env: {
                 NODE_ENV: "production"
             }
+        },
+        {
+            name: "custom-bot",
+            script: "./custom-bot/src/index.js",
+            watch: false,
+            ignore_watch: ["node_modules", "logs"],
+            env: {
+                NODE_ENV: "production"
+            }
         }
     ]
 };

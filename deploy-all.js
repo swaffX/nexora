@@ -21,6 +21,12 @@ const bots = [
         token: process.env.WELCOME_BOT_TOKEN,
         clientId: process.env.WELCOME_CLIENT_ID,
         path: path.join(__dirname, 'welcome-bot', 'src', 'commands')
+    },
+    {
+        name: 'custom-bot',
+        token: process.env.CUSTOM_BOT_TOKEN,
+        clientId: process.env.CUSTOM_CLIENT_ID,
+        path: path.join(__dirname, 'custom-bot', 'src', 'commands')
     }
 ];
 
