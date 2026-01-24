@@ -1,0 +1,87 @@
+const { Events } = require('discord.js');
+const path = require('path');
+const logger = require(path.join(__dirname, '..', '..', '..', 'shared', 'logger'));
+const { Guild, User } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
+const { embeds } = require(path.join(__dirname, '..', '..', '..', 'shared', 'embeds'));
+
+module.exports = {
+    name: Events.ClientReady,
+    once: true,
+    async execute(client) {
+        logger.success(`📈 Nexora Status Bot Devrede: ${client.user.tag}`);
+
+        client.user.setPresence({
+            activities: [{ name: 'NEXORA STATS', type: 3 }], // Watching
+            status: 'online'
+        });
+
+        const updateLeaderboard = async () => {
+            logger.info('[Status] Leaderboard taranıyor...');
+            for (const [guildId, guild] of client.guilds.cache) {
+                try {
+                    const settings = await Guild.findOne({ odaId: guildId });
+
+                    if (settings && settings.levelSystem && settings.levelSystem.enabled && settings.levelSystem.leaderboardChannelId) {
+                        const channel = guild.channels.cache.get(settings.levelSystem.leaderboardChannelId);
+                        if (!channel) continue;
+
+                        // 1. Top XP (All Time)
+                        const topXp = await User.find({ odaId: guildId }).sort({ xp: -1 }).limit(10).lean();
+
+                        // 2. Top Chatters
+                        const topMsg = await User.find({ odaId: guildId, totalMessages: { $gt: 0 } }).sort({ totalMessages: -1 }).limit(10).lean();
+
+                        // 3. Voice Champions
+                        const topVoice = await User.find({ odaId: guildId, totalVoiceMinutes: { $gt: 0 } }).sort({ totalVoiceMinutes: -1 }).limit(10).lean();
+
+                        // 4. Global Stats
+                        const allUsers = await User.find({ odaId: guildId }, 'totalMessages totalVoiceMinutes');
+                        let totalMsgCount = 0;
+                        let totalVoiceCount = 0;
+                        allUsers.forEach(u => {
+                            totalMsgCount += u.totalMessages || 0;
+                            totalVoiceCount += u.totalVoiceMinutes || 0;
+                        });
+
+                        const data = {
+                            xp: topXp.map(u => ({ userId: u.odasi, level: u.level, xp: u.xp })),
+                            messages: topMsg.map(u => ({ userId: u.odasi, totalMessages: u.totalMessages })),
+                            voice: topVoice.map(u => ({ userId: u.odasi, totalVoiceMinutes: u.totalVoiceMinutes })),
+                            stats: {
+                                trackedUsers: allUsers.length,
+                                totalMessages: totalMsgCount,
+                                totalVoice: totalVoiceCount
+                            }
+                        };
+
+                        const embed = embeds.leaderboard(guild.name, guild.iconURL({ dynamic: true }), data);
+
+                        if (settings.levelSystem.leaderboardMessageId) {
+                            try {
+                                const msg = await channel.messages.fetch(settings.levelSystem.leaderboardMessageId);
+                                if (msg) await msg.edit({ embeds: [embed] });
+                            } catch (e) {
+                                // Mesaj silinmiş
+                                const newMsg = await channel.send({ embeds: [embed] });
+                                settings.levelSystem.leaderboardMessageId = newMsg.id;
+                                await settings.save();
+                            }
+                        } else {
+                            // İlk mesaj
+                            const newMsg = await channel.send({ embeds: [embed] });
+                            settings.levelSystem.leaderboardMessageId = newMsg.id;
+                            await settings.save();
+                        }
+                        logger.info(`[Status] ${guild.name} leaderboard güncellendi.`);
+                    }
+                } catch (error) {
+                    logger.error(`[Status] Leaderboard hatası (${guild.name}):`, error);
+                }
+            }
+        };
+
+        // İlk çalıştırma ve döngü
+        setTimeout(updateLeaderboard, 5000); // 5 saniye bekle, bot iyice açılsın
+        setInterval(updateLeaderboard, 300000); // 5 dk
+    }
+};
