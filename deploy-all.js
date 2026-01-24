@@ -50,6 +50,12 @@ const bots = [
         token: process.env.SUPERVISOR_BOT_TOKEN,
         clientId: process.env.SUPERVISOR_CLIENT_ID,
         path: path.join(__dirname, 'supervisor-bot', 'src', 'commands')
+    },
+    {
+        name: 'status-bot',
+        token: process.env.STATUS_BOT_TOKEN,
+        clientId: process.env.STATUS_CLIENT_ID,
+        path: path.join(__dirname, 'status-bot', 'src', 'commands')
     }
 ];
 
