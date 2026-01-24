@@ -39,9 +39,7 @@ const matchSchema = new mongoose.Schema({
         team: { type: String, enum: ['A', 'B'] },
         amount: { type: Number },
         claimed: { type: Boolean, default: false } // Kazananlar ödülünü aldı mı?
-    }],
-
-    createdAt: { type: Date, default: Date.now }
-});
+    }]
+}, { timestamps: true });
 
 module.exports = mongoose.model('Match', matchSchema);

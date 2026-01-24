@@ -641,5 +641,58 @@ module.exports = {
             match.status = 'FINISHED';
             await match.save();
         }, 3000);
+    },
+    async checkTimeouts(client) {
+        const TIMEOUT_MS = 5 * 60 * 1000; // 5 dakika
+        const cutoff = new Date(Date.now() - TIMEOUT_MS);
+
+        try {
+            // Tamamlanmamış ve süresi geçmiş maçları bul (updatedAt)
+            const matches = await Match.find({
+                status: { $in: ['SETUP', 'DRAFT', 'VETO', 'SIDE_SELECTION'] },
+                updatedAt: { $lt: cutoff }
+            });
+
+            if (matches.length > 0) {
+                console.log(`[Auto-Timeout] ${matches.length} maç zaman aşımına uğradı.`);
+
+                for (const match of matches) {
+                    const guild = client.guilds.cache.get(match.guildId);
+                    if (guild) {
+                        // Bildirim
+                        const channel = guild.channels.cache.get(match.channelId);
+                        if (channel) {
+                            const embed = new EmbedBuilder()
+                                .setColor(0xED4245)
+                                .setTitle('⏰ Zaman Aşımı')
+                                .setDescription('Maç kurulumu sırasında 5 dakika boyunca işlem yapılmadığı için maç **iptal edildi**.');
+                            await channel.send({ content: `<@${match.hostId}>`, embeds: [embed] }).catch(() => { });
+                        }
+
+                        // Kanalları Sil
+                        if (match.createdChannelIds && match.createdChannelIds.length > 0) {
+                            for (const cid of match.createdChannelIds) {
+                                try { guild.channels.cache.get(cid)?.delete(); } catch (e) { }
+                            }
+                        }
+
+                        // Voice Geri Taşıma (cleanupMatch içindeki logic'in basitleştirilmiş hali)
+                        if (match.lobbyVoiceId) {
+                            const allPlayers = [...match.teamA, ...match.teamB];
+                            for (const id of allPlayers) {
+                                try {
+                                    const m = await guild.members.fetch(id);
+                                    if (m.voice.channel) await m.voice.setChannel(match.lobbyVoiceId);
+                                } catch (e) { }
+                            }
+                        }
+                    }
+                    match.status = 'CANCELLED';
+                    await match.save();
+                }
+            }
+        } catch (error) {
+            console.error('[Timeout Error]', error);
+        }
     }
 };

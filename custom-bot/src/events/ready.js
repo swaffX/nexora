@@ -2,6 +2,7 @@ const { Events } = require('discord.js');
 const path = require('path');
 const logger = require(path.join(__dirname, '..', '..', '..', 'shared', 'logger'));
 const { joinVoiceChannel } = require('@discordjs/voice');
+const matchHandler = require('../handlers/matchHandler');
 
 module.exports = {
     name: Events.ClientReady,
@@ -38,5 +39,10 @@ module.exports = {
         } catch (e) {
             logger.error('Ses bağlantı hatası:', e.message);
         }
+
+        // AFK Timeout Kontrolü (Dakikada bir)
+        setInterval(() => {
+            matchHandler.checkTimeouts(client);
+        }, 60000); // 1 dk
     },
 };
