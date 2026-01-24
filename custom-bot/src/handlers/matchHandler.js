@@ -1,23 +1,14 @@
 const {
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
-    EmbedBuilder,
-    ChannelType,
-    PermissionsBitField,
-    StringSelectMenuBuilder,
-    UserSelectMenuBuilder,
-    ComponentType,
-    AttachmentBuilder
+    ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder,
+    ChannelType, PermissionsBitField, StringSelectMenuBuilder,
+    UserSelectMenuBuilder, ComponentType, AttachmentBuilder
 } = require('discord.js');
 const path = require('path');
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const { Match, User } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
 
-// Font Kaydı
 GlobalFonts.registerFromPath(path.join(__dirname, '..', '..', '..', 'assets', 'fonts', 'Valorant.ttf'), 'VALORANT');
 
-// VALORANT Harita Havuzu
 const MAPS = [
     { name: 'Abyss', img: 'https://cdn.mobalytics.gg/assets/valorant/images/maps/abyss-preview.png' },
     { name: 'Ascent', img: 'https://images.contentstack.io/v3/assets/bltb6530b271fddd0b1/blt72ffc2b11ce3444e/5ebc4706977e4952089b0d38/Ascent_KeyArt.jpg' },
@@ -37,10 +28,8 @@ let MATCH_CATEGORY_ID = '1463883244436197397';
 module.exports = {
     async handleInteraction(interaction, client) {
         let action;
-
-        if (interaction.commandName === 'setup-match' || interaction.customId === 'match_create') {
-            action = 'create';
-        } else if (interaction.customId) {
+        if (interaction.commandName === 'setup-match' || interaction.customId === 'match_create') action = 'create';
+        else if (interaction.customId) {
             const parts = interaction.customId.split('_');
             action = parts[1];
         }
@@ -52,12 +41,12 @@ module.exports = {
             else if (action === 'randomcap') await this.assignRandomCaptains(interaction);
             else if (action === 'pick') await this.handlePlayerPick(interaction);
             else if (action === 'refresh') await this.refreshDraftUI(interaction);
-            else if (action === 'vote') await this.handleMapVote(interaction); // YENİ: Vote
+            else if (action === 'vote') await this.handleMapVote(interaction);
             else if (action === 'sidepick') await this.handleSidePick(interaction);
             else if (action === 'endmatch') await this.endMatch(interaction);
             else if (action === 'randommap') await this.handleRandomMap(interaction);
             else if (action === 'winner') await this.handleMatchResult(interaction);
-            else if (action === 'enddraft') await this.prepareVoting(interaction, await Match.findOne({ matchId: interaction.customId.split('_')[2] }));
+            else if (action === 'enddraft') await this.prepareVoting(interaction, await Match.findOne({ matchId: interaction.customId.split('_')[2] }), true);
         } catch (error) {
             console.error(`Match Handler Error [${action}]:`, error);
             if (!interaction.replied && !interaction.deferred) await interaction.reply({ content: '❌ İşlem sırasında hata!', ephemeral: true });
@@ -65,15 +54,9 @@ module.exports = {
     },
 
     async createLobby(interaction) {
-        const REQUIRED_ROLE_ID = '1463875325019557920';
-        const REQUIRED_VOICE_ID = '1463922466467483801';
-
-        if (!interaction.member.roles.cache.has(REQUIRED_ROLE_ID)) {
-            return interaction.reply({ content: '❌ Yetkiniz yok (Match Admin).', ephemeral: true });
-        }
-        if (interaction.member.voice.channelId !== REQUIRED_VOICE_ID) {
-            return interaction.reply({ content: `❌ <#${REQUIRED_VOICE_ID}> kanalında olmalısınız!`, ephemeral: true });
-        }
+        const REQUIRED_ROLE_ID = '1463875325019557920'; const REQUIRED_VOICE_ID = '1463922466467483801';
+        if (!interaction.member.roles.cache.has(REQUIRED_ROLE_ID)) return interaction.reply({ content: '❌ Yetkiniz yok.', ephemeral: true });
+        if (interaction.member.voice.channelId !== REQUIRED_VOICE_ID) return interaction.reply({ content: `❌ <#${REQUIRED_VOICE_ID}> kanalında olmalısınız!`, ephemeral: true });
 
         let category = interaction.guild.channels.cache.get(MATCH_CATEGORY_ID);
         if (!category) {
@@ -82,31 +65,19 @@ module.exports = {
         }
 
         const matchId = interaction.id;
-        const lobbyChannelId = interaction.member.voice.channelId;
-
         const newMatch = new Match({
-            matchId: matchId,
-            guildId: interaction.guild.id,
-            hostId: interaction.user.id,
-            channelId: interaction.channel.id,
-            lobbyVoiceId: lobbyChannelId,
-            status: 'SETUP'
+            matchId: matchId, guildId: interaction.guild.id, hostId: interaction.user.id,
+            channelId: interaction.channel.id, lobbyVoiceId: interaction.member.voice.channelId, status: 'SETUP'
         });
         await newMatch.save();
 
-        const embed = new EmbedBuilder()
-            .setColor(0x5865F2)
-            .setTitle('👑 Kaptan Seçimi')
-            .setDescription('Kaptanları belirleyin veya **Rastgele Ata** butonuna basın.')
-            .addFields(
-                { name: '🔵 Team A Kaptanı', value: 'Seçilmedi', inline: true },
-                { name: '🔴 Team B Kaptanı', value: 'Seçilmedi', inline: true }
-            );
+        const embed = new EmbedBuilder().setColor(0x5865F2).setTitle('👑 Kaptan Seçimi').setDescription('Kaptanları belirleyin.')
+            .addFields({ name: '🔵 Team A', value: 'Seçilmedi', inline: true }, { name: '🔴 Team B', value: 'Seçilmedi', inline: true });
 
         const rows = [
             new ActionRowBuilder().addComponents(new UserSelectMenuBuilder().setCustomId('match_captainA').setPlaceholder('Team A Kaptanı').setMaxValues(1)),
             new ActionRowBuilder().addComponents(new UserSelectMenuBuilder().setCustomId('match_captainB').setPlaceholder('Team B Kaptanı').setMaxValues(1)),
-            new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`match_randomcap_${matchId}`).setLabel('🎲 Rastgele Kaptan').setStyle(ButtonStyle.Secondary))
+            new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`match_randomcap_${matchId}`).setLabel('🎲 Rastgele').setStyle(ButtonStyle.Secondary))
         ];
 
         await interaction.reply({ content: `Match ID: ${matchId}`, embeds: [embed], components: rows, ephemeral: false });
@@ -132,8 +103,6 @@ module.exports = {
     async assignRandomCaptains(interaction) {
         const matchId = interaction.customId.split('_')[2];
         const match = await Match.findOne({ matchId });
-        if (!match) return;
-
         const voiceChannel = interaction.member.voice.channel;
         if (!voiceChannel) return interaction.reply({ content: 'Ses kanalında değilsin!', ephemeral: true });
 
@@ -167,6 +136,7 @@ module.exports = {
     async startDraftMode(interaction, match) {
         const member = await interaction.guild.members.fetch(match.hostId).catch(() => null);
         const channel = member?.voice?.channel;
+
         if (!channel) return interaction.channel.send({ content: '❌ Host ses kanalında değil!' }).then(m => setTimeout(() => m.delete(), 5000));
 
         if (!match.lobbyVoiceId) { match.lobbyVoiceId = channel.id; await match.save(); }
@@ -182,7 +152,6 @@ module.exports = {
 
     async updateDraftUI(interaction, match, sendNew = false) {
         if ((match.teamA.length >= 5 && match.teamB.length >= 5) || match.availablePlayerIds.length === 0) {
-            // Eğer yeni mesaj ise (direkt geçiş) silmeye gerek yok (zaten yok), ama update ise var.
             return this.prepareVoting(interaction, match, !sendNew);
         }
 
@@ -195,9 +164,7 @@ module.exports = {
             } catch (e) { }
         }
 
-        const embed = new EmbedBuilder()
-            .setColor(0xFEE75C)
-            .setTitle('👥 Draft Aşaması')
+        const embed = new EmbedBuilder().setColor(0xFEE75C).setTitle('👥 Draft Aşaması')
             .setDescription(`**Sıra:** <@${currentTurnCaptain}> (Team ${match.pickTurn})`)
             .addFields(
                 { name: `🔵 Team A (${match.teamA.length})`, value: match.teamA.map(id => `<@${id}>`).join('\n') || '-', inline: true },
@@ -206,22 +173,12 @@ module.exports = {
             );
 
         const components = [];
-        if (poolOptions.length > 0) {
-            components.push(new ActionRowBuilder().addComponents(
-                new StringSelectMenuBuilder()
-                    .setCustomId(`match_pick_${match.matchId}`)
-                    .setPlaceholder(`Oyuncu Seç (Team ${match.pickTurn})`)
-                    .addOptions(poolOptions.slice(0, 25))
-            ));
-        } else {
-            components.push(new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId(`match_enddraft_${match.matchId}`).setLabel('Seçimi Bitir').setStyle(ButtonStyle.Success)
-            ));
-        }
-
         components.push(new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId(`match_refresh_${match.matchId}`).setLabel('🔄 Yenile').setStyle(ButtonStyle.Secondary)
+            poolOptions.length > 0
+                ? new StringSelectMenuBuilder().setCustomId(`match_pick_${match.matchId}`).setPlaceholder(`Oyuncu Seç (Team ${match.pickTurn})`).addOptions(poolOptions.slice(0, 25))
+                : new ButtonBuilder().setCustomId(`match_enddraft_${match.matchId}`).setLabel('Seçimi Bitir').setStyle(ButtonStyle.Success)
         ));
+        components.push(new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`match_refresh_${match.matchId}`).setLabel('🔄 Yenile').setStyle(ButtonStyle.Secondary)));
 
         if (sendNew) {
             await interaction.channel.send({ content: `Match ID: ${match.matchId}`, embeds: [embed], components: components });
@@ -251,7 +208,6 @@ module.exports = {
     async refreshDraftUI(interaction) {
         const matchId = interaction.customId.split('_')[2];
         const match = await Match.findOne({ matchId });
-
         const host = await interaction.guild.members.fetch(match.hostId);
         const channel = host.voice.channel;
         if (channel) {
@@ -263,15 +219,19 @@ module.exports = {
         await this.updateDraftUI(interaction, match);
     },
 
-    // --- YENİ OYLAMA SİSTEMİ ---
-    async prepareVoting(interaction, match) {
+    async prepareVoting(interaction, match, deleteMsg = true) {
         match.status = 'VOTING';
         match.voteStatus = 'VOTING';
-        match.voteEndTime = new Date(Date.now() + 60000); // 60s
+        match.voteEndTime = new Date(Date.now() + 60000);
         await match.save();
 
-        const embedInit = new EmbedBuilder().setColor(0x57F287).setTitle('🗳️ Oylama Odası Hazırlanıyor...').setDescription('Takımlar kuruldu! Harita oylamasına geçiliyor.');
-        await interaction.update({ embeds: [embedInit], components: [] });
+        if (deleteMsg && interaction.message) {
+            await interaction.message.delete().catch(() => { });
+        }
+
+        const embedInit = new EmbedBuilder().setColor(0x57F287).setTitle('🗳️ Oylama Odası Hazırlanıyor...').setDescription('Harita oylamasına geçiliyor.');
+        const infoMsg = await interaction.channel.send({ embeds: [embedInit] });
+        setTimeout(() => infoMsg.delete().catch(() => { }), 5000);
 
         const guild = interaction.guild;
         const everyone = guild.roles.everyone;
@@ -288,34 +248,24 @@ module.exports = {
         });
 
         match.createdChannelIds.push(votingChannel.id);
-        match.channelId = votingChannel.id; // İletişimi buradan sürdür
+        match.channelId = votingChannel.id;
         await match.save();
-
         this.startMapVoting(votingChannel, match);
     },
 
     async startMapVoting(channel, match) {
-        // Rastgele 5 harita
-        const mapsToVote = MAPS.sort(() => 0.5 - Math.random()).slice(0, 5);
+        // TÜM HARİTALAR SUNULUYOR (Random 5 limitini kaldırdım)
+        // Discord Menüsü max 25 alır, bizde 11 var. OK.
+        const mapsToVote = MAPS;
         const endUnix = Math.floor(match.voteEndTime.getTime() / 1000);
 
-        const embed = new EmbedBuilder()
-            .setColor(0xFFA500)
-            .setTitle('🗳️ Harita Oylaması')
-            .setDescription(`Aşağıdaki menüden oynamak istediğiniz haritayı seçin!\n\n⏳ **Bitiş:** <t:${endUnix}:R>`)
+        const embed = new EmbedBuilder().setColor(0xFFA500).setTitle('🗳️ Harita Oylaması').setDescription(`Oynamak istediğiniz haritayı seçin!\n\n⏳ **Bitiş:** <t:${endUnix}:R>`)
             .addFields({ name: 'Aday Haritalar', value: mapsToVote.map(m => `• ${m.name}`).join('\n') });
 
         const options = mapsToVote.map(m => ({ label: m.name, value: m.name, emoji: '🗺️' }));
-        const row = new ActionRowBuilder().addComponents(
-            new StringSelectMenuBuilder()
-                .setCustomId(`match_vote_${match.matchId}`)
-                .setPlaceholder('Haritanı Seç!')
-                .addOptions(options)
-        );
+        const row = new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId(`match_vote_${match.matchId}`).setPlaceholder('Haritanı Seç!').addOptions(options));
 
-        await channel.send({ content: '@here Oylama Başladı! (60 Saniye)', embeds: [embed], components: [row] });
-
-        // 60 sn sonra bitir
+        await channel.send({ content: '@here', embeds: [embed], components: [row] });
         setTimeout(() => this.endVoting(channel, match.matchId), 60000);
     },
 
@@ -327,11 +277,9 @@ module.exports = {
         const selectedMap = interaction.values[0];
         const userId = interaction.user.id;
 
-        // Önceki oyu sil, yeni oyu ekle
         match.votes = match.votes.filter(v => v.userId !== userId);
         match.votes.push({ userId, mapName: selectedMap });
         await match.save();
-
         await interaction.reply({ content: `✅ Oyunuz **${selectedMap}** için kaydedildi.`, ephemeral: true });
     },
 
@@ -341,50 +289,36 @@ module.exports = {
 
         const counts = {};
         match.votes.forEach(v => { counts[v.mapName] = (counts[v.mapName] || 0) + 1; });
-
-        const sortedMaps = Object.entries(counts).sort((a, b) => b[1] - a[1]); // En çok oy alanlar
+        const sortedMaps = Object.entries(counts).sort((a, b) => b[1] - a[1]);
 
         if (sortedMaps.length === 0) {
             match.selectedMap = MAPS[Math.floor(Math.random() * MAPS.length)].name;
-            channel.send(`⚠️ Kimse oy kullanmadı. Rastgele seçildi: **${match.selectedMap}**`);
+            channel.send(`⚠️ Kimse oy kullanmadı. Rastgele: **${match.selectedMap}**`);
         } else {
             const topMap = sortedMaps[0];
-            // Beraberlik Kontrolü: 1. ve 2. eşitse
             if (sortedMaps.length > 1 && sortedMaps[1][1] === topMap[1]) {
-                channel.send(`⚖️ **Beraberlik!** (${topMap[0]} ve ${sortedMaps[1][0]}). Sistem rastgele birini seçiyor...`);
+                channel.send(`⚖️ **Beraberlik!** Rastgele seçim yapılıyor...`);
                 const tied = sortedMaps.filter(m => m[1] === topMap[1]);
                 match.selectedMap = tied[Math.floor(Math.random() * tied.length)][0];
-            } else {
-                match.selectedMap = topMap[0];
-            }
-            channel.send(`✅ **Oylama Sonucu:** **${match.selectedMap}** (${topMap[1]} oy) kazandı!`);
+            } else { match.selectedMap = topMap[0]; }
+            channel.send(`✅ **Kazanan:** **${match.selectedMap}** (${topMap[1]} oy)`);
         }
 
-        match.voteStatus = 'FINISHED';
-        await match.save();
+        match.voteStatus = 'FINISHED'; await match.save();
         this.startSideSelection(channel, match);
     },
 
     async startSideSelection(channel, match) {
         const winner = Math.random() < 0.5 ? 'A' : 'B';
-        match.coinFlipWinner = winner;
-        match.status = 'SIDE_SELECTION';
-        await match.save();
-
+        match.coinFlipWinner = winner; match.status = 'SIDE_SELECTION'; await match.save();
         const winnerId = winner === 'A' ? match.captainA : match.captainB;
         const mapData = MAPS.find(m => m.name === match.selectedMap);
 
-        const embed = new EmbedBuilder()
-            .setColor(0xFFD700)
-            .setTitle(`🏰 Harita: ${match.selectedMap}`)
-            .setDescription(`**Yazı-Tura Kazananı:** Team ${winner} (<@${winnerId}>)\nTaraf seçimi bekleniyor...`)
-            .setImage(mapData ? mapData.img : null);
-
+        const embed = new EmbedBuilder().setColor(0xFFD700).setTitle(`🏰 Harita: ${match.selectedMap}`).setDescription(`**Taraf Seçimi:** Team ${winner} (<@${winnerId}>)`).setImage(mapData ? mapData.img : null);
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`match_sidepick_${match.matchId}_ATTACK`).setLabel('🗡️ Attack').setStyle(ButtonStyle.Danger),
             new ButtonBuilder().setCustomId(`match_sidepick_${match.matchId}_DEFEND`).setLabel('🛡️ Defend').setStyle(ButtonStyle.Success)
         );
-
         await channel.send({ content: `<@${winnerId}>`, embeds: [embed], components: [row] });
     },
 
@@ -392,14 +326,12 @@ module.exports = {
         const [_, __, matchId, side] = interaction.customId.split('_');
         const match = await Match.findOne({ matchId });
         const winnerId = match.coinFlipWinner === 'A' ? match.captainA : match.captainB;
-
         if (interaction.user.id !== winnerId) return interaction.reply({ content: 'Sıra sende değil!', ephemeral: true });
 
         if (match.coinFlipWinner === 'A') { match.sideA = side; match.sideB = side === 'ATTACK' ? 'DEFEND' : 'ATTACK'; }
         else { match.sideB = side; match.sideA = side === 'ATTACK' ? 'DEFEND' : 'ATTACK'; }
 
-        match.status = 'LIVE';
-        await match.save();
+        match.status = 'LIVE'; await match.save();
         await interaction.update({ components: [] });
         await this.setupVoiceAndStart(interaction.guild, match, interaction.channel);
     },
@@ -415,41 +347,33 @@ module.exports = {
         const voiceA = await guild.channels.create({ name: `🔵 Team A (${match.sideA})`, type: ChannelType.GuildVoice, parent: category.id, permissionOverwrites: createPerms(match.teamA) });
         const voiceB = await guild.channels.create({ name: `🔴 Team B (${match.sideB})`, type: ChannelType.GuildVoice, parent: category.id, permissionOverwrites: createPerms(match.teamB) });
 
-        match.createdChannelIds.push(voiceA.id); match.createdChannelIds.push(voiceB.id);
-        await match.save();
+        match.createdChannelIds.push(voiceA.id); match.createdChannelIds.push(voiceB.id); await match.save();
 
-        // Herkesi Taşı
         const move = async (id, cid) => { try { const m = await guild.members.fetch(id); if (m.voice.channel) await m.voice.setChannel(cid); } catch (e) { } };
         await Promise.all([...match.teamA.map(id => move(id, voiceA.id)), ...match.teamB.map(id => move(id, voiceB.id))]);
 
         const panelRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`match_endmatch_${match.matchId}`).setLabel('🛑 Maçı Bitir').setStyle(ButtonStyle.Danger));
-        await infoChannel.send({
-            content: `✅ **MAÇ BAŞLADI!**\nHarita: **${match.selectedMap}**\nTeam A: **${match.sideA}** vs Team B: **${match.sideB}**\n`,
-            components: [panelRow]
-        });
+        await infoChannel.send({ content: `✅ **MAÇ BAŞLADI!**`, components: [panelRow] });
     },
 
     async endMatch(interaction) {
         const matchId = interaction.customId.split('_')[2];
         const match = await Match.findOne({ matchId });
         if (!match) return;
-
         const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId(`match_winner_${matchId}_A`).setLabel('🏆 Team A Kazandı').setStyle(ButtonStyle.Primary),
-            new ButtonBuilder().setCustomId(`match_winner_${matchId}_B`).setLabel('🏆 Team B Kazandı').setStyle(ButtonStyle.Danger),
+            new ButtonBuilder().setCustomId(`match_winner_${matchId}_A`).setLabel('🏆 Team A').setStyle(ButtonStyle.Primary),
+            new ButtonBuilder().setCustomId(`match_winner_${matchId}_B`).setLabel('🏆 Team B').setStyle(ButtonStyle.Danger),
             new ButtonBuilder().setCustomId(`match_winner_${matchId}_CANCEL`).setLabel('❌ İptal').setStyle(ButtonStyle.Secondary)
         );
         await interaction.reply({ content: '🏁 Maç Sonucu?', components: [row], ephemeral: true });
     },
 
-    // Rastgele Seçim (Devre dışı bırakıldı, Oylama var)
     async handleRandomMap(interaction) { return interaction.reply({ content: 'Oylama aktif!', ephemeral: true }); },
 
     async handleMatchResult(interaction) {
         const [_, __, matchId, winner] = interaction.customId.split('_');
         const match = await Match.findOne({ matchId });
         if (!match) return;
-
         await interaction.update({ content: '⏳ İşleniyor...', components: [] });
 
         if (winner !== 'CANCEL') {
@@ -463,38 +387,31 @@ module.exports = {
         try {
             let resultChannel = guild.channels.cache.find(c => c.name === 'maç-sonuçları');
             if (!resultChannel) resultChannel = await guild.channels.create({ name: 'maç-sonuçları', type: ChannelType.GuildText });
-
             const winningTeamIds = winnerTeam === 'A' ? match.teamA : match.teamB;
             const teamName = winnerTeam === 'A' ? 'TEAM A' : 'TEAM B';
             const color = winnerTeam === 'A' ? '#5865F2' : '#ED4245';
 
-            const canvas = createCanvas(800, 450);
-            const ctx = canvas.getContext('2d');
+            const canvas = createCanvas(800, 450); const ctx = canvas.getContext('2d');
             const mapData = MAPS.find(m => m.name === match.selectedMap) || MAPS[0];
-
             try {
-                const bg = await loadImage(mapData.img);
-                ctx.drawImage(bg, 0, 0, 800, 450);
+                const bg = await loadImage(mapData.img); ctx.drawImage(bg, 0, 0, 800, 450);
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'; ctx.fillRect(0, 0, 800, 450);
             } catch (e) { ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0, 0, 800, 450); }
 
             ctx.textAlign = 'center'; ctx.font = '80px VALORANT'; ctx.fillStyle = color; ctx.fillText('VICTORY', 400, 100);
             ctx.font = '40px VALORANT'; ctx.fillStyle = 'white'; ctx.fillText(`${teamName} WON`, 400, 150);
-
             for (let i = 0; i < winningTeamIds.length; i++) {
                 try {
                     const member = await guild.members.fetch(winningTeamIds[i]);
                     const avatar = await loadImage(member.user.displayAvatarURL({ extension: 'png', size: 128, forceStatic: true }));
                     const x = 100 + (i * 130); const y = 220;
                     ctx.save(); ctx.beginPath(); ctx.arc(x + 50, y + 50, 50, 0, Math.PI * 2); ctx.clip(); ctx.drawImage(avatar, x, y, 100, 100); ctx.restore();
-                    ctx.font = '18px VALORANT'; ctx.fillText(member.displayName.substring(0, 10), x + 50, y + 130);
+                    ctx.fillStyle = 'white'; ctx.font = '18px VALORANT'; ctx.fillText(member.displayName.substring(0, 10), x + 50, y + 130);
                 } catch (e) { }
             }
-
             const attachment = new AttachmentBuilder(await canvas.encode('png'), { name: 'match-result.png' });
             const embed = new EmbedBuilder().setColor(color).setImage('attachment://match-result.png').setDescription(`**Kazanan:** ${teamName}\n**Harita:** ${match.selectedMap}`);
             if (betReport) embed.addFields({ name: 'Bahis', value: betReport });
-
             await resultChannel.send({ embeds: [embed], files: [attachment] });
         } catch (e) { console.error(e); }
     },
@@ -516,24 +433,21 @@ module.exports = {
     async cleanupMatch(guild, match) {
         if (match.lobbyVoiceId) {
             const allPlayers = [...match.teamA, ...match.teamB];
-            for (const id of allPlayers) {
-                try { const m = await guild.members.fetch(id); if (m.voice.channel) await m.voice.setChannel(match.lobbyVoiceId); } catch (e) { }
-            }
+            for (const id of allPlayers) try { const m = await guild.members.fetch(id); if (m.voice.channel) await m.voice.setChannel(match.lobbyVoiceId); } catch (e) { }
         }
         setTimeout(async () => {
-            for (const cid of match.createdChannelIds) { try { guild.channels.cache.get(cid)?.delete(); } catch (e) { } }
+            for (const cid of match.createdChannelIds) try { guild.channels.cache.get(cid)?.delete(); } catch (e) { }
             match.status = 'FINISHED'; await match.save();
         }, 3000);
     },
 
     async checkTimeouts(client) {
-        // ... (Aynen Kalacak, yukardaki eklediğim gibi)
         const TIMEOUT_MS = 5 * 60 * 1000;
         const matches = await Match.find({ status: { $in: ['SETUP', 'DRAFT', 'VOTING', 'SIDE_SELECTION'] }, updatedAt: { $lt: new Date(Date.now() - TIMEOUT_MS) } });
-        for (const m of matches) {
-            m.status = 'CANCELLED'; await m.save();
-            const g = client.guilds.cache.get(m.guildId);
-            if (g && m.createdChannelIds) for (const cid of m.createdChannelIds) try { g.channels.cache.get(cid)?.delete(); } catch (e) { }
+        for (const match of matches) {
+            match.status = 'CANCELLED'; await match.save();
+            const guild = client.guilds.cache.get(match.guildId);
+            if (guild && match.createdChannelIds) for (const cid of match.createdChannelIds) try { guild.channels.cache.get(cid)?.delete(); } catch (e) { }
         }
     }
 };
