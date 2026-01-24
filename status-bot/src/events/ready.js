@@ -80,25 +80,40 @@ module.exports = {
                             }
                         };
 
-                        const embed = embeds.leaderboard(guild.name, guild.iconURL({ dynamic: true }), data);
+                        // Canvas ile Görsel Oluştur
+                        const { createLeaderboardImage } = require('../utils/canvasHelper');
+                        const { AttachmentBuilder } = require('discord.js');
 
-                        if (settings.levelSystem.leaderboardMessageId) {
-                            try {
-                                const msg = await channel.messages.fetch(settings.levelSystem.leaderboardMessageId);
-                                if (msg) await msg.edit({ embeds: [embed] });
-                            } catch (e) {
-                                // Mesaj silinmiş
-                                const newMsg = await channel.send({ embeds: [embed] });
+                        try {
+                            const buffer = await createLeaderboardImage(guild.name, guild.iconURL({ extension: 'png', forceStatic: true }), data, client);
+                            const attachment = new AttachmentBuilder(buffer, { name: 'leaderboard.png' });
+
+                            const msgContent = `**${guild.name}** Sunucu İstatistikleri 📊\n*Her 5 dakikada bir otomatik güncellenir.*`;
+
+                            if (settings.levelSystem.leaderboardMessageId) {
+                                try {
+                                    const msg = await channel.messages.fetch(settings.levelSystem.leaderboardMessageId);
+                                    if (msg) {
+                                        // Mesajı güncelle (Resim değişecek, eski resimler silinir otomatik)
+                                        await msg.edit({ content: msgContent, embeds: [], files: [attachment] });
+                                    }
+                                } catch (e) {
+                                    // Mesaj silinmiş
+                                    const newMsg = await channel.send({ content: msgContent, files: [attachment] });
+                                    settings.levelSystem.leaderboardMessageId = newMsg.id;
+                                    await settings.save();
+                                }
+                            } else {
+                                // İlk mesaj
+                                const newMsg = await channel.send({ content: msgContent, files: [attachment] });
                                 settings.levelSystem.leaderboardMessageId = newMsg.id;
                                 await settings.save();
                             }
-                        } else {
-                            // İlk mesaj
-                            const newMsg = await channel.send({ embeds: [embed] });
-                            settings.levelSystem.leaderboardMessageId = newMsg.id;
-                            await settings.save();
+                            logger.info(`[Status] ${guild.name} leaderboard (Canvas) güncellendi.`);
+
+                        } catch (canvasError) {
+                            logger.error(`[Status] Canvas Hatası:`, canvasError);
                         }
-                        logger.info(`[Status] ${guild.name} leaderboard güncellendi.`);
                     }
                 } catch (error) {
                     logger.error(`[Status] Leaderboard hatası (${guild.name}):`, error);
