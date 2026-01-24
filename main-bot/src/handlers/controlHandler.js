@@ -108,9 +108,19 @@ module.exports = {
     },
 
     async showWallet(interaction, userData) {
+        const total = userData.balance + userData.bank;
+
         const embed = new EmbedBuilder()
-            .setColor(0xFFD700)
-            .setDescription(`💳 **Cüzdanın:** ${userData.balance.toLocaleString()} NexCoin\n🏦 **Bankan:** ${userData.bank.toLocaleString()} NexCoin`);
+            .setColor(0xF1C40F) // Gold
+            .setAuthor({ name: `${interaction.user.username} Bakiyesi`, iconURL: interaction.user.displayAvatarURL() })
+            .addFields(
+                { name: '💵 Cüzdan', value: `**${userData.balance.toLocaleString()}** Coin`, inline: true },
+                { name: '🏦 Banka', value: `**${userData.bank.toLocaleString()}** Coin`, inline: true },
+                { name: '💎 Toplam Varlık', value: `**${total.toLocaleString()}** Coin`, inline: false }
+            )
+            .setFooter({ text: 'Nexora Economy', iconURL: interaction.guild.iconURL() })
+            .setTimestamp();
+
         await interaction.editReply({ embeds: [embed] });
     }
 };
