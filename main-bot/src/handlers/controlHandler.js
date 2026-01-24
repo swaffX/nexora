@@ -109,7 +109,7 @@ module.exports = {
 
     async showWallet(interaction, userData) {
         const embed = new EmbedBuilder()
-            .setColor(0GOLD)
+            .setColor(0xFFD700)
             .setDescription(`💳 **Cüzdanın:** ${userData.balance.toLocaleString()} NexCoin\n🏦 **Bankan:** ${userData.bank.toLocaleString()} NexCoin`);
         await interaction.editReply({ embeds: [embed] });
     }
