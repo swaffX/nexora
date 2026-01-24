@@ -34,6 +34,15 @@ module.exports = {
             script: "./src/index.js",
             watch: ["src"],
             ignore_watch: ["node_modules", ".env"],
+        },
+        {
+            name: "moderation-bot",
+            script: "./moderation-bot/src/index.js",
+            watch: false,
+            ignore_watch: ["node_modules", "logs"],
+            env: {
+                NODE_ENV: "production"
+            }
         }
     ]
 };

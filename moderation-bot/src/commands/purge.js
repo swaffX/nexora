@@ -1,10 +1,10 @@
 const path = require('path');
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
-const { embeds } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'embeds'));
+const { embeds } = require(path.join(__dirname, '..', '..', 'shared', 'embeds'));
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('temizle')
+        .setName('purge') // Türkçe 'temizle' yerine global 'purge' kullanımı daha standart
         .setDescription('Toplu mesaj sil')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
         .addIntegerOption(opt =>

@@ -116,10 +116,31 @@ async function processVoiceSession(user, guild, client) {
         if (guildSettings && guildSettings.levelSystem?.logChannelId) {
             const logChannel = client.channels.cache.get(guildSettings.levelSystem.logChannelId);
             if (logChannel) {
-                const embed = new EmbedBuilder()
-                    .setColor('#00FF00')
-                    .setDescription(`🎉 <@${user.odasi}> tebrikler! **Level ${newLevel}** oldun! 🔊 (Ses Aktifliği)`);
-                logChannel.send({ embeds: [embed] }).catch(() => { });
+                try {
+                    // Kullanıcıyı Bul
+                    const member = await guild.members.fetch(user.odasi).catch(() => null);
+                    if (member) {
+                        const { createLevelCard } = require('../utils/canvasHelper');
+
+                        const nextLevelXP = 100 * Math.pow(newLevel + 1, 2);
+                        const xpLeft = Math.floor(nextLevelXP - user.xp);
+
+                        const attachment = await createLevelCard(member.user, newLevel, xpLeft);
+
+                        await logChannel.send({
+                            content: `🎉 <@${user.odasi}> tebrikler! **Level ${newLevel}** oldun! 🔊 (Ses Aktifliği)`,
+                            files: [attachment]
+                        });
+                    } else {
+                        // Üye bulunamazsa text at
+                        throw new Error('Member not found');
+                    }
+                } catch (err) {
+                    const embed = new EmbedBuilder()
+                        .setColor('#00FF00')
+                        .setDescription(`🎉 <@${user.odasi}> tebrikler! **Level ${newLevel}** oldun! 🔊 (Ses Aktifliği)`);
+                    logChannel.send({ embeds: [embed] }).catch(() => { });
+                }
             }
         }
     }

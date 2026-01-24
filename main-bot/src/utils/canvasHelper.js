@@ -65,4 +65,65 @@ async function createWelcomeImage(member) {
     return new AttachmentBuilder(await canvas.encode('png'), { name: 'welcome.png' });
 }
 
-module.exports = { createWelcomeImage };
+async function createLevelCard(user, level, xpLeft) {
+    const canvas = createCanvas(800, 250);
+    const ctx = canvas.getContext('2d');
+
+    // 1. Arkaplan (Koyu Siyah)
+    ctx.fillStyle = '#090909';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 2. Altın/Turuncu Çerçeve
+    ctx.strokeStyle = '#FFA500'; // Turuncu
+    ctx.lineWidth = 6;
+    ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+
+    // 3. Yazılar
+    ctx.textAlign = 'left';
+
+    // TEBRİKLER
+    ctx.font = 'bold 60px Arial';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('TEBRİKLER!', 280, 90);
+
+    // LEVEL X
+    ctx.font = 'bold 50px Arial';
+    ctx.fillStyle = '#FFD700'; // Gold
+    ctx.fillText(`LEVEL ${level}`, 280, 150);
+
+    // XP Bilgisi
+    ctx.font = '24px Arial';
+    ctx.fillStyle = '#aaaaaa';
+    ctx.fillText(`Sonraki Seviye: ${xpLeft} XP kaldı`, 280, 190);
+
+    // 4. Avatar
+    try {
+        const avatarURL = user.displayAvatarURL({ extension: 'png', size: 512, forceStatic: true });
+        const avatar = await loadImage(avatarURL);
+
+        ctx.save();
+        ctx.beginPath();
+        // Daire
+        ctx.arc(140, 125, 90, 0, Math.PI * 2, true);
+        ctx.closePath();
+
+        // Kırpma
+        ctx.clip();
+        ctx.drawImage(avatar, 50, 35, 180, 180);
+
+        // Çerçeve (Avatar Etrafına)
+        ctx.beginPath();
+        ctx.arc(140, 125, 90, 0, Math.PI * 2, true);
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = '#FFD700';
+        ctx.stroke();
+
+        ctx.restore();
+    } catch (e) {
+        console.error('Level avatar error:', e);
+    }
+
+    return new AttachmentBuilder(await canvas.encode('png'), { name: `levelup-${user.id}.png` });
+}
+
+module.exports = { createWelcomeImage, createLevelCard };

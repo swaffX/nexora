@@ -27,6 +27,8 @@ module.exports = {
     async execute(interaction) {
         const subcommand = interaction.options.getSubcommand();
         const userData = await User.findOrCreate(interaction.user.id, interaction.guild.id, interaction.user.username);
+        const { getDailyDeal, decreaseStock } = require('../../utils/dailyDealManager');
+        const dailyDeal = getDailyDeal();
 
         if (subcommand === 'list') {
             const embed = new EmbedBuilder()
@@ -35,11 +37,24 @@ module.exports = {
                 .setColor(0xF1C40F)
                 .setThumbnail('https://cdn-icons-png.flaticon.com/512/1170/1170679.png');
 
+            // 🔥 GÜNÜN FIRSATI
+            if (dailyDeal && dailyDeal.stock > 0) {
+                embed.addFields({
+                    name: `🔥 GÜNÜN FIRSATI (-%${dailyDeal.discountPercent})`,
+                    value: `${dailyDeal.emoji} **${dailyDeal.name}**\nFiyat: ~~${dailyDeal.originalPrice.toLocaleString()}~~ ➡️ **${dailyDeal.salePrice.toLocaleString()} NexCoin**\n📦 Stok: **${dailyDeal.stock}** adet kaldı!\nID: \`${dailyDeal.itemId}\``
+                });
+            } else if (dailyDeal && dailyDeal.stock <= 0) {
+                embed.addFields({
+                    name: `🔥 GÜNÜN FIRSATI (TÜKENDİ)`,
+                    value: `Bugünün fırsatı **${dailyDeal.name}** tamamen satıldı! Yarını bekle.`
+                });
+            }
+
             // Kategorilere ayır
             const categories = {
                 [ItemType.BOX]: [],
                 [ItemType.PET]: [],
-                [ItemType.COLLECTIBLE]: [] // Sadece "price > 0" olanlar
+                [ItemType.COLLECTIBLE]: []
             };
 
             for (const item of Object.values(ITEMS)) {
@@ -51,7 +66,7 @@ module.exports = {
             // Kutular
             if (categories[ItemType.BOX].length > 0) {
                 const text = categories[ItemType.BOX].map(i =>
-                    `${i.emoji} **${i.name}** - 💰 ${i.price.toLocaleString()}`
+                    `${i.emoji} **${i.name}** (\`${i.id}\`) - 💰 ${i.price.toLocaleString()}`
                 ).join('\n');
                 embed.addFields({ name: '📦 Kutular', value: text });
             }
@@ -59,7 +74,7 @@ module.exports = {
             // Petler
             if (categories[ItemType.PET].length > 0) {
                 const text = categories[ItemType.PET].map(i =>
-                    `${i.emoji} **${i.name}** - 💰 ${i.price.toLocaleString()}\n└ *${i.bonus.type === 'xp' ? 'XP Bonusu' : i.bonus.type === 'money' ? 'Para Bonusu' : i.bonus.type === 'luck' ? 'Şans Bonusu' : 'Saldırı Gücü'}*`
+                    `${i.emoji} **${i.name}** (\`${i.id}\`) - 💰 ${i.price.toLocaleString()}`
                 ).join('\n');
                 embed.addFields({ name: '🐾 Siber Yoldaşlar', value: text });
             }
@@ -67,7 +82,7 @@ module.exports = {
             // Diğer
             if (categories[ItemType.COLLECTIBLE].length > 0) {
                 const text = categories[ItemType.COLLECTIBLE].map(i =>
-                    `${i.emoji} **${i.name}** - 💰 ${i.price.toLocaleString()}`
+                    `${i.emoji} **${i.name}** (\`${i.id}\`) - 💰 ${i.price.toLocaleString()}`
                 ).join('\n');
                 embed.addFields({ name: '💎 Eşyalar', value: text });
             }
@@ -91,14 +106,28 @@ module.exports = {
                 });
             }
 
-            if (item.price <= 0) {
-                return interaction.reply({
-                    embeds: [embeds.error('Hata', 'Bu eşya markette satılmıyor.')],
-                    ephemeral: true
-                });
+            if (item.price <= 0) return interaction.reply({ embeds: [embeds.error('Hata', 'Bu eşya satılık değil.')], ephemeral: true });
+
+            // Fiyat Hesaplama (İndirim Kontrolü)
+            let unitPrice = item.price;
+            let isDealItem = false;
+
+            if (dailyDeal && dailyDeal.itemId === item.id) {
+                if (dailyDeal.stock >= amount) {
+                    unitPrice = dailyDeal.salePrice;
+                    isDealItem = true;
+                } else if (dailyDeal.stock > 0) {
+                    return interaction.reply({
+                        content: `🔥 Fırsat ürününden sadece **${dailyDeal.stock}** adet kaldı! Lütfen daha az miktar girin.`,
+                        ephemeral: true
+                    });
+                } else {
+                    // Stok bitti, normal fiyattan alacak mı? (İsteğe bağlı, şimdilik normal fiyata dönelim)
+                    // return interaction.reply('Fırsat ürünü tükendi! Normal fiyattan almak için ...'); 
+                }
             }
 
-            const totalPrice = item.price * amount;
+            const totalPrice = unitPrice * amount;
 
             if (userData.balance < totalPrice) {
                 return interaction.reply({
@@ -118,11 +147,23 @@ module.exports = {
                 userData.inventory.push({ itemId: item.id, amount: amount });
             }
 
+            // Stok düş
+            if (isDealItem) {
+                decreaseStock(amount);
+            }
+
             await userData.save();
+
+            // Quest Update
+            try {
+                const { updateQuestProgress } = require('../../utils/questManager');
+                await updateQuestProgress(userData, 'buy', amount);
+            } catch (e) { }
 
             return interaction.reply({
                 embeds: [embeds.success('Satın Alma Başarılı',
                     `${amount} adet ${item.emoji} **${item.name}** satın aldınız.\n` +
+                    (isDealItem ? `🔥 **Günün Fırsatı İndirimi Uygulandı!**\n` : '') +
                     `Ödenen: **${totalPrice.toLocaleString()} NexCoin**\n` +
                     `Kalan: **${userData.balance.toLocaleString()} NexCoin**`
                 )]
