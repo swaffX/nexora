@@ -44,6 +44,12 @@ const bots = [
         token: process.env.CUSTOM_BOT_TOKEN,
         clientId: process.env.CUSTOM_CLIENT_ID,
         path: path.join(__dirname, 'custom-bot', 'src', 'commands')
+    },
+    {
+        name: 'autoviser-bot',
+        token: process.env.AUTOVISER_BOT_TOKEN,
+        clientId: process.env.AUTOVISER_CLIENT_ID,
+        path: path.join(__dirname, 'autoviser-bot', 'src', 'commands')
     }
 ];
 
