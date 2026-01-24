@@ -8,8 +8,12 @@ module.exports = {
     execute(client) {
         logger.success(`🛡️ Moderasyon Botu Devrede: ${client.user.tag}`);
         client.user.setPresence({
-            activities: [{ name: 'Sunucu Düzenini', type: ActivityType.Watching }],
-            status: 'dnd',
+            activities: [{
+                name: 'made by swaff',
+                type: 1,
+                url: 'https://www.twitch.tv/swaffxedits'
+            }],
+            status: 'online'
         });
 
         // Ses Kanalına Gir

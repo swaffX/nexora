@@ -1,10 +1,10 @@
 const path = require('path');
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
-const { embeds } = require(path.join(__dirname, '..', '..', 'shared', 'embeds'));
+const { embeds } = require(path.join(__dirname, '..', '..', '..', 'shared', 'embeds'));
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('purge') // Türkçe 'temizle' yerine global 'purge' kullanımı daha standart
+        .setName('purge')
         .setDescription('Toplu mesaj sil')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
         .addIntegerOption(opt =>
@@ -32,7 +32,6 @@ module.exports = {
 
             messages = Array.from(messages.values()).slice(0, amount);
 
-            // 14 günden eski mesajları filtrele
             const twoWeeksAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
             messages = messages.filter(m => m.createdTimestamp > twoWeeksAgo);
 

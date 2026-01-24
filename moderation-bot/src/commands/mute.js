@@ -1,6 +1,6 @@
 const path = require('path');
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
-const { embeds } = require(path.join(__dirname, '..', '..', 'shared', 'embeds'));
+const { embeds } = require(path.join(__dirname, '..', '..', '..', 'shared', 'embeds'));
 const ms = require('ms');
 
 module.exports = {
@@ -33,7 +33,6 @@ module.exports = {
             });
         }
 
-        // Yetki kontrolü
         if (member.roles.highest.position >= interaction.member.roles.highest.position) {
             return interaction.reply({
                 embeds: [embeds.error('Yetki Hatası', 'Bu kullanıcıyı susturamazsınız.')],
@@ -56,7 +55,6 @@ module.exports = {
                 embeds: [embeds.moderation('Susturma', user, interaction.user, reason, duration)]
             });
 
-            // DM gönder
             try {
                 await user.send({
                     embeds: [embeds.warning(

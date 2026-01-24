@@ -1,6 +1,6 @@
 const path = require('path');
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
-const { embeds } = require(path.join(__dirname, '..', '..', 'shared', 'embeds'));
+const { embeds } = require(path.join(__dirname, '..', '..', '..', 'shared', 'embeds'));
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -42,7 +42,6 @@ module.exports = {
         }
 
         try {
-            // DM gönder
             try {
                 await user.send({
                     embeds: [embeds.error(
