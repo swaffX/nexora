@@ -258,9 +258,12 @@ module.exports = {
         // Discord Menüsü max 25 alır, bizde 11 var. OK.
         const mapsToVote = MAPS;
         const endUnix = Math.floor(match.voteEndTime.getTime() / 1000);
+        const totalPlayers = match.teamA.length + match.teamB.length;
 
-        const embed = new EmbedBuilder().setColor(0xFFA500).setTitle('🗳️ Harita Oylaması').setDescription(`Oynamak istediğiniz haritayı seçin!\n\n⏳ **Bitiş:** <t:${endUnix}:R>`)
-            .addFields({ name: 'Aday Haritalar', value: mapsToVote.map(m => `• ${m.name}`).join('\n') });
+        const embed = new EmbedBuilder().setColor(0xFFA500).setTitle('🗳️ Harita Oylaması')
+            .setDescription(`Oynamak istediğiniz haritayı seçin!\n\n⏳ **Bitiş:** <t:${endUnix}:R>`)
+            .addFields({ name: 'Aday Haritalar', value: mapsToVote.map(m => `• ${m.name}`).join('\n') })
+            .setFooter({ text: `🗳️ Oy Durumu: 0/${totalPlayers}` });
 
         const options = mapsToVote.map(m => ({ label: m.name, value: m.name, emoji: '🗺️' }));
         const row = new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId(`match_vote_${match.matchId}`).setPlaceholder('Haritanı Seç!').addOptions(options));
@@ -281,6 +284,20 @@ module.exports = {
         match.votes.push({ userId, mapName: selectedMap });
         await match.save();
         await interaction.reply({ content: `✅ Oyunuz **${selectedMap}** için kaydedildi.`, ephemeral: true });
+
+        // Erken Bitiş ve Sayaç Güncelleme
+        const totalPlayers = match.teamA.length + match.teamB.length;
+
+        try {
+            const embed = EmbedBuilder.from(interaction.message.embeds[0]);
+            embed.setFooter({ text: `🗳️ Oy Durumu: ${match.votes.length}/${totalPlayers}` });
+            await interaction.message.edit({ embeds: [embed] });
+        } catch (e) { }
+
+        if (match.votes.length >= totalPlayers) {
+            await interaction.channel.send('⚡ **Herkes oy kullandı! Oylama sonlandırılıyor...**');
+            await this.endVoting(interaction.channel, match.matchId);
+        }
     },
 
     async endVoting(channel, matchId) {
