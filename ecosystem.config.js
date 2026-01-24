@@ -28,13 +28,7 @@ module.exports = {
             watch: ["src"],
             ignore_watch: ["node_modules", ".env"],
         },
-        {
-            name: "Backup_Bot",
-            cwd: "./backup-bot",
-            script: "./src/index.js",
-            watch: ["src"],
-            ignore_watch: ["node_modules", ".env"],
-        },
+
         {
             name: "moderation-bot",
             script: "./moderation-bot/src/index.js",

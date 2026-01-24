@@ -8,8 +8,7 @@
     "guard-bot-1",
     "guard-bot-2",
     "guard-bot-3",
-    "main-bot",
-    "backup-bot"
+    "main-bot"
   ],
   "scripts": {
     "start": "pm2 start ecosystem.config.js",
@@ -18,7 +17,7 @@
     "delete": "pm2 delete all",
     "logs": "pm2 logs",
     "dashboard": "pm2 monit",
-    "install:all": "cd shared && npm install && cd ../guard-bot-1 && npm install && cd ../guard-bot-2 && npm install && cd ../guard-bot-3 && npm install && cd ../main-bot && npm install && cd ../backup-bot && npm install"
+    "install:all": "cd shared && npm install && cd ../guard-bot-1 && npm install && cd ../guard-bot-2 && npm install && cd ../guard-bot-3 && npm install && cd ../main-bot && npm install"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
