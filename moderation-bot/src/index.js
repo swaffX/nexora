@@ -1,7 +1,7 @@
 const { Client, GatewayIntentBits, Collection, ActivityType } = require('discord.js');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
-const { connectDatabase } = require(path.join(__dirname, '..', '..', 'shared', 'database'));
+const db = require(path.join(__dirname, '..', '..', 'shared', 'database'));
 const logger = require(path.join(__dirname, '..', '..', 'shared', 'logger'));
 
 const client = new Client({
@@ -10,7 +10,7 @@ const client = new Client({
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildModeration // Ban/Kick yetkileri için
+        GatewayIntentBits.GuildModeration
     ]
 });
 
@@ -29,13 +29,18 @@ if (fs.existsSync(handlersPath)) {
 
 // Database & Login
 (async () => {
-    await connectDatabase();
+    // Database Bağlantısı
+    const mongoURI = process.env.MONGO_URI;
+    if (mongoURI) {
+        await db.connect(mongoURI);
+    } else {
+        logger.error('MONGO_URI bulunamadı!');
+    }
 
     // TOKEN: MODERATION_BOT_TOKEN
     const token = process.env.MODERATION_BOT_TOKEN;
     if (!token) {
         logger.error('MODERATION_BOT_TOKEN bulunamadı! .env dosyasını kontrol et.');
-        // process.exit(1); // Şimdilik kapatmayalım, hata versin
     } else {
         await client.login(token);
     }
