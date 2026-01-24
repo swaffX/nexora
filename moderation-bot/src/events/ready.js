@@ -11,7 +11,7 @@ module.exports = {
             activities: [{
                 name: 'made by swaff',
                 type: 1,
-                url: 'https://www.twitch.tv/swaffxedits'
+                url: 'https://www.twitch.tv/swaffval'
             }],
             status: 'online'
         });

@@ -56,6 +56,14 @@ module.exports = {
                     userData.monthlyMessages += 1;
                     await userData.save();
 
+                    // 🏆 Başarım Kontrolü
+                    try {
+                        const { checkAchievements } = require('../utils/achievementManager');
+                        await checkAchievements(userData, message);
+                    } catch (e) {
+                        logger.error('Achievement check error:', e);
+                    }
+
                     // Level atladı ve yeni bir seviyeye ulaştı (null değilse)
                     if (newLevel) {
                         // Log kanalına veya mevcut kanala bildir
