@@ -12,6 +12,7 @@ const ValorantUser = require('./ValorantUser');
 const Match = require('./Match');
 const Tournament = require('./Tournament');
 const Ticket = require('./Ticket');
+const Penal = require('./Penal');
 
 module.exports = {
     User,
@@ -27,5 +28,6 @@ module.exports = {
     ValorantUser,
     Match,
     Tournament,
-    Ticket
+    Ticket,
+    Penal
 };

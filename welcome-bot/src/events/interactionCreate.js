@@ -5,24 +5,37 @@ const logger = require(path.join(__dirname, '..', '..', '..', 'shared', 'logger'
 module.exports = {
     name: Events.InteractionCreate,
     async execute(interaction, client) {
-        // Slash Commands
-        if (interaction.isChatInputCommand()) {
-            const command = client.commands.get(interaction.commandName);
-            if (!command) return;
-            try {
-                await command.execute(interaction, client);
-            } catch (error) {
-                console.error(error);
-                await interaction.reply({ content: 'Hata!', ephemeral: true });
-            }
-        }
+        if (interaction.isButton() && interaction.customId.startsWith('verify_captcha_')) {
+            // Buton DM'den geldiği için ephemeral aslında sadece o DM'de geçerli
+            await interaction.deferUpdate();
 
-        // Buttons
-        if (interaction.isButton()) {
-            // Kayıt Butonu (verify)
-            if (interaction.customId === 'verify_user') {
-                const verifyHandler = require('../handlers/verifyHandler');
-                await verifyHandler.handleVerify(interaction, client);
+            const guildId = interaction.customId.split('_')[2];
+            const guild = client.guilds.cache.get(guildId);
+
+            if (!guild) return interaction.followUp({ content: '❌ Sunucu bulunamadı. Muhtemelen bot sunucudan atıldı.', ephemeral: true });
+
+            const member = await guild.members.fetch(interaction.user.id).catch(() => null);
+            if (!member) return interaction.followUp({ content: '❌ Sunucuda bulunamadın. (Çıkmış olabilirsin).', ephemeral: true });
+
+            const UNREG_ROLE_ID = '1463875341553635553';
+            const LOG_CHANNEL_ID = '1464177606684315730';
+            const REGISTER_CHANNEL_ID = '1463875473703436289';
+
+            if (member.roles.cache.has(UNREG_ROLE_ID)) {
+                return interaction.followUp({ content: '✅ Zaten doğrulanmışsın.', ephemeral: true });
+            }
+
+            try {
+                await member.roles.add(UNREG_ROLE_ID);
+                await interaction.editReply({ content: '✅ **Doğrulama Başarılı!** Sunucuya erişimin açıldı.', components: [] }); // Butonu kaldır
+
+                // Log
+                const channel = guild.channels.cache.get(LOG_CHANNEL_ID);
+                if (channel) await channel.send(`✅ <@${member.id}> bot olmadığını doğruladı ve sunucuya alındı.`);
+
+            } catch (err) {
+                console.error(err);
+                await interaction.followUp({ content: '❌ İşlem sırasında hata oluştu.', ephemeral: true });
             }
         }
     },
