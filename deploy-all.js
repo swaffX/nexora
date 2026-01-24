@@ -3,11 +3,28 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
+// Main Bot Token Kontrolü (Ana .env veya main-bot/.env)
+let mainToken = process.env.TOKEN;
+let mainClientId = process.env.CLIENT_ID;
+
+if (!mainToken) {
+    const mainEnvPath = path.join(__dirname, 'main-bot', '.env');
+    if (fs.existsSync(mainEnvPath)) {
+        console.log('📝 Main Bot için yerel .env okunuyor...');
+        const content = fs.readFileSync(mainEnvPath, 'utf8');
+        // Basit regex
+        const tokenMatch = content.match(/TOKEN=(.*)/);
+        const idMatch = content.match(/CLIENT_ID=(.*)/);
+        if (tokenMatch) mainToken = tokenMatch[1].trim();
+        if (idMatch) mainClientId = idMatch[1].trim();
+    }
+}
+
 const bots = [
     {
         name: 'main-bot',
-        token: process.env.TOKEN,
-        clientId: process.env.CLIENT_ID,
+        token: mainToken,
+        clientId: mainClientId,
         path: path.join(__dirname, 'main-bot', 'src', 'commands')
     },
     {
@@ -69,8 +86,13 @@ function loadCommands(dir) {
         console.log(`🔄 ${bot.name}: ${commands.length} komut bulundu. Yükleniyor...`);
 
         try {
+            // Önce Global'i temizle (Opsiyonel, çakışmayı önler)
+            // await rest.put(Routes.applicationCommands(bot.clientId), { body: [] });
+
+            // Sunucuya Yükle
+            const targetGuildId = process.env.GUILD_ID || '1069725546600210583'; // Fallback ID
             await rest.put(
-                Routes.applicationGuildCommands(bot.clientId, process.env.GUILD_ID), // Önce sunucuya özel yükle (Hızlı)
+                Routes.applicationGuildCommands(bot.clientId, targetGuildId),
                 { body: commands }
             );
             console.log(`✅ ${bot.name}: BAŞARILI!`);

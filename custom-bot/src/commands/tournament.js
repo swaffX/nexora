@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 const path = require('path');
 const { Tournament } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
-const tournamentHandler = require(path.join(__dirname, '..', '..', 'handlers', 'tournamentHandler'));
+const tournamentHandler = require(path.join(__dirname, '..', 'handlers', 'tournamentHandler'));
 
 module.exports = {
     data: new SlashCommandBuilder()
