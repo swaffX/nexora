@@ -1,6 +1,6 @@
 # NEXORA - Multi-Bot Discord System
 
-🛡️ **5-Bot Discord Management System** for Nexora community, featuring advanced moderation, anti-raid, leveling, and competitive gaming features.
+🛡️ **5-Bot Discord Management System** for Nexora community, featuring advanced moderation, anti-raid, leveling, and *competitive gaming (Valorant) integration*.
 
 ## 🌟 Features
 
@@ -11,14 +11,16 @@
 - 📈 **Server Statistics & Leaderboards** - Auto-updating stats for XP, messages, and voice time
 - 🔨 **Moderation Tools** - Ban, kick, mute, purge, warn commands
 - 👋 **Welcome System** - Customizable welcome messages
+- 🎯 **Valorant Integration** - (In Development) Check rank, recent matches, and RSO verification.
 
 ### Guard Bots (1, 2, 3)
 - 🛡️ **Guard Bot 1** - Anti-Raid Protection
 - 🚫 **Guard Bot 2** - Anti-Spam Protection  
 - ⚠️ **Guard Bot 3** - Anti-Nuke Protection
 
-### Backup Bot
-- 💾 **Backup Bot** - Automatic server backup and recovery
+### Custom Bot
+- 🏆 **Competitive Match System** - Advanced 5v5 Lobby, Map Voting, Side Selection, and Result Tracking.
+- 🔗 **Riot RSO System** - Securely link Discord accounts with Riot Games accounts.
 
 ## 🏗️ Project Structure
 
@@ -28,7 +30,7 @@ nexora/
 ├── guard-bot-1/       # Anti-Raid protection
 ├── guard-bot-2/       # Anti-Spam protection
 ├── guard-bot-3/       # Anti-Nuke protection
-├── backup-bot/        # Backup system
+├── custom-bot/        # 5v5 Match & Valorant Logic
 ├── shared/            # Shared utilities, models, and configs
 └── ecosystem.config.js # PM2 configuration for all bots
 ```
@@ -68,30 +70,7 @@ GUILD_ID=YOUR_GUILD_ID
 TOKEN=YOUR_MAIN_BOT_TOKEN
 CLIENT_ID=YOUR_MAIN_BOT_CLIENT_ID
 ```
-
-**`guard-bot-1/.env`:**
-```env
-TOKEN=YOUR_GUARD_BOT_1_TOKEN
-CLIENT_ID=YOUR_GUARD_BOT_1_CLIENT_ID
-```
-
-**`guard-bot-2/.env`:**
-```env
-TOKEN=YOUR_GUARD_BOT_2_TOKEN
-CLIENT_ID=YOUR_GUARD_BOT_2_CLIENT_ID
-```
-
-**`guard-bot-3/.env`:**
-```env
-TOKEN=YOUR_GUARD_BOT_3_TOKEN
-CLIENT_ID=YOUR_GUARD_BOT_3_CLIENT_ID
-```
-
-**`backup-bot/.env`:**
-```env
-TOKEN=YOUR_BACKUP_BOT_TOKEN
-CLIENT_ID=YOUR_BACKUP_BOT_CLIENT_ID
-```
+*(Repeat for guard-bot-1, guard-bot-2, guard-bot-3, custom-bot)*
 
 4. **Deploy Slash Commands:**
 ```bash
@@ -156,6 +135,11 @@ npm run dashboard # PM2 dashboard
 ### Match System
 - `/setup-match` - Deploy match creation panel in a channel
 
+### Valorant (RSO)
+- `/link` - Link your Riot Games account via RSO
+- `/rank` - View your competitive rank
+- `/lastmatch` - View details of your last match
+
 ### Moderation
 - `/ban` - Ban a user
 - `/kick` - Kick a user
@@ -185,6 +169,7 @@ Match lobby voice channel ID: `1463922466467483801`
 - **Mongoose** (MongoDB ODM)
 - **PM2** (Process Manager)
 - **@discordjs/voice** (Voice Channel Support)
+- **Riot Games API** (Integration)
 
 ## 📝 License
 
