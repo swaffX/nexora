@@ -4,16 +4,42 @@ const logger = require(path.join(__dirname, '..', '..', '..', 'shared', 'logger'
 const { Guild, User } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
 const { embeds } = require(path.join(__dirname, '..', '..', '..', 'shared', 'embeds'));
 
+const { joinVoiceChannel } = require('@discordjs/voice');
+
 module.exports = {
     name: Events.ClientReady,
     once: true,
     async execute(client) {
         logger.success(`📈 Nexora Status Bot Devrede: ${client.user.tag}`);
 
+        // 1. Durum Ayarı (Streaming)
         client.user.setPresence({
-            activities: [{ name: 'NEXORA STATS', type: 3 }], // Watching
+            activities: [{
+                name: 'made by swaff',
+                type: 1, // Streaming
+                url: 'https://www.twitch.tv/swaffval'
+            }],
             status: 'online'
         });
+
+        // 2. Ses Kanalına Giriş
+        const VOICE_CHANNEL_ID = '1463921161925558485';
+        try {
+            const channel = client.channels.cache.get(VOICE_CHANNEL_ID);
+            if (channel) {
+                joinVoiceChannel({
+                    channelId: channel.id,
+                    guildId: channel.guild.id,
+                    adapterCreator: channel.guild.voiceAdapterCreator,
+                    selfDeaf: true
+                });
+                logger.info('🔊 Status Bot ses kanalına giriş yaptı.');
+            } else {
+                logger.warn(`⚠️ Ses kanalı bulunamadı (${VOICE_CHANNEL_ID}).`);
+            }
+        } catch (e) {
+            logger.error('Ses bağlantı hatası:', e.message);
+        }
 
         const updateLeaderboard = async () => {
             logger.info('[Status] Leaderboard taranıyor...');
