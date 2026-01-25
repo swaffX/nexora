@@ -10,18 +10,67 @@ const manager = require('./manager');
 
 module.exports = {
     async startSideSelection(channel, match) {
-        const winner = Math.random() < 0.5 ? 'A' : 'B';
-        match.coinFlipWinner = winner;
+        // Coinflip Aşamasını Başlat
+        match.status = 'COIN_FLIP';
+        await match.save();
+
+        const embed = new EmbedBuilder()
+            .setColor(0xF1C40F)
+            .setTitle('🪙 Yazı Tura (Coinflip)')
+            .setDescription(`**Team A Kaptanı** (<@${match.captainA}>), seçimini yap!\nKazanan taraf seçme hakkını elde eder.`);
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId(`match_coin_HEADS_${match.matchId}`).setLabel('Yazı').setStyle(ButtonStyle.Primary).setEmoji('🪙'),
+            new ButtonBuilder().setCustomId(`match_coin_TAILS_${match.matchId}`).setLabel('Tura').setStyle(ButtonStyle.Secondary).setEmoji('🦅')
+        );
+
+        await channel.send({ content: `<@${match.captainA}>`, embeds: [embed], components: [row] });
+    },
+
+    async handleCoinFlip(interaction) {
+        const [_, __, choice, matchId] = interaction.customId.split('_'); // match_coin_HEADS_123
+        const match = await Match.findOne({ matchId });
+        if (!match) return;
+
+        if (interaction.user.id !== match.captainA) return interaction.reply({ content: 'Sadece Team A Kaptanı seçebilir.', ephemeral: true });
+
+        await interaction.deferUpdate();
+
+        // Sonucu Belirle
+        const result = Math.random() < 0.5 ? 'HEADS' : 'TAILS';
+        const win = (choice === result);
+
+        // Kazanan Kim?
+        // Eğer A bildiyse -> A kazanır.
+        // Bilemediyse -> B kazanır.
+        const winnerTeam = win ? 'A' : 'B';
+        match.coinFlipWinner = winnerTeam;
+        const winnerId = winnerTeam === 'A' ? match.captainA : match.captainB;
+
+        // Animasyonlu Mesaj (3 saniye gecikmeli gibi yapabiliriz ama Discord API izin vermez, direkt sonucu atalım)
+        const resultEmbed = new EmbedBuilder()
+            .setColor(win ? 0x00FF00 : 0xFF0000)
+            .setTitle(`🪙 Sonuç: ${result === 'HEADS' ? 'YAZI' : 'TURA'}!`)
+            .setDescription(`**${choice === 'HEADS' ? 'Yazı' : 'Tura'}** seçildi.\n\n🎉 **Kazanan:** Team ${winnerTeam} (<@${winnerId}>)\nTaraf seçme hakkı kazandınız!`);
+
+        await interaction.editReply({ components: [] });
+        await interaction.channel.send({ embeds: [resultEmbed] });
+
+        // Taraf Seçimine Geç
+        setTimeout(() => this.showSidePicker(interaction.channel, match, winnerTeam), 2000);
+    },
+
+    async showSidePicker(channel, match, winnerTeam) {
         match.status = 'SIDE_SELECTION';
         await match.save();
 
-        const winnerId = winner === 'A' ? match.captainA : match.captainB;
+        const winnerId = winnerTeam === 'A' ? match.captainA : match.captainB;
         const mapData = MAPS.find(m => m.name === match.selectedMap);
 
         const embed = new EmbedBuilder()
             .setColor(0xFFD700)
             .setTitle(`🏰 Harita: ${match.selectedMap}`)
-            .setDescription(`**Taraf Seçimi:** Team ${winner} (<@${winnerId}>)`)
+            .setDescription(`**Taraf Seçimi:** Team ${winnerTeam} (<@${winnerId}>)\nLütfen başlamak istediğiniz tarafı seçin.`)
             .setImage(mapData ? mapData.img : null);
 
         const row = new ActionRowBuilder().addComponents(
@@ -65,8 +114,14 @@ module.exports = {
             ...teamIds.map(id => ({ id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.Connect, PermissionsBitField.Flags.Speak] }))
         ];
 
-        const voiceA = await guild.channels.create({ name: `🔵 Team A (${match.sideA})`, type: ChannelType.GuildVoice, parent: category.id, permissionOverwrites: createPerms(match.teamA) });
-        const voiceB = await guild.channels.create({ name: `🔴 Team B (${match.sideB})`, type: ChannelType.GuildVoice, parent: category.id, permissionOverwrites: createPerms(match.teamB) });
+        const captainA = await guild.members.fetch(match.captainA).catch(() => ({ displayName: 'PLAYER A' }));
+        const captainB = await guild.members.fetch(match.captainB).catch(() => ({ displayName: 'PLAYER B' }));
+
+        const nameA = `TEAM ${captainA.displayName.toUpperCase()}`;
+        const nameB = `TEAM ${captainB.displayName.toUpperCase()}`;
+
+        const voiceA = await guild.channels.create({ name: `🔵 ${nameA} (${match.sideA})`, type: ChannelType.GuildVoice, parent: category.id, permissionOverwrites: createPerms(match.teamA) });
+        const voiceB = await guild.channels.create({ name: `🔴 ${nameB} (${match.sideB})`, type: ChannelType.GuildVoice, parent: category.id, permissionOverwrites: createPerms(match.teamB) });
 
         match.createdChannelIds.push(voiceA.id);
         match.createdChannelIds.push(voiceB.id);
@@ -75,8 +130,33 @@ module.exports = {
         const move = async (id, cid) => { try { const m = await guild.members.fetch(id); if (m.voice.channel) await m.voice.setChannel(cid); } catch (e) { } };
         await Promise.all([...match.teamA.map(id => move(id, voiceA.id)), ...match.teamB.map(id => move(id, voiceB.id))]);
 
+        // --- MATCH START CANVAS ---
+        const { createLobbyImage } = require('../utils/matchCanvas');
+        let attachment;
+        try {
+            const getMemberData = async (id) => {
+                try {
+                    const m = await guild.members.fetch(id);
+                    return { username: m.displayName, avatarURL: m.user.displayAvatarURL({ extension: 'png', forceStatic: true }) };
+                } catch { return { username: 'Unknown', avatarURL: null }; }
+            };
+
+            const teamAData = await Promise.all(match.teamA.map(getMemberData));
+            const teamBData = await Promise.all(match.teamB.map(getMemberData));
+
+            const buffer = await createLobbyImage(teamAData, teamBData, match.selectedMap || 'Abyss', nameA, nameB);
+            attachment = new AttachmentBuilder(buffer, { name: 'match-start.png' });
+        } catch (e) { console.error('Canvas Start Error:', e); }
+
         const panelRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`match_endmatch_${match.matchId}`).setLabel('🛑 Maçı Bitir').setStyle(ButtonStyle.Danger));
-        await infoChannel.send({ content: `✅ **MAÇ BAŞLADI!**`, components: [panelRow] });
+
+        const payload = {
+            content: `✅ **MAÇ BAŞLADI!**\n🏰 Harita: **${match.selectedMap}**\n⚔️ Taraf: **${nameA} (${match.sideA}) vs ${nameB} (${match.sideB})**`,
+            components: [panelRow]
+        };
+        if (attachment) payload.files = [attachment];
+
+        await infoChannel.send(payload);
     },
 
     async endMatch(interaction) {

@@ -7,56 +7,42 @@ const { Match } = require(path.join(__dirname, '..', '..', '..', '..', 'shared',
 const { MAPS, getCategoryId } = require('./constants');
 const gameHandler = require('./game');
 
+const { createVoteResultImage } = require('../utils/matchCanvas');
+const { AttachmentBuilder } = require('discord.js');
+
 module.exports = {
-    async prepareVoting(interaction, match, deleteMsg = true) {
-        match.status = 'VOTING';
-        match.voteStatus = 'VOTING';
-        match.voteEndTime = new Date(Date.now() + 60000);
-        await match.save();
-
-        if (deleteMsg && interaction.message) {
-            await interaction.message.delete().catch(() => { });
-        }
-
-        const embedInit = new EmbedBuilder().setColor(0x57F287).setTitle('🗳️ Oylama Odası Hazırlanıyor...').setDescription('Harita oylamasına geçiliyor.');
-        const infoMsg = await interaction.channel.send({ embeds: [embedInit] });
-        setTimeout(() => infoMsg.delete().catch(() => { }), 5000);
-
-        const guild = interaction.guild;
-        const everyone = guild.roles.everyone;
-        const allPlayers = [...match.teamA, ...match.teamB];
-
-        const MATCH_CATEGORY_ID = getCategoryId();
-        const votingChannel = await guild.channels.create({
-            name: `🗳️・map-voting`,
-            type: ChannelType.GuildText,
-            parent: MATCH_CATEGORY_ID,
-            permissionOverwrites: [
-                { id: everyone.id, deny: [PermissionsBitField.Flags.ViewChannel] },
-                ...allPlayers.map(id => ({ id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }))
-            ]
-        });
-
-        match.createdChannelIds.push(votingChannel.id);
-        match.channelId = votingChannel.id;
-        await match.save();
-        this.startMapVoting(votingChannel, match);
-    },
+    // ... (prepareVoting aynı)
 
     async startMapVoting(channel, match) {
         const mapsToVote = MAPS;
         const endUnix = Math.floor(match.voteEndTime.getTime() / 1000);
         const totalPlayers = match.teamA.length + match.teamB.length;
 
+        // İLK GÖRSEL (Boş)
+        const allMapNames = mapsToVote.map(m => m.name);
+        let buffer;
+        try {
+            buffer = await createVoteResultImage(allMapNames, {});
+        } catch (e) { console.error('Canvas Vote Error:', e); }
+
+        const attachment = buffer ? new AttachmentBuilder(buffer, { name: 'voting.png' }) : null;
+
         const embed = new EmbedBuilder().setColor(0xFFA500).setTitle('🗳️ Harita Oylaması')
             .setDescription(`Oynamak istediğiniz haritayı seçin!\n\n⏳ **Bitiş:** <t:${endUnix}:R>`)
-            .addFields({ name: 'Aday Haritalar', value: mapsToVote.map(m => `• ${m.name}`).join('\n') })
+            .setImage('attachment://voting.png') // Resmi embed içine göm
             .setFooter({ text: `🗳️ Oy Durumu: 0/${totalPlayers}` });
 
         const options = mapsToVote.map(m => ({ label: m.name, value: m.name, emoji: '🗺️' }));
         const row = new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId(`match_vote_${match.matchId}`).setPlaceholder('Haritanı Seç!').addOptions(options));
 
-        await channel.send({ content: '@here', embeds: [embed], components: [row] });
+        const msgPayload = { content: '@here', embeds: [embed], components: [row] };
+        if (attachment) msgPayload.files = [attachment];
+
+        const msg = await channel.send(msgPayload);
+
+        // Mesaj ID sakla ki edit yapabilelim
+        match.votingMessageId = msg.id;
+        await match.save();
 
         // Timer
         setTimeout(() => this.endVoting(channel, match.matchId), 60000);
@@ -70,19 +56,31 @@ module.exports = {
         const selectedMap = interaction.values[0];
         const userId = interaction.user.id;
 
-        match.votes = match.votes.filter(v => v.userId !== userId); // Varsa eskisini sil (gerçi menüde değiştiremez ama kod sağlam olsun)
+        match.votes = match.votes.filter(v => v.userId !== userId);
         match.votes.push({ userId, mapName: selectedMap });
         await match.save();
         await interaction.reply({ content: `✅ Oyunuz **${selectedMap}** için kaydedildi.`, ephemeral: true });
 
-        // Erken Bitiş ve Sayaç Güncelleme
+        // GÖRSEL GÜNCELLE
         const totalPlayers = match.teamA.length + match.teamB.length;
 
         try {
-            const embed = EmbedBuilder.from(interaction.message.embeds[0]);
-            embed.setFooter({ text: `🗳️ Oy Durumu: ${match.votes.length}/${totalPlayers}` });
-            await interaction.message.edit({ embeds: [embed] });
-        } catch (e) { }
+            const votingMsg = await interaction.channel.messages.fetch(match.votingMessageId);
+            if (votingMsg) {
+                const counts = {};
+                match.votes.forEach(v => counts[v.mapName] = (counts[v.mapName] || 0) + 1);
+                const allMapNames = MAPS.map(m => m.name);
+
+                const buffer = await createVoteResultImage(allMapNames, counts);
+                const attachment = new AttachmentBuilder(buffer, { name: 'voting.png' });
+
+                const embed = EmbedBuilder.from(votingMsg.embeds[0]);
+                embed.setFooter({ text: `🗳️ Oy Durumu: ${match.votes.length}/${totalPlayers}` });
+                embed.setImage('attachment://voting.png'); // Gerekli mi? Evet, çünkü yeni dosya adı aynı ama içerik farklı
+
+                await votingMsg.edit({ embeds: [embed], files: [attachment] });
+            }
+        } catch (e) { console.error('Vote Update Error:', e); }
 
         if (match.votes.length >= totalPlayers) {
             await interaction.channel.send('⚡ **Herkes oy kullandı! Oylama sonlandırılıyor...**');

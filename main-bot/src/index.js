@@ -113,8 +113,7 @@ async function start() {
         await client.login(process.env.TOKEN);
 
         // Kripto Döngüsünü Başlat
-        // Kripto Döngüsünü Başlat
-        require('./handlers/cryptoHandler').start();
+
 
         // Gece 00:00 Görev Sıfırlama Döngüsü
         setInterval(async () => {

@@ -32,6 +32,9 @@ module.exports = {
                 case 'randomcap':
                     await lobby.assignRandomCaptains(interaction);
                     break;
+                case 'coin':
+                    await game.handleCoinFlip(interaction);
+                    break;
 
                 // --- DRAFT ---
                 case 'pick':
