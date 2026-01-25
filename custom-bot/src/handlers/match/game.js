@@ -131,7 +131,7 @@ module.exports = {
         await Promise.all([...match.teamA.map(id => move(id, voiceA.id)), ...match.teamB.map(id => move(id, voiceB.id))]);
 
         // --- MATCH START CANVAS ---
-        const { createLobbyImage } = require('../utils/matchCanvas');
+        const { createLobbyImage } = require('../../utils/matchCanvas');
         let attachment;
         try {
             const getMemberData = async (id) => {

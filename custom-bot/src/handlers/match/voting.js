@@ -7,7 +7,7 @@ const { Match } = require(path.join(__dirname, '..', '..', '..', '..', 'shared',
 const { MAPS, getCategoryId } = require('./constants');
 const gameHandler = require('./game');
 
-const { createVoteResultImage } = require('../utils/matchCanvas');
+const { createVoteResultImage } = require('../../utils/matchCanvas');
 const { AttachmentBuilder } = require('discord.js');
 
 module.exports = {

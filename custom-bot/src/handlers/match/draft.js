@@ -2,7 +2,7 @@ const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelect
 const path = require('path');
 const { Match } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const votingHandler = require('./voting');
-const { createLobbyImage } = require('../utils/matchCanvas');
+const { createLobbyImage } = require('../../utils/matchCanvas');
 
 // Her maç için aktif timer'ı tutar
 const draftTimers = new Map();
