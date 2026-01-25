@@ -8,7 +8,7 @@ const matchSchema = new mongoose.Schema({
     lobbyVoiceId: { type: String }, // Oyuncuların geri döneceği kanal
 
     // Durum
-    status: { type: String, enum: ['SETUP', 'DRAFT', 'VOTING', 'VETO', 'SIDE_SELECTION', 'LIVE', 'FINISHED', 'CANCELLED'], default: 'SETUP' },
+    status: { type: String, enum: ['SETUP', 'DRAFT', 'VOTING', 'VETO', 'COIN_FLIP', 'SIDE_SELECTION', 'LIVE', 'FINISHED', 'CANCELLED'], default: 'SETUP' },
 
     // Takımlar
     captainA: { type: String },
