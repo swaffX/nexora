@@ -3,12 +3,6 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
 const db = require(path.join(__dirname, '..', '..', 'shared', 'database'));
 const logger = require(path.join(__dirname, '..', '..', 'shared', 'logger'));
-// Custom Discord.js Voice Fix
-try {
-    const { generateDependencyReport } = require('@discordjs/voice');
-    logger.info(generateDependencyReport());
-} catch (e) { }
-
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -73,9 +67,6 @@ if (fs.existsSync(eventsPath)) {
 
 // Main
 (async () => {
-    const sodium = require('libsodium-wrappers');
-    await sodium.ready;
-
     const mongoURI = process.env.MONGODB_URI;
     if (mongoURI) {
         await db.connect(mongoURI);
