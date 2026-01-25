@@ -46,5 +46,7 @@ module.exports = {
                     await interaction.followUp({ content: '❌ İşlem sırasında hata oluştu.', flags: MessageFlags.Ephemeral });
                 }
             }
-        },
-    };
+        }
+    }
+},
+};
