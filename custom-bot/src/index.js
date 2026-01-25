@@ -68,6 +68,9 @@ if (fs.existsSync(eventsPath)) {
 
 // Main
 (async () => {
+    const sodium = require('libsodium-wrappers');
+    await sodium.ready;
+
     const mongoURI = process.env.MONGODB_URI;
     if (mongoURI) {
         await db.connect(mongoURI);
