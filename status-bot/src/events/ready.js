@@ -88,7 +88,8 @@ module.exports = {
                             const buffer = await createLeaderboardImage(guild.name, guild.iconURL({ extension: 'png', forceStatic: true }), data, client);
                             const attachment = new AttachmentBuilder(buffer, { name: 'leaderboard.png' });
 
-                            const msgContent = `**${guild.name}** Sunucu İstatistikleri 📊\n*Her 5 dakikada bir otomatik güncellenir.*`;
+                            const timestamp = Math.floor(Date.now() / 1000);
+                            const msgContent = `**${guild.name}** Sunucu İstatistikleri 📊\nSon Güncelleme: <t:${timestamp}:R>\n*Her 5 dakikada bir otomatik güncellenir.*`;
 
                             if (settings.levelSystem.leaderboardMessageId) {
                                 try {

@@ -58,9 +58,10 @@ async function createLeaderboardImage(guildName, guildIconUrl, data, client) {
     ctx.shadowBlur = 0;
 
     // KATEGORİLER (XP - VOICE - CHAT)
-    await drawRankList(ctx, '🏆 TOP LEVEL', 50, 200, data.xp, client, 'xp', '#fbbf24'); // Amber
-    await drawRankList(ctx, '🎙️ TOP VOICE', 370, 200, data.voice, client, 'voice', '#3b82f6'); // Blue
-    await drawRankList(ctx, '💬 TOP CHAT', 690, 200, data.messages, client, 'msg', '#10b981'); // Emerald
+    // Emojileri kaldırdım, sadece metin
+    await drawRankList(ctx, 'TOP LEVEL', 50, 200, data.xp, client, 'xp', '#fbbf24'); // Amber
+    await drawRankList(ctx, 'TOP VOICE', 370, 200, data.voice, client, 'voice', '#3b82f6'); // Blue
+    await drawRankList(ctx, 'TOP CHAT', 690, 200, data.messages, client, 'msg', '#10b981'); // Emerald
 
     // Footer (Global Stats)
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
@@ -78,15 +79,11 @@ async function createLeaderboardImage(guildName, guildIconUrl, data, client) {
     const totalHours = Math.floor(data.stats.totalVoice / 60);
     const totalMins = data.stats.totalVoice % 60;
 
-    const statsText = `👥 Üye: ${data.stats.trackedUsers}   •   💬 Mesaj: ${data.stats.totalMessages.toLocaleString()}   •   🎙️ Toplam Ses: ${totalHours}s ${totalMins}dk`;
+    // Emojiler yerine text separator veya simple chars
+    const statsText = `Üye: ${data.stats.trackedUsers}   •   Mesaj: ${data.stats.totalMessages.toLocaleString()}   •   Toplam Ses: ${totalHours}s ${totalMins}dk`;
     ctx.fillText(statsText, width / 2, 620);
 
-    // Güncelleme Tarihi
-    ctx.font = '14px sans-serif';
-    ctx.fillStyle = '#94a3b8';
-    ctx.textAlign = 'right';
-    const now = new Date();
-    ctx.fillText(`Son Güncelleme: ${now.toLocaleTimeString('tr-TR')}`, width - 20, height - 10);
+    // "Son Güncelleme" kısmını buradan kaldırdık (Embed'e eklenecek)
 
     return canvas.encode('png');
 }
