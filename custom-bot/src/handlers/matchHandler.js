@@ -73,8 +73,10 @@ module.exports = {
         } catch (error) {
             console.error(`Match Router Error [${action}]:`, error);
             try {
-                if (!interaction.replied && !interaction.deferred) {
-                    const { MessageFlags } = require('discord.js');
+                const { MessageFlags } = require('discord.js');
+                if (interaction.replied || interaction.deferred) {
+                    await interaction.followUp({ content: '❌ İşlem sırasında bir hata oluştu.', flags: MessageFlags.Ephemeral });
+                } else {
                     await interaction.reply({ content: '❌ İşlem sırasında bir hata oluştu.', flags: MessageFlags.Ephemeral });
                 }
             } catch (e) { }
