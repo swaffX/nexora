@@ -9,9 +9,14 @@ module.exports = {
     once: true,
     async execute(client) {
         logger.success(`👁️ Supervisor Bot Devrede: ${client.user.tag}`);
+        const { ActivityType } = require('discord.js');
         client.user.setPresence({
-            activities: [{ name: 'Yetkilileri İzliyor 🕵️', type: 3 }],
-            status: 'dnd'
+            activities: [{
+                name: 'made by swaff',
+                type: ActivityType.Streaming,
+                url: 'https://guns.lol/swaff'
+            }],
+            status: 'online'
         });
 
         // Ses Kanalına Gir

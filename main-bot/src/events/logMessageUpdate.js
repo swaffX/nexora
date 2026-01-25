@@ -5,7 +5,7 @@ const { sendLog } = require('../utils/logHelper');
 module.exports = {
     name: 'messageUpdate',
     async execute(oldMessage, newMessage, client) {
-        if (!oldMessage.guild || oldMessage.author?.bot) return;
+        if (!oldMessage.guild || !oldMessage.author || oldMessage.author.bot) return;
         if (oldMessage.content === newMessage.content) return; // Sadece içerik değişince
 
         const embed = new EmbedBuilder()
