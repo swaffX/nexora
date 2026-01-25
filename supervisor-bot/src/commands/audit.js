@@ -8,7 +8,8 @@ module.exports = {
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
     async execute(interaction) {
-        await interaction.deferReply({ ephemeral: true });
+        const { MessageFlags } = require('discord.js');
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const report = await runAudit(interaction.guild);
 
         // Skor Rengi
