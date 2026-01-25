@@ -3,6 +3,8 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
 const db = require(path.join(__dirname, '..', '..', 'shared', 'database'));
 const logger = require(path.join(__dirname, '..', '..', 'shared', 'logger'));
+const { generateDependencyReport } = require('@discordjs/voice');
+logger.info(generateDependencyReport());
 
 const client = new Client({
     intents: [

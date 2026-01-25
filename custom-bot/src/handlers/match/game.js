@@ -168,7 +168,8 @@ module.exports = {
             new ButtonBuilder().setCustomId(`match_winner_${matchId}_B`).setLabel('🏆 Team B').setStyle(ButtonStyle.Danger),
             new ButtonBuilder().setCustomId(`match_winner_${matchId}_CANCEL`).setLabel('❌ İptal').setStyle(ButtonStyle.Secondary)
         );
-        await interaction.reply({ content: '🏁 Maç Sonucu?', components: [row], ephemeral: true });
+        const { MessageFlags } = require('discord.js');
+        await interaction.reply({ content: '🏁 Maç Sonucu?', components: [row], flags: MessageFlags.Ephemeral });
     },
 
     async handleMatchResult(interaction) {

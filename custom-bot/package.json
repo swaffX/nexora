@@ -12,6 +12,7 @@
         "dotenv": "^16.4.5",
         "libsodium-wrappers": "^0.7.13",
         "mongoose": "^8.2.0",
-        "sodium-native": "^5.0.10"
+        "sodium-native": "^5.0.10",
+        "tweetnacl": "^1.0.3"
     }
 }
