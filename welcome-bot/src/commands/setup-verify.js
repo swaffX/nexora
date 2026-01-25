@@ -22,6 +22,7 @@ module.exports = {
             );
 
         await interaction.channel.send({ embeds: [embed], components: [row] });
-        await interaction.reply({ content: 'Kayıt paneli kuruldu!', ephemeral: true });
+        const { MessageFlags } = require('discord.js');
+        await interaction.reply({ content: 'Kayıt paneli kuruldu!', flags: MessageFlags.Ephemeral });
     }
 };

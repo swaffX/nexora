@@ -6,7 +6,8 @@ moment.locale('tr');
 
 module.exports = {
     async handleVerify(interaction, client) {
-        await interaction.deferReply({ ephemeral: true });
+        const { MessageFlags } = require('discord.js');
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         const member = interaction.member;
         const roleId = '1339943438463762512'; // ÜYE ROLÜ ID (Değiştirmeyi unutma!)
