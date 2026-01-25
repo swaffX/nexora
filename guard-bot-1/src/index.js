@@ -66,40 +66,26 @@ async function start() {
 
         logger.info(`${commands.length} slash komut yükleniyor...`);
 
-        
-                if (process.env.GUILD_ID) {
+        if (process.env.GUILD_ID) {
             // Çift komut oluşumunu engellemek için önce Global komutları temizle
-            await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: [] });
+            try {
+                await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: [] });
+                logger.info('Global komutlar temizlendi.');
+            } catch (e) {
+                logger.warn('Global komutlar temizlenirken hata (önemsiz olabilir):', e.message);
+            }
 
             await rest.put(
                 Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
                 { body: commands }
             );
-            logger.success('Slash komutlar SUNUCU modunda yüklendi (Global temizlendi)!');
-        } else {
-            
-        if (process.env.GUILD_ID) {
-            await rest.put(
-                Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
-                { body: commands }
-            );
-            logger.success('Slash komutlar SUNUCU modunda yüklendi (Anında Erişim)!');
-        } else {
-            
-        if (process.env.GUILD_ID) {
-            await rest.put(
-                Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
-                { body: commands }
-            );
-            logger.success('Slash komutlar SUNUCU modunda yüklendi (Anında Erişim)!');
+            logger.success('Slash komutlar SUNUCU modunda yüklendi!');
         } else {
             await rest.put(
                 Routes.applicationCommands(process.env.CLIENT_ID),
                 { body: commands }
             );
             logger.success('Slash komutlar GLOBAL modda yüklendi (Önbellek süresi olabilir)!');
-        }
-        }
         }
 
         // Bot'u başlat

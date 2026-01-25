@@ -5,7 +5,13 @@ const { sendLog } = require('../utils/logHelper');
 module.exports = {
     name: 'messageUpdate',
     async execute(oldMessage, newMessage, client) {
-        if (oldMessage.partial) return;
+        if (oldMessage.partial) {
+            try {
+                await oldMessage.fetch();
+            } catch (e) {
+                return; // Fetch edilemiyorsa atla
+            }
+        }
         if (!oldMessage.guild || !oldMessage.author || oldMessage.author.bot) return;
         if (oldMessage.content === newMessage.content) return; // Sadece içerik değişince
 
