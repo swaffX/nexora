@@ -49,9 +49,10 @@ module.exports = {
     },
 
     async handleMapVote(interaction) {
+        const { MessageFlags } = require('discord.js');
         const matchId = interaction.customId.split('_')[2];
         const match = await Match.findOne({ matchId });
-        if (!match || match.voteStatus !== 'VOTING') return interaction.reply({ content: 'Oylama aktif değil.', ephemeral: true });
+        if (!match || match.voteStatus !== 'VOTING') return interaction.reply({ content: 'Oylama aktif değil.', flags: MessageFlags.Ephemeral });
 
         const selectedMap = interaction.values[0];
         const userId = interaction.user.id;
@@ -59,7 +60,7 @@ module.exports = {
         match.votes = match.votes.filter(v => v.userId !== userId);
         match.votes.push({ userId, mapName: selectedMap });
         await match.save();
-        await interaction.reply({ content: `✅ Oyunuz **${selectedMap}** için kaydedildi.`, ephemeral: true });
+        await interaction.reply({ content: `✅ Oyunuz **${selectedMap}** için kaydedildi.`, flags: MessageFlags.Ephemeral });
 
         // GÖRSEL GÜNCELLE
         const totalPlayers = match.teamA.length + match.teamB.length;

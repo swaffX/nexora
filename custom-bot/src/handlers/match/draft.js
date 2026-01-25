@@ -165,7 +165,10 @@ module.exports = {
         if (!match) return;
 
         const currentCap = match.pickTurn === 'A' ? match.captainA : match.captainB;
-        if (interaction.user.id !== currentCap) return interaction.reply({ content: 'Sıra sende değil!', ephemeral: true });
+        if (interaction.user.id !== currentCap) {
+            const { MessageFlags } = require('discord.js');
+            return interaction.reply({ content: 'Sıra sende değil!', flags: MessageFlags.Ephemeral });
+        }
 
         const pickedId = interaction.values[0];
         if (match.pickTurn === 'A') { match.teamA.push(pickedId); match.pickTurn = 'B'; }

@@ -9,8 +9,14 @@ module.exports = {
         const REQUIRED_ROLE_ID = '1463875325019557920';
         const REQUIRED_VOICE_ID = '1463922466467483801';
 
-        if (!interaction.member.roles.cache.has(REQUIRED_ROLE_ID)) return interaction.reply({ content: '❌ Yetkiniz yok.', ephemeral: true });
-        if (interaction.member.voice.channelId !== REQUIRED_VOICE_ID) return interaction.reply({ content: `❌ <#${REQUIRED_VOICE_ID}> kanalında olmalısınız!`, ephemeral: true });
+        if (!interaction.member.roles.cache.has(REQUIRED_ROLE_ID)) {
+            const { MessageFlags } = require('discord.js');
+            return interaction.reply({ content: '❌ Yetkiniz yok.', flags: MessageFlags.Ephemeral });
+        }
+        if (interaction.member.voice.channelId !== REQUIRED_VOICE_ID) {
+            const { MessageFlags } = require('discord.js');
+            return interaction.reply({ content: `❌ <#${REQUIRED_VOICE_ID}> kanalında olmalısınız!`, flags: MessageFlags.Ephemeral });
+        }
 
         let MATCH_CATEGORY_ID = getCategoryId();
         let category = interaction.guild.channels.cache.get(MATCH_CATEGORY_ID);
@@ -40,16 +46,17 @@ module.exports = {
     },
 
     async selectCaptain(interaction, team) {
+        const { MessageFlags } = require('discord.js');
         const matchId = interaction.message.content.split('Match ID: ')[1];
         const match = await Match.findOne({ matchId });
-        if (!match) return interaction.reply({ content: 'Maç bulunamadı.', ephemeral: true });
+        if (!match) return interaction.reply({ content: 'Maç bulunamadı.', flags: MessageFlags.Ephemeral });
 
         const selectedId = interaction.values[0];
         if (team === 'A') {
-            if (match.captainB === selectedId) return interaction.reply({ content: 'Aynı kişi seçilemez!', ephemeral: true });
+            if (match.captainB === selectedId) return interaction.reply({ content: 'Aynı kişi seçilemez!', flags: MessageFlags.Ephemeral });
             match.captainA = selectedId; match.teamA = [selectedId];
         } else {
-            if (match.captainA === selectedId) return interaction.reply({ content: 'Aynı kişi seçilemez!', ephemeral: true });
+            if (match.captainA === selectedId) return interaction.reply({ content: 'Aynı kişi seçilemez!', flags: MessageFlags.Ephemeral });
             match.captainB = selectedId; match.teamB = [selectedId];
         }
         await match.save();
@@ -57,13 +64,14 @@ module.exports = {
     },
 
     async assignRandomCaptains(interaction) {
+        const { MessageFlags } = require('discord.js');
         const matchId = interaction.customId.split('_')[2];
         const match = await Match.findOne({ matchId });
         const voiceChannel = interaction.member.voice.channel;
-        if (!voiceChannel) return interaction.reply({ content: 'Ses kanalında değilsin!', ephemeral: true });
+        if (!voiceChannel) return interaction.reply({ content: 'Ses kanalında değilsin!', flags: MessageFlags.Ephemeral });
 
         const members = voiceChannel.members.filter(m => !m.user.bot).map(m => m.id);
-        if (members.length < 2) return interaction.reply({ content: 'En az 2 oyuncu lazım.', ephemeral: true });
+        if (members.length < 2) return interaction.reply({ content: 'En az 2 oyuncu lazım.', flags: MessageFlags.Ephemeral });
 
         const shuffled = members.sort(() => 0.5 - Math.random());
         match.captainA = shuffled[0]; match.teamA = [shuffled[0]];
