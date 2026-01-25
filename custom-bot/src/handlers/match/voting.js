@@ -11,7 +11,15 @@ const { createVoteResultImage } = require('../../utils/matchCanvas');
 const { AttachmentBuilder } = require('discord.js');
 
 module.exports = {
-    // ... (prepareVoting aynı)
+    async prepareVoting(interaction, match, isNewMessage = false) {
+        match.voteStatus = 'VOTING';
+        match.voteEndTime = new Date(Date.now() + 60000); // 1 Dakika
+        match.votes = [];
+        match.selectedMap = null;
+        await match.save();
+
+        this.startMapVoting(interaction.channel, match);
+    },
 
     async startMapVoting(channel, match) {
         const mapsToVote = MAPS;
