@@ -32,7 +32,8 @@ module.exports = {
         const match = await Match.findOne({ matchId });
         if (!match) return;
 
-        if (interaction.user.id !== match.captainA) return interaction.reply({ content: 'Sadece Team A Kaptanı seçebilir.', ephemeral: true });
+        const { MessageFlags } = require('discord.js');
+        if (interaction.user.id !== match.captainA) return interaction.reply({ content: 'Sadece Team A Kaptanı seçebilir.', flags: MessageFlags.Ephemeral });
 
         await interaction.deferUpdate();
 
