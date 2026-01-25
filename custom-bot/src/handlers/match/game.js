@@ -3,7 +3,7 @@ const {
     ChannelType, PermissionsBitField, AttachmentBuilder
 } = require('discord.js');
 const path = require('path');
-const { createCanvas, loadImage } = require('@napi-rs/canvas');
+
 const { Match, User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const { MAPS, getCategoryId } = require('./constants');
 const manager = require('./manager');
@@ -132,31 +132,12 @@ module.exports = {
         const move = async (id, cid) => { try { const m = await guild.members.fetch(id); if (m.voice.channel) await m.voice.setChannel(cid); } catch (e) { } };
         await Promise.all([...match.teamA.map(id => move(id, voiceA.id)), ...match.teamB.map(id => move(id, voiceB.id))]);
 
-        // --- MATCH START CANVAS ---
-        const { createLobbyImage } = require('../../utils/matchCanvas');
-        let attachment;
-        try {
-            const getMemberData = async (id) => {
-                try {
-                    const m = await guild.members.fetch(id);
-                    return { username: m.displayName, avatarURL: m.user.displayAvatarURL({ extension: 'png', forceStatic: true }) };
-                } catch { return { username: 'Unknown', avatarURL: null }; }
-            };
-
-            const teamAData = await Promise.all(match.teamA.map(getMemberData));
-            const teamBData = await Promise.all(match.teamB.map(getMemberData));
-
-            const buffer = await createLobbyImage(teamAData, teamBData, match.selectedMap || 'Abyss', nameA, nameB);
-            attachment = new AttachmentBuilder(buffer, { name: 'match-start.png' });
-        } catch (e) { console.error('Canvas Start Error:', e); }
-
         const panelRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`match_endmatch_${match.matchId}`).setLabel('🛑 Maçı Bitir').setStyle(ButtonStyle.Danger));
 
         const payload = {
             content: `✅ **MAÇ BAŞLADI!**\n🏰 Harita: **${match.selectedMap}**\n⚔️ Taraf: **${nameA} (${match.sideA}) vs ${nameB} (${match.sideB})**`,
             components: [panelRow]
         };
-        if (attachment) payload.files = [attachment];
 
         await infoChannel.send(payload);
     },
@@ -196,32 +177,23 @@ module.exports = {
         try {
             let resultChannel = guild.channels.cache.find(c => c.name === 'maç-sonuçları');
             if (!resultChannel) resultChannel = await guild.channels.create({ name: 'maç-sonuçları', type: ChannelType.GuildText });
-            const winningTeamIds = winnerTeam === 'A' ? match.teamA : match.teamB;
+
             const teamName = winnerTeam === 'A' ? 'TEAM A' : 'TEAM B';
             const color = winnerTeam === 'A' ? '#5865F2' : '#ED4245';
 
-            const canvas = createCanvas(800, 450); const ctx = canvas.getContext('2d');
-            const mapData = MAPS.find(m => m.name === match.selectedMap) || MAPS[0];
-            try {
-                const bg = await loadImage(mapData.img); ctx.drawImage(bg, 0, 0, 800, 450);
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'; ctx.fillRect(0, 0, 800, 450);
-            } catch (e) { ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0, 0, 800, 450); }
+            const embed = new EmbedBuilder()
+                .setColor(color)
+                .setTitle(`🏆 KAZANAN: ${teamName}`)
+                .setDescription(`**Harita:** ${match.selectedMap}`)
+                .addFields(
+                    { name: 'Kadro A', value: match.teamA.map(id => `<@${id}>`).join(', ') || '-', inline: true },
+                    { name: 'Kadro B', value: match.teamB.map(id => `<@${id}>`).join(', ') || '-', inline: true }
+                )
+                .setTimestamp();
 
-            ctx.textAlign = 'center'; ctx.font = '80px VALORANT'; ctx.fillStyle = color; ctx.fillText('VICTORY', 400, 100);
-            ctx.font = '40px VALORANT'; ctx.fillStyle = 'white'; ctx.fillText(`${teamName} WON`, 400, 150);
-            for (let i = 0; i < winningTeamIds.length; i++) {
-                try {
-                    const member = await guild.members.fetch(winningTeamIds[i]);
-                    const avatar = await loadImage(member.user.displayAvatarURL({ extension: 'png', size: 128, forceStatic: true }));
-                    const x = 100 + (i * 130); const y = 220;
-                    ctx.save(); ctx.beginPath(); ctx.arc(x + 50, y + 50, 50, 0, Math.PI * 2); ctx.clip(); ctx.drawImage(avatar, x, y, 100, 100); ctx.restore();
-                    ctx.fillStyle = 'white'; ctx.font = '18px VALORANT'; ctx.fillText(member.displayName.substring(0, 10), x + 50, y + 130);
-                } catch (e) { }
-            }
-            const attachment = new AttachmentBuilder(await canvas.encode('png'), { name: 'match-result.png' });
-            const embed = new EmbedBuilder().setColor(color).setImage('attachment://match-result.png').setDescription(`**Kazanan:** ${teamName}\n**Harita:** ${match.selectedMap}`);
             if (betReport) embed.addFields({ name: 'Bahis', value: betReport });
-            await resultChannel.send({ embeds: [embed], files: [attachment] });
+
+            await resultChannel.send({ embeds: [embed] });
         } catch (e) { console.error(e); }
     },
 

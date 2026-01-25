@@ -2,7 +2,7 @@ const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelect
 const path = require('path');
 const { Match } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const votingHandler = require('./voting');
-const { createLobbyImage } = require('../../utils/matchCanvas');
+
 
 // Her maç için aktif timer'ı tutar
 const draftTimers = new Map();
@@ -30,26 +30,7 @@ module.exports = {
             // Timer temizle
             if (draftTimers.has(match.matchId)) clearTimeout(draftTimers.get(match.matchId));
 
-            // --- GÖRSEL LOBBY OLUŞTUR ---
-            try {
-                const getMemberData = async (id) => {
-                    try {
-                        const m = await interaction.guild.members.fetch(id);
-                        return { username: m.displayName, avatarURL: m.user.displayAvatarURL({ extension: 'png', forceStatic: true }) };
-                    } catch { return { username: 'Unknown', avatarURL: null }; }
-                };
-
-                const teamAData = await Promise.all(match.teamA.map(getMemberData));
-                const teamBData = await Promise.all(match.teamB.map(getMemberData));
-
-                const buffer = await createLobbyImage(teamAData, teamBData);
-                const attachment = new AttachmentBuilder(buffer, { name: 'lobby.png' });
-
-                await interaction.channel.send({ content: `✅ **Takımlar Belirlendi!** Map Veto Moduna Geçiliyor...`, files: [attachment] });
-
-            } catch (canvasErr) {
-                console.error('Canvas Error:', canvasErr);
-            }
+            await interaction.channel.send({ content: `✅ **Takımlar Belirlendi!** Oylamaya geçiliyor...` });
 
             return votingHandler.prepareVoting(interaction, match, true);
         }
