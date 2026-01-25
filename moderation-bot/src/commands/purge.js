@@ -21,7 +21,8 @@ module.exports = {
         const amount = interaction.options.getInteger('sayı');
         const user = interaction.options.getUser('kullanıcı');
 
-        await interaction.deferReply({ ephemeral: true });
+        const { MessageFlags } = require('discord.js');
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         try {
             let messages = await interaction.channel.messages.fetch({ limit: 100 });

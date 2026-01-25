@@ -14,10 +14,11 @@ module.exports = {
                 logger.command(interaction.user.tag, interaction.commandName, interaction.guild.name);
             } catch (error) {
                 logger.error(`Komut Hatası (${interaction.commandName}):`, error);
+                const { MessageFlags } = require('discord.js');
                 if (interaction.replied || interaction.deferred) {
-                    await interaction.followUp({ content: '❌ Bir hata oluştu!', ephemeral: true });
+                    await interaction.followUp({ content: '❌ Bir hata oluştu!', flags: MessageFlags.Ephemeral });
                 } else {
-                    await interaction.reply({ content: '❌ Bir hata oluştu!', ephemeral: true });
+                    await interaction.reply({ content: '❌ Bir hata oluştu!', flags: MessageFlags.Ephemeral });
                 }
             }
         }

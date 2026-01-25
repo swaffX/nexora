@@ -20,24 +20,26 @@ module.exports = {
         const reason = interaction.options.getString('sebep') || 'Belirtilmedi';
 
         const member = await interaction.guild.members.fetch(user.id).catch(() => null);
-        if (!member) {
+        if (member) {
+            const { MessageFlags } = require('discord.js');
+            if (!member.kickable) {
+                return interaction.reply({
+                    embeds: [embeds.error('Yetki Hatası', 'Bu kullanıcıyı atamazsınız.')],
+                    flags: MessageFlags.Ephemeral
+                });
+            }
+
+            if (member.roles.highest.position >= interaction.member.roles.highest.position) {
+                return interaction.reply({
+                    embeds: [embeds.error('Yetki Hatası', 'Bu kullanıcıyı atamazsınız.')],
+                    flags: MessageFlags.Ephemeral
+                });
+            }
+        } else {
+            const { MessageFlags } = require('discord.js');
             return interaction.reply({
                 embeds: [embeds.error('Hata', 'Kullanıcı bulunamadı.')],
-                ephemeral: true
-            });
-        }
-
-        if (!member.kickable) {
-            return interaction.reply({
-                embeds: [embeds.error('Yetki Hatası', 'Bu kullanıcıyı atamazsınız.')],
-                ephemeral: true
-            });
-        }
-
-        if (member.roles.highest.position >= interaction.member.roles.highest.position) {
-            return interaction.reply({
-                embeds: [embeds.error('Yetki Hatası', 'Bu kullanıcıyı atamazsınız.')],
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
@@ -58,9 +60,10 @@ module.exports = {
             });
 
         } catch (error) {
+            const { MessageFlags } = require('discord.js');
             await interaction.reply({
                 embeds: [embeds.error('Hata', `Kick başarısız: ${error.message}`)],
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
     }

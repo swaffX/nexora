@@ -9,7 +9,8 @@ class Database {
     async connect(uri) {
         try {
             this.connection = await mongoose.connect(uri, {
-
+                // Mongoose 6+: deprecated options (useNewUrlParser, useUnifiedTopology) are default.
+                // Do not add them back to avoid warnings.
             });
             logger.success('MongoDB bağlantısı başarılı!');
             return this.connection;

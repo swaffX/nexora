@@ -64,26 +64,28 @@ module.exports = {
         const reason = interaction.options.getString('sebep') || 'Belirtilmedi';
 
         const member = await interaction.guild.members.fetch(user.id).catch(() => null);
+        const { MessageFlags } = require('discord.js');
         if (!member) {
             return interaction.reply({
                 embeds: [embeds.error('Hata', 'Kullanıcı bulunamadı.')],
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
         if (member.roles.highest.position >= interaction.member.roles.highest.position) {
             return interaction.reply({
                 embeds: [embeds.error('Yetki Hatası', 'Bu kullanıcıya ceza veremezsiniz.')],
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
         // Süre Kontrolü
         const durationMs = ms(duration);
         if (!durationMs || durationMs < 1000) {
+            const { MessageFlags } = require('discord.js');
             return interaction.reply({
                 embeds: [embeds.error('Hata', 'Geçersiz süre formatı (örn: 1h, 30m).')],
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 

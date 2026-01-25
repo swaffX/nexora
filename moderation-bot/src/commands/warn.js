@@ -24,9 +24,10 @@ module.exports = {
         const member = await interaction.guild.members.fetch(user.id).catch(() => null);
         if (member) {
             if (member.roles.highest.position >= interaction.member.roles.highest.position) {
+                const { MessageFlags } = require('discord.js');
                 return interaction.reply({
                     embeds: [embeds.error('Yetki Hatası', 'Bu kullanıcıyı uyaramazsınız.')],
-                    ephemeral: true
+                    flags: MessageFlags.Ephemeral
                 });
             }
         }
