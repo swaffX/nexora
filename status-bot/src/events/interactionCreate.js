@@ -13,10 +13,13 @@ module.exports = {
         } catch (error) {
             console.error('Komut Hatası:', error);
             if (interaction.replied || interaction.deferred) {
-                await interaction.followUp({ content: 'Bir hata oluştu!', ephemeral: true });
+                const { MessageFlags } = require('discord.js');
+                await interaction.followUp({ content: 'Bir hata oluştu!', flags: MessageFlags.Ephemeral });
             } else {
-                await interaction.reply({ content: 'Bir hata oluştu!', ephemeral: true });
+                const { MessageFlags } = require('discord.js');
+                await interaction.reply({ content: 'Bir hata oluştu!', flags: MessageFlags.Ephemeral });
             }
         }
     },
 };
+```

@@ -60,9 +60,11 @@ Sistem ses kanalındaki oyuncuları otomatik algılar ve seçim yapmanızı sağ
             }
         } catch (error) {
             // Mesaj bulunamazsa yeni at
-            await channel.send({ embeds: [embed], components: [row] });
+            await interaction.channel.send({ embeds: [embed], components: [row] });
             const { MessageFlags } = require('discord.js');
+            await interaction.reply({ content: 'Maç paneli kuruldu!', flags: MessageFlags.Ephemeral });
             return interaction.reply({ content: '⚠️ Sabit mesaj bulunamadı, yeni bir tane oluşturuldu. (Lütfen ID\'yi güncelle)', flags: MessageFlags.Ephemeral });
         }
     }
 };
+```

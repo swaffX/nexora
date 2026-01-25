@@ -87,8 +87,9 @@ module.exports = {
         const match = await Match.findOne({ matchId });
         if (!match) return;
 
+        const { MessageFlags } = require('discord.js');
         const winnerId = match.coinFlipWinner === 'A' ? match.captainA : match.captainB;
-        if (interaction.user.id !== winnerId) return interaction.reply({ content: 'Sıra sende değil!', ephemeral: true });
+        if (interaction.user.id !== winnerId) return interaction.reply({ content: 'Sıra sende değil!', flags: MessageFlags.Ephemeral });
 
         if (match.coinFlipWinner === 'A') {
             match.sideA = side;

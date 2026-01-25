@@ -3,9 +3,16 @@ const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, Butt
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('link')
-        .setDescription('Link your Riot Games account (RSO) to access statistics and verification.'),
+        .setDescription('Link your Riot Games account (RSO) to access statistics and verification.')
+        .addStringOption(option =>
+            option.setName('riot-id')
+                .setDescription('Your Riot ID (e.g., Player#TAG)')
+                .setRequired(true)),
 
     async execute(interaction) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        const riotId = interaction.options.getString('riot-id');
+
         const embed = new EmbedBuilder()
             .setColor(0xFF4655)
             .setTitle('Valorant Account Integration')

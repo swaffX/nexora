@@ -14,15 +14,16 @@ module.exports = {
 
     async execute(interaction) {
         // Cooldown Check (30 Saniye)
-        if (cooldowns.has(interaction.user.id)) {
-            return interaction.reply({ content: '⏳ Lütfen komutu tekrar kullanmak için biraz bekle.', ephemeral: true });
-        }
+        // Cooldown Check (30 Saniye) - Removed as per instruction
+        // if (cooldowns.has(interaction.user.id)) {
+        //     return interaction.reply({ content: '⏳ Lütfen komutu tekrar kullanmak için biraz bekle.', ephemeral: true });
+        // }
 
-        await interaction.deferReply();
-        cooldowns.add(interaction.user.id);
-        setTimeout(() => cooldowns.delete(interaction.user.id), 30000); // 30 sn sonra sil
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral }); // Changed to use MessageFlags.Ephemeral
+        // cooldowns.add(interaction.user.id); // Removed as per instruction
+        // setTimeout(() => cooldowns.delete(interaction.user.id), 30000); // 30 sn sonra sil - Removed as per instruction
 
-        const riotId = interaction.options.getString('name');
+        const riotId = interaction.options.getString('name'); // Kept original variable name and option name
 
         // Split Name#Tag
         let name, tag;
