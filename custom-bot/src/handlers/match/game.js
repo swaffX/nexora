@@ -187,7 +187,8 @@ module.exports = {
         } else {
             // İptal (Force End gibi)
             await manager.forceEndMatch(interaction.guild, match.matchId, 'Maç sonucu girilirken iptal edildi.');
-            await interaction.followUp({ content: '✅ Maç iptal edildi ve kanallar silindi.', ephemeral: true });
+            const { MessageFlags } = require('discord.js');
+            await interaction.followUp({ content: '✅ Maç iptal edildi ve kanallar silindi.', flags: MessageFlags.Ephemeral });
         }
     },
 
