@@ -13,7 +13,10 @@ module.exports = {
                 await command.execute(interaction, client);
             } catch (error) {
                 console.error(error);
-                if (!interaction.replied) await interaction.reply({ content: 'Hata!', ephemeral: true });
+                if (!interaction.replied) {
+                    const { MessageFlags } = require('discord.js');
+                    await interaction.reply({ content: 'Hata!', flags: MessageFlags.Ephemeral });
+                }
             }
         }
 

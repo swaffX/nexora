@@ -31,13 +31,15 @@ module.exports = {
                 vUser.region = 'eu'; // Varsayılan
                 await vUser.save();
 
+                const { MessageFlags } = require('discord.js');
                 return interaction.reply({
                     content: `✅ **Bağlandı:** \`${name}#${tag}\`\nArtık istatistiklerinizi görüntüleyebilirsiniz.`,
-                    ephemeral: true
+                    flags: MessageFlags.Ephemeral
                 });
             } catch (error) {
                 console.error(error);
-                return interaction.reply({ content: '❌ Kayıt sırasında hata oluştu.', ephemeral: true });
+                const { MessageFlags } = require('discord.js');
+                return interaction.reply({ content: '❌ Kayıt sırasında hata oluştu.', flags: MessageFlags.Ephemeral });
             }
         }
 
@@ -57,10 +59,11 @@ module.exports = {
                 .setDisabled(true)
         );
 
+        const { MessageFlags } = require('discord.js');
         await interaction.reply({
             embeds: [embed],
             components: [row],
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
     }
 };

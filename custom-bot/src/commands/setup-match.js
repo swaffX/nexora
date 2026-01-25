@@ -55,12 +55,14 @@ Sistem ses kanalındaki oyuncuları otomatik algılar ve seçim yapmanızı sağ
             const msg = await channel.messages.fetch(TARGET_MESSAGE_ID);
             if (msg) {
                 await msg.edit({ embeds: [embed], components: [row] });
-                return interaction.reply({ content: '✅ Maç Paneli başarıyla güncellendi!', ephemeral: true });
+                const { MessageFlags } = require('discord.js');
+                return interaction.reply({ content: '✅ Maç Paneli başarıyla güncellendi!', flags: MessageFlags.Ephemeral });
             }
         } catch (error) {
             // Mesaj bulunamazsa yeni at
             await channel.send({ embeds: [embed], components: [row] });
-            return interaction.reply({ content: '⚠️ Sabit mesaj bulunamadı, yeni bir tane oluşturuldu. (Lütfen ID\'yi güncelle)', ephemeral: true });
+            const { MessageFlags } = require('discord.js');
+            return interaction.reply({ content: '⚠️ Sabit mesaj bulunamadı, yeni bir tane oluşturuldu. (Lütfen ID\'yi güncelle)', flags: MessageFlags.Ephemeral });
         }
     }
 };
