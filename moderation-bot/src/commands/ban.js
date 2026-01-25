@@ -28,17 +28,18 @@ module.exports = {
         const member = await interaction.guild.members.fetch(user.id).catch(() => null);
 
         if (member) {
+            const { MessageFlags } = require('discord.js');
             if (!member.bannable) {
                 return interaction.reply({
                     embeds: [embeds.error('Yetki Hatası', 'Bu kullanıcıyı yasaklayamazsınız.')],
-                    ephemeral: true
+                    flags: MessageFlags.Ephemeral
                 });
             }
 
             if (member.roles.highest.position >= interaction.member.roles.highest.position) {
                 return interaction.reply({
                     embeds: [embeds.error('Yetki Hatası', 'Bu kullanıcıyı yasaklayamazsınız.')],
-                    ephemeral: true
+                    flags: MessageFlags.Ephemeral
                 });
             }
         }
@@ -63,9 +64,10 @@ module.exports = {
             });
 
         } catch (error) {
+            const { MessageFlags } = require('discord.js');
             await interaction.reply({
                 embeds: [embeds.error('Hata', `Ban başarısız: ${error.message}`)],
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
     }

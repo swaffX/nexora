@@ -5,6 +5,7 @@ const { sendLog } = require('../utils/logHelper');
 module.exports = {
     name: 'messageUpdate',
     async execute(oldMessage, newMessage, client) {
+        if (oldMessage.partial) return;
         if (!oldMessage.guild || !oldMessage.author || oldMessage.author.bot) return;
         if (oldMessage.content === newMessage.content) return; // Sadece içerik değişince
 
