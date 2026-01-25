@@ -74,7 +74,8 @@ module.exports = {
             console.error(`Match Router Error [${action}]:`, error);
             try {
                 if (!interaction.replied && !interaction.deferred) {
-                    await interaction.reply({ content: '❌ İşlem sırasında bir hata oluştu.', ephemeral: true });
+                    const { MessageFlags } = require('discord.js');
+                    await interaction.reply({ content: '❌ İşlem sırasında bir hata oluştu.', flags: MessageFlags.Ephemeral });
                 }
             } catch (e) { }
         }
