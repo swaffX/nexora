@@ -67,4 +67,3 @@ Sistem ses kanalındaki oyuncuları otomatik algılar ve seçim yapmanızı sağ
         }
     }
 };
-```
