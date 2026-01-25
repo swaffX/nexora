@@ -83,7 +83,22 @@ async function punishUser(guild, odasi, reason, action, logChannelId) {
 module.exports = {
     name: 'channelDelete',
     async execute(channel, client) {
-        const guildSettings = await Guild.findOrCreate(channel.guild.id, channel.guild.name);
+        let guildSettings;
+        try {
+            guildSettings = await Guild.findOrCreate(channel.guild.id, channel.guild.name);
+        } catch (error) {
+            console.error('Guard Bot DB Hatası:', error.message);
+            // DB Hatası durumunda varsayılan koruma aktif (Fail-Safe)
+            guildSettings = {
+                antiNuke: {
+                    enabled: true,
+                    channelDeleteLimit: 3,
+                    action: 'ban',
+                    logChannelId: null,
+                    whitelistedUsers: []
+                }
+            };
+        }
 
         if (!guildSettings.antiNuke?.enabled) return;
 

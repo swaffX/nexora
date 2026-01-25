@@ -1,3 +1,5 @@
+const cooldowns = new Set();
+
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const axios = require('axios');
 
@@ -11,7 +13,11 @@ module.exports = {
                 .setRequired(true)),
 
     async execute(interaction) {
+        if (cooldowns.has(interaction.user.id)) return interaction.reply({ content: '⏳ Biraz yavaş ol dostum (30sn bekle).', ephemeral: true });
+
         await interaction.deferReply();
+        cooldowns.add(interaction.user.id);
+        setTimeout(() => cooldowns.delete(interaction.user.id), 30000);
 
         const riotId = interaction.options.getString('name');
 

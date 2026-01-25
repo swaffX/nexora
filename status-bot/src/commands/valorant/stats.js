@@ -1,6 +1,8 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const axios = require('axios');
 
+const cooldowns = new Set();
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('stats')
@@ -11,7 +13,14 @@ module.exports = {
                 .setRequired(true)),
 
     async execute(interaction) {
+        // Cooldown Check (30 Saniye)
+        if (cooldowns.has(interaction.user.id)) {
+            return interaction.reply({ content: '⏳ Lütfen komutu tekrar kullanmak için biraz bekle.', ephemeral: true });
+        }
+
         await interaction.deferReply();
+        cooldowns.add(interaction.user.id);
+        setTimeout(() => cooldowns.delete(interaction.user.id), 30000); // 30 sn sonra sil
 
         const riotId = interaction.options.getString('name');
 

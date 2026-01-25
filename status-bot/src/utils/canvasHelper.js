@@ -88,6 +88,8 @@ async function createLeaderboardImage(guildName, guildIconUrl, data, client) {
     return canvas.encode('png');
 }
 
+const userAvatarCache = new Map();
+
 async function drawRankList(ctx, title, x, y, list, client, type, color) {
     // Başlık Kutusu
     ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
@@ -106,10 +108,10 @@ async function drawRankList(ctx, title, x, y, list, client, type, color) {
     let currentY = y + 70;
     const top5 = list.slice(0, 5);
 
-    for (let i = 0; i < 5; i++) { // Her zaman 5 satır çiz (boş olsa bile)
+    for (let i = 0; i < 5; i++) { // Her zaman 5 satır çiz
         const item = top5[i];
 
-        // Arka Plan Şeridi (Tek/Çift satır ayrımı)
+        // Arka Plan Şeridi
         if (i % 2 === 0) {
             ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
             ctx.fillRect(x, currentY - 10, 260, 60);
@@ -125,42 +127,59 @@ async function drawRankList(ctx, title, x, y, list, client, type, color) {
 
         // Sıra No
         ctx.font = 'bold 24px sans-serif';
-        if (i === 0) ctx.fillStyle = '#fbbf24'; // Altın
-        else if (i === 1) ctx.fillStyle = '#94a3b8'; // Gümüş
-        else if (i === 2) ctx.fillStyle = '#b45309'; // Bronz
-        else ctx.fillStyle = '#64748b'; // Gri
+        if (i === 0) ctx.fillStyle = '#fbbf24';
+        else if (i === 1) ctx.fillStyle = '#94a3b8';
+        else if (i === 2) ctx.fillStyle = '#b45309';
+        else ctx.fillStyle = '#64748b';
 
         ctx.fillText(`${i + 1}`, x + 10, currentY + 25);
 
-        // Avatar
-        let username = 'Bilinmiyor';
-        let avatarUrl = 'https://cdn.discordapp.com/embed/avatars/0.png';
-        try {
-            let user = client.users.cache.get(item.userId);
-            if (!user) user = await client.users.fetch(item.userId);
-            if (user) {
-                username = user.username;
-                avatarUrl = user.displayAvatarURL({ extension: 'png', size: 64, forceStatic: true });
-            }
-        } catch (e) { }
+        // --- AVATAR CACHE SYSTEM ---
+        let avatarImage;
+        const cacheKey = item.userId;
 
-        try {
-            const avatar = await loadImage(avatarUrl);
+        if (userAvatarCache.has(cacheKey)) {
+            const cached = userAvatarCache.get(cacheKey);
+            // 10 dakika cache (Resim URL değişmediyse)
+            if (Date.now() - cached.timestamp < 10 * 60 * 1000) {
+                avatarImage = cached.image;
+            }
+        }
+
+        if (!avatarImage) {
+            try {
+                let user = client.users.cache.get(item.userId);
+                if (!user) user = await client.users.fetch(item.userId);
+                if (user) {
+                    const avatarUrl = user.displayAvatarURL({ extension: 'png', size: 64, forceStatic: true });
+                    avatarImage = await loadImage(avatarUrl);
+                    userAvatarCache.set(cacheKey, { image: avatarImage, timestamp: Date.now() });
+                }
+            } catch (e) { }
+        }
+
+        if (avatarImage) {
             const avatarSize = 40;
             ctx.save();
             applyRoundAvatar(ctx, x + 40, currentY - 5, avatarSize);
-            ctx.drawImage(avatar, x + 40, currentY - 5, avatarSize, avatarSize);
+            ctx.drawImage(avatarImage, x + 40, currentY - 5, avatarSize, avatarSize);
             ctx.restore();
+        }
+
+        // --- İSİM ---
+        let username = 'Bilinmiyor';
+        try {
+            const user = client.users.cache.get(item.userId);
+            if (user) username = user.username;
         } catch (e) { }
 
-        // İsim
         ctx.font = 'bold 16px sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.fillText(username.substring(0, 10), x + 90, currentY + 10);
 
         // Değer
         ctx.font = '14px sans-serif';
-        ctx.fillStyle = color; // Kategori rengi
+        ctx.fillStyle = color;
         let valText = '';
         if (type === 'xp') valText = `LVL ${item.level} • ${item.xp.toLocaleString()} XP`;
         else if (type === 'voice') valText = `${Math.floor(item.totalVoiceMinutes / 60)}s ${item.totalVoiceMinutes % 60}dk`;
