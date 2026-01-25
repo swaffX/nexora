@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits , MessageFlags } = require('discord.js');
 const User = require('../../../../shared/models/User');
 
 const SPECIAL_USERS = ['315875588906680330'];
@@ -30,7 +30,7 @@ module.exports = {
     async execute(interaction) {
         // Ekstra Güvenlik: Sadece Admin veya Özel ID'ler
         if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator) && !SPECIAL_USERS.includes(interaction.user.id)) {
-            return interaction.reply({ content: '❌ Bu komutu kullanmak için yetkiniz yok.', ephemeral: true });
+            return interaction.reply({ content: '❌ Bu komutu kullanmak için yetkiniz yok.', flags: MessageFlags.Ephemeral });
         }
 
         const subcommand = interaction.options.getSubcommand();

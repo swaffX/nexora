@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder , MessageFlags } = require('discord.js');
 const path = require('path');
 const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 
@@ -22,7 +22,7 @@ module.exports = {
             const diff = 86400000 - (now - lastDaily);
             const hours = Math.floor(diff / 3600000);
             const minutes = Math.floor((diff % 3600000) / 60000);
-            return interaction.reply({ content: `⏱️ Günlük ödülünü zaten aldın! **${hours} saat ${minutes} dakika** sonra tekrar gel.`, ephemeral: true });
+            return interaction.reply({ content: `⏱️ Günlük ödülünü zaten aldın! **${hours} saat ${minutes} dakika** sonra tekrar gel.`, flags: MessageFlags.Ephemeral });
         }
 
         user.balance += DAILY_REWARD;

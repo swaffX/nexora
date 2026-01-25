@@ -1,4 +1,5 @@
 const path = require('path');
+const { MessageFlags } = require('discord.js');
 const logger = require(path.join(__dirname, '..', '..', '..', 'shared', 'logger'));
 
 module.exports = {
@@ -14,7 +15,7 @@ module.exports = {
                 logger.command(interaction.user.tag, interaction.commandName, interaction.guild?.name || 'DM');
             } catch (error) {
                 logger.error(`Komut hatası: ${interaction.commandName}`, error);
-                const errorMessage = { content: '❌ Komut çalıştırılırken bir hata oluştu!', ephemeral: true };
+                const errorMessage = { content: '❌ Komut çalıştırılırken bir hata oluştu!', flags: MessageFlags.Ephemeral };
                 if (interaction.replied || interaction.deferred) {
                     await interaction.followUp(errorMessage);
                 } else {
@@ -63,7 +64,7 @@ module.exports = {
                 }
             } catch (error) {
                 logger.error('Button interaction hatası:', error);
-                const errorMsg = { content: '❌ Bir hata oluştu. Lütfen tekrar deneyin.', ephemeral: true };
+                const errorMsg = { content: '❌ Bir hata oluştu. Lütfen tekrar deneyin.', flags: MessageFlags.Ephemeral };
                 if (interaction.replied || interaction.deferred) {
                     await interaction.followUp(errorMsg).catch(() => { });
                 } else {
@@ -122,11 +123,11 @@ module.exports = {
                     if (selected === 'level_commands') content = '📈 **Seviye Sistemi:**\n`/profile` - Profilini gör\n`/leaderboard` - Sıralama';
                     if (selected === 'user_commands') content = '👤 **Kullanıcı:**\n`/avatar` - Avatarını gör\n`/banner` - Bannerını gör\n`/profil` - Gelişmiş profil';
 
-                    await interaction.reply({ content: content, ephemeral: true });
+                    await interaction.reply({ content: content, flags: MessageFlags.Ephemeral });
                 }
             } catch (error) {
                 logger.error('Select menu interaction hatası:', error);
-                const errorMsg = { content: '❌ Bir hata oluştu. Lütfen tekrar deneyin.', ephemeral: true };
+                const errorMsg = { content: '❌ Bir hata oluştu. Lütfen tekrar deneyin.', flags: MessageFlags.Ephemeral };
                 if (interaction.replied || interaction.deferred) {
                     await interaction.followUp(errorMsg).catch(() => { });
                 } else {

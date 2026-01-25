@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder , MessageFlags } = require('discord.js');
 const User = require('../../../../shared/models/User');
 
 module.exports = {
@@ -44,7 +44,7 @@ module.exports = {
         }
 
         if (betType === 'unknown') {
-            return interaction.reply({ content: '❌ Geçersiz seçim! Lütfen **kırmızı**, **siyah**, **yeşil** veya **0-36** arası bir sayı girin.', ephemeral: true });
+            return interaction.reply({ content: '❌ Geçersiz seçim! Lütfen **kırmızı**, **siyah**, **yeşil** veya **0-36** arası bir sayı girin.', flags: MessageFlags.Ephemeral });
         }
 
         // Bakiye Kontrolü
@@ -61,7 +61,7 @@ module.exports = {
             // Ancak user hiç yoksa oluşturup sonra bakiye 0 diye hata vermek daha kullanıcı dostu olabilir ama
             // oyun komutu olduğu için bakiyesi 0 olan adamın DB'de olup olmaması çok fark etmez.
             const checkUser = await User.findOne({ odasi: userId, odaId: guildId });
-            return interaction.reply({ content: `❌ Yetersiz bakiye! Mevcut: **${checkUser ? checkUser.balance : 0}**`, ephemeral: true });
+            return interaction.reply({ content: `❌ Yetersiz bakiye! Mevcut: **${checkUser ? checkUser.balance : 0}**`, flags: MessageFlags.Ephemeral });
         }
 
         // ÇEVİR

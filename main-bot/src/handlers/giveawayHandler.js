@@ -1,4 +1,5 @@
 const path = require('path');
+const { MessageFlags } = require('discord.js');
 const { Giveaway } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
 const { embeds } = require(path.join(__dirname, '..', '..', '..', 'shared', 'embeds'));
 
@@ -12,14 +13,14 @@ module.exports = {
             if (!giveaway) {
                 return interaction.reply({
                     embeds: [embeds.error('Hata', 'Çekiliş bulunamadı.')],
-                    ephemeral: true
+                    flags: MessageFlags.Ephemeral
                 });
             }
 
             if (giveaway.ended) {
                 return interaction.reply({
                     embeds: [embeds.error('Hata', 'Bu çekiliş bitmiş.')],
-                    ephemeral: true
+                    flags: MessageFlags.Ephemeral
                 });
             }
 
@@ -30,7 +31,7 @@ module.exports = {
 
                 return interaction.reply({
                     embeds: [embeds.warning('Çekilişten Çıktınız', 'Çekilişten ayrıldınız.')],
-                    ephemeral: true
+                    flags: MessageFlags.Ephemeral
                 });
             }
 
@@ -40,7 +41,7 @@ module.exports = {
 
             await interaction.reply({
                 embeds: [embeds.success('Çekilişe Katıldınız', `**${giveaway.prize}** çekilişine katıldınız!`)],
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
     }

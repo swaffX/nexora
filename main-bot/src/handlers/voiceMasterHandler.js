@@ -9,7 +9,7 @@ const {
     ModalBuilder,
     TextInputBuilder,
     TextInputStyle
-} = require('discord.js');
+, MessageFlags } = require('discord.js');
 const path = require('path');
 const { TempVoice } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
 
@@ -138,26 +138,26 @@ async function handleInteraction(interaction, client) {
 
     // Veritabanı kontrolü
     const voiceData = await TempVoice.findOne({ channelId: channelId });
-    if (!voiceData) return interaction.reply({ content: '❌ Bu oda artık aktif veritabanında yok.', ephemeral: true });
+    if (!voiceData) return interaction.reply({ content: '❌ Bu oda artık aktif veritabanında yok.', flags: MessageFlags.Ephemeral });
 
     // Yetki kontrolü (Sadece oda sahibi)
     if (interaction.user.id !== voiceData.ownerId) {
-        return interaction.reply({ content: '❌ Bu odayı sadece sahibi yönetebilir.', ephemeral: true });
+        return interaction.reply({ content: '❌ Bu odayı sadece sahibi yönetebilir.', flags: MessageFlags.Ephemeral });
     }
 
     const channel = interaction.guild.channels.cache.get(channelId);
-    if (!channel) return interaction.reply({ content: '❌ Kanal bulunamadı.', ephemeral: true });
+    if (!channel) return interaction.reply({ content: '❌ Kanal bulunamadı.', flags: MessageFlags.Ephemeral });
 
     // --- İŞLEMLER ---
 
     if (type === 'lock') {
         await channel.permissionOverwrites.edit(interaction.guild.roles.everyone, { Connect: false });
-        await interaction.reply({ content: '🔒 Oda **kilitlendi**. Sadece izinli kişiler girebilir.', ephemeral: true });
+        await interaction.reply({ content: '🔒 Oda **kilitlendi**. Sadece izinli kişiler girebilir.', flags: MessageFlags.Ephemeral });
     }
 
     if (type === 'unlock') {
         await channel.permissionOverwrites.edit(interaction.guild.roles.everyone, { Connect: true });
-        await interaction.reply({ content: '🔓 Oda **açıldı**. Herkes girebilir.', ephemeral: true });
+        await interaction.reply({ content: '🔓 Oda **açıldı**. Herkes girebilir.', flags: MessageFlags.Ephemeral });
     }
 
     if (type === 'edit') {
@@ -199,12 +199,12 @@ async function handleInteraction(interaction, client) {
     if (type === 'kick') {
         // Kanaldaki üyeleri listele
         const members = channel.members.filter(m => m.id !== interaction.user.id);
-        if (members.size === 0) return interaction.reply({ content: '❌ Odada atılacak kimse yok.', ephemeral: true });
+        if (members.size === 0) return interaction.reply({ content: '❌ Odada atılacak kimse yok.', flags: MessageFlags.Ephemeral });
 
         // Buna basitçe "kimi atmak istersin" diye select menu açabiliriz ama şimdilik basit tutalım.
         // Burada ilk kişiyi atmasın, kullanıcıya soralım.
         // V2'de UserSelectMenu eklenebilir.
-        interaction.reply({ content: '⚠️ Bu özellik şu an bakımda (UserSelectMenu eklenecek).', ephemeral: true });
+        interaction.reply({ content: '⚠️ Bu özellik şu an bakımda (UserSelectMenu eklenecek).', flags: MessageFlags.Ephemeral });
     }
 }
 
@@ -220,16 +220,16 @@ async function handleModal(interaction) {
     if (type === 'rename') {
         const newName = interaction.fields.getTextInputValue('new_name');
         await channel.setName(newName);
-        await interaction.reply({ content: `✅ Oda ismi **${newName}** olarak değiştirildi.`, ephemeral: true });
+        await interaction.reply({ content: `✅ Oda ismi **${newName}** olarak değiştirildi.`, flags: MessageFlags.Ephemeral });
     }
 
     if (type === 'limit') {
         const limitStr = interaction.fields.getTextInputValue('limit_count');
         const limit = parseInt(limitStr);
-        if (isNaN(limit)) return interaction.reply({ content: '❌ Geçerli bir sayı girin.', ephemeral: true });
+        if (isNaN(limit)) return interaction.reply({ content: '❌ Geçerli bir sayı girin.', flags: MessageFlags.Ephemeral });
 
         await channel.setUserLimit(limit);
-        await interaction.reply({ content: `✅ Oda limiti **${limit}** kişi olarak ayarlandı.`, ephemeral: true });
+        await interaction.reply({ content: `✅ Oda limiti **${limit}** kişi olarak ayarlandı.`, flags: MessageFlags.Ephemeral });
     }
 }
 

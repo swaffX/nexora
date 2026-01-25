@@ -1,5 +1,5 @@
 const path = require('path');
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder , MessageFlags } = require('discord.js');
 const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const { ITEMS, ItemType } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'gameData'));
 const { embeds } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'embeds'));
@@ -102,11 +102,11 @@ module.exports = {
             if (!item) {
                 return interaction.reply({
                     embeds: [embeds.error('Hata', 'Böyle bir eşya bulunamadı.')],
-                    ephemeral: true
+                    flags: MessageFlags.Ephemeral
                 });
             }
 
-            if (item.price <= 0) return interaction.reply({ embeds: [embeds.error('Hata', 'Bu eşya satılık değil.')], ephemeral: true });
+            if (item.price <= 0) return interaction.reply({ embeds: [embeds.error('Hata', 'Bu eşya satılık değil.')], flags: MessageFlags.Ephemeral });
 
             // Fiyat Hesaplama (İndirim Kontrolü)
             let unitPrice = item.price;
@@ -119,7 +119,7 @@ module.exports = {
                 } else if (dailyDeal.stock > 0) {
                     return interaction.reply({
                         content: `🔥 Fırsat ürününden sadece **${dailyDeal.stock}** adet kaldı! Lütfen daha az miktar girin.`,
-                        ephemeral: true
+                        flags: MessageFlags.Ephemeral
                     });
                 } else {
                     // Stok bitti, normal fiyattan alacak mı? (İsteğe bağlı, şimdilik normal fiyata dönelim)
@@ -132,7 +132,7 @@ module.exports = {
             if (userData.balance < totalPrice) {
                 return interaction.reply({
                     embeds: [embeds.error('Yetersiz Bakiye', `Eksik: **${(totalPrice - userData.balance).toLocaleString()} NexCoin**`)],
-                    ephemeral: true
+                    flags: MessageFlags.Ephemeral
                 });
             }
 

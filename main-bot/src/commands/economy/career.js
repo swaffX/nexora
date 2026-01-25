@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ComponentType } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ComponentType , MessageFlags } = require('discord.js');
 const path = require('path');
 const User = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models', 'User'));
 const { JOBS, calculateSalary, requiredXP } = require('../../utils/jobs');
@@ -62,7 +62,7 @@ module.exports = {
         // --- 2. JOBS: İş Listesi ve Seçim ---
         if (subcommand === 'jobs') {
             if (user.career.job) {
-                return interaction.reply({ content: '❌ Zaten bir işin var! Önce istifa etmelisin (`/career resign`).', ephemeral: true });
+                return interaction.reply({ content: '❌ Zaten bir işin var! Önce istifa etmelisin (`/career resign`).', flags: MessageFlags.Ephemeral });
             }
 
             const embed = new EmbedBuilder()
@@ -114,7 +114,7 @@ module.exports = {
         // --- 3. WORK: Çalışma ---
         if (subcommand === 'work') {
             if (!user.career.job) {
-                return interaction.reply({ content: '❌ İşsizken çalışamazsın! Önce iş bul (`/career jobs`).', ephemeral: true });
+                return interaction.reply({ content: '❌ İşsizken çalışamazsın! Önce iş bul (`/career jobs`).', flags: MessageFlags.Ephemeral });
             }
 
             // Cooldown Kontrolü (1 Saat)
@@ -124,7 +124,7 @@ module.exports = {
 
             if (NOW - lastWork < COOLDOWN) {
                 const remaining = Math.ceil((COOLDOWN - (NOW - lastWork)) / 60000);
-                return interaction.reply({ content: `⏳ Çok yorgunsun! Tekrar çalışmak için **${remaining} dakika** dinlenmelisin.`, ephemeral: true });
+                return interaction.reply({ content: `⏳ Çok yorgunsun! Tekrar çalışmak için **${remaining} dakika** dinlenmelisin.`, flags: MessageFlags.Ephemeral });
             }
 
             // Maaş ve XP Hesapla
@@ -173,7 +173,7 @@ module.exports = {
         // --- 4. RESIGN: İstifa ---
         if (subcommand === 'resign') {
             if (!user.career.job) {
-                return interaction.reply({ content: '❌ Zaten işsizsin.', ephemeral: true });
+                return interaction.reply({ content: '❌ Zaten işsizsin.', flags: MessageFlags.Ephemeral });
             }
 
             // Onay mekanizması eklenebilir ama basit tutalım.
@@ -187,7 +187,7 @@ module.exports = {
             };
             await user.save();
 
-            return interaction.reply({ content: `🚪 **${oldJob}** mesleğinden istifa ettin. Artık özgürsün (ve parasızsın).`, ephemeral: true });
+            return interaction.reply({ content: `🚪 **${oldJob}** mesleğinden istifa ettin. Artık özgürsün (ve parasızsın).`, flags: MessageFlags.Ephemeral });
         }
     },
 

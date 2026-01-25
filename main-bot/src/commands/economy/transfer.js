@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder , MessageFlags } = require('discord.js');
 const path = require('path');
 const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 
@@ -12,8 +12,8 @@ module.exports = {
         const target = interaction.options.getUser('user');
         const amount = interaction.options.getInteger('amount');
 
-        if (target.id === interaction.user.id) return interaction.reply({ content: 'Kendine para atamazsın.', ephemeral: true });
-        if (target.bot) return interaction.reply({ content: 'Botlara para atamazsın.', ephemeral: true });
+        if (target.id === interaction.user.id) return interaction.reply({ content: 'Kendine para atamazsın.', flags: MessageFlags.Ephemeral });
+        if (target.bot) return interaction.reply({ content: 'Botlara para atamazsın.', flags: MessageFlags.Ephemeral });
 
         // ATOMİK İŞLEM: Gönderenden düş
         const sender = await User.findOneAndUpdate(
@@ -23,7 +23,7 @@ module.exports = {
         );
 
         if (!sender) {
-            return interaction.reply({ content: '❌ Yetersiz bakiye veya hesap bulunamadı.', ephemeral: true });
+            return interaction.reply({ content: '❌ Yetersiz bakiye veya hesap bulunamadı.', flags: MessageFlags.Ephemeral });
         }
 
         // ATOMİK İŞLEM: Alıcıya ekle

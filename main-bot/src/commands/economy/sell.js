@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder , MessageFlags } = require('discord.js');
 const path = require('path');
 const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const { ITEMS } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'gameData'));
@@ -21,7 +21,7 @@ module.exports = {
 
         let user = await User.findOne({ odasi: interaction.user.id, odaId: interaction.guild.id });
         if (!user || !user.inventory || user.inventory.length === 0) {
-            return interaction.reply({ content: '❌ Satacak hiç eşyan yok!', ephemeral: true });
+            return interaction.reply({ content: '❌ Satacak hiç eşyan yok!', flags: MessageFlags.Ephemeral });
         }
 
         // HEPSİNİ SAT MODU
@@ -48,7 +48,7 @@ module.exports = {
                 }
             }
 
-            if (soldCount === 0) return interaction.reply({ content: '❌ Satılabilecek değerli bir eşyan yok.', ephemeral: true });
+            if (soldCount === 0) return interaction.reply({ content: '❌ Satılabilecek değerli bir eşyan yok.', flags: MessageFlags.Ephemeral });
 
             user.inventory = newInv;
             user.balance += totalEarnings;
@@ -85,12 +85,12 @@ module.exports = {
             slot = sortedInv.find(s => s.itemId === itemQuery || ITEMS[s.itemId].name.toLowerCase() === itemQuery);
         }
 
-        if (!slot) return interaction.reply({ content: '❌ Böyle bir eşyan yok. Sıra numarasını kontrol et.', ephemeral: true });
+        if (!slot) return interaction.reply({ content: '❌ Böyle bir eşyan yok. Sıra numarasını kontrol et.', flags: MessageFlags.Ephemeral });
 
-        if (slot.amount < amount) return interaction.reply({ content: `❌ Elinde sadece **${slot.amount}** tane var.`, ephemeral: true });
+        if (slot.amount < amount) return interaction.reply({ content: `❌ Elinde sadece **${slot.amount}** tane var.`, flags: MessageFlags.Ephemeral });
 
         const itemData = ITEMS[slot.itemId];
-        if (itemData.sellPrice <= 0) return interaction.reply({ content: '🚫 Bu eşya satılamaz!', ephemeral: true });
+        if (itemData.sellPrice <= 0) return interaction.reply({ content: '🚫 Bu eşya satılamaz!', flags: MessageFlags.Ephemeral });
 
         const earnings = itemData.sellPrice * amount;
 

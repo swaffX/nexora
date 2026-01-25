@@ -1,4 +1,4 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle , MessageFlags } = require('discord.js');
 const path = require('path');
 const { User } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
 const { embeds } = require(path.join(__dirname, '..', '..', '..', 'shared', 'embeds'));
@@ -9,7 +9,7 @@ module.exports = {
         const { customId } = interaction;
         if (!customId.startsWith('ctrl_')) return;
 
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         const userData = await User.findOrCreate(interaction.user.id, interaction.guild.id, interaction.user.username);
         const action = customId.split('_')[1];

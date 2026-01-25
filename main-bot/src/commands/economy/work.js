@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder , MessageFlags } = require('discord.js');
 const path = require('path');
 const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 
@@ -39,7 +39,7 @@ module.exports = {
             const seconds = Math.floor((remaining % 60000) / 1000);
             return interaction.reply({
                 content: `⏳ **Çok yorgunsun!** Tekrar çalışmak için **${minutes}dk ${seconds}sn** beklemelisin.`,
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 

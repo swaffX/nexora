@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle , MessageFlags } = require('discord.js');
 const path = require('path');
 const { embeds } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'embeds'));
 
@@ -18,6 +18,6 @@ module.exports = {
             );
 
         await interaction.channel.send({ embeds: [embeds.verify()], components: [row] });
-        await interaction.reply({ content: 'Kayıt mesajı gönderildi.', ephemeral: true });
+        await interaction.reply({ content: 'Kayıt mesajı gönderildi.', flags: MessageFlags.Ephemeral });
     }
 };

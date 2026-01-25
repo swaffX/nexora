@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder , MessageFlags } = require('discord.js');
 const User = require('../../../../shared/models/User');
 
 const HORSES = [
@@ -38,7 +38,7 @@ module.exports = {
         );
 
         if (!user) {
-            return interaction.reply({ content: '❌ Yetersiz bakiye!', ephemeral: true });
+            return interaction.reply({ content: '❌ Yetersiz bakiye!', flags: MessageFlags.Ephemeral });
         }
 
         // Yarış Hazırlığı

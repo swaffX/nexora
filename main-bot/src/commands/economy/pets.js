@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder , MessageFlags } = require('discord.js');
 const path = require('path');
 const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const { ITEMS, ItemType } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'gameData'));
@@ -11,7 +11,7 @@ module.exports = {
     async execute(interaction) {
         const user = await User.findOne({ odasi: interaction.user.id, odaId: interaction.guild.id });
 
-        if (!user || !user.inventory) return interaction.reply({ content: '❌ Hiçbir eşyan (veya petin) yok.', ephemeral: true });
+        if (!user || !user.inventory) return interaction.reply({ content: '❌ Hiçbir eşyan (veya petin) yok.', flags: MessageFlags.Ephemeral });
 
         // Envanterden PET olanları filtrele
         const myPets = user.inventory.filter(slot => {
@@ -79,7 +79,7 @@ module.exports = {
             user.activePet = selectedId;
             await user.save();
 
-            await i.reply({ content: `✅ **${item.name}** seninle yolculuğa çıktı! Bonusların aktif.`, ephemeral: true });
+            await i.reply({ content: `✅ **${item.name}** seninle yolculuğa çıktı! Bonusların aktif.`, flags: MessageFlags.Ephemeral });
         });
     },
 

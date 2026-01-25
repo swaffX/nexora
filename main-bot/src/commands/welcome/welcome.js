@@ -1,5 +1,5 @@
 const path = require('path');
-const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits , MessageFlags } = require('discord.js');
 const { Guild } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const { embeds } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'embeds'));
 
@@ -79,7 +79,7 @@ module.exports = {
                 if (!guildSettings.welcome.channelId) {
                     return interaction.reply({
                         embeds: [embeds.error('Hata', 'Önce hoşgeldin kanalını ayarlayın.')],
-                        ephemeral: true
+                        flags: MessageFlags.Ephemeral
                     });
                 }
 
@@ -87,7 +87,7 @@ module.exports = {
                 if (!channel) {
                     return interaction.reply({
                         embeds: [embeds.error('Hata', 'Hoşgeldin kanalı bulunamadı.')],
-                        ephemeral: true
+                        flags: MessageFlags.Ephemeral
                     });
                 }
 

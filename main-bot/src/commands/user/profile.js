@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, AttachmentBuilder } = require('discord.js');
+const { SlashCommandBuilder, AttachmentBuilder , MessageFlags } = require('discord.js');
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const User = require('../../../../shared/models/User');
 const ValorantUser = require('../../../../shared/models/ValorantUser');
@@ -37,27 +37,27 @@ module.exports = {
         // --- BİYOGRAFİ AYARLAMA ---
         if (subcommand === 'set-bio') {
             const text = interaction.options.getString('text');
-            if (text.length > 150) return interaction.reply({ content: '❌ Biyografi en fazla 150 karakter olabilir.', ephemeral: true });
+            if (text.length > 150) return interaction.reply({ content: '❌ Biyografi en fazla 150 karakter olabilir.', flags: MessageFlags.Ephemeral });
 
             await User.findOneAndUpdate(
                 { odasi: interaction.user.id, odaId: guildId },
                 { $set: { bio: text } },
                 { upsert: true, new: true, setDefaultsOnInsert: true }
             );
-            return interaction.reply({ content: '✅ Biyografi güncellendi!', ephemeral: true });
+            return interaction.reply({ content: '✅ Biyografi güncellendi!', flags: MessageFlags.Ephemeral });
         }
 
         // --- ARKAPLAN AYARLAMA ---
         if (subcommand === 'set-bg') {
             const url = interaction.options.getString('url');
-            if (!url.startsWith('http')) return interaction.reply({ content: '❌ Lütfen geçerli bir resim bağlantısı girin.', ephemeral: true });
+            if (!url.startsWith('http')) return interaction.reply({ content: '❌ Lütfen geçerli bir resim bağlantısı girin.', flags: MessageFlags.Ephemeral });
 
             await User.findOneAndUpdate(
                 { odasi: interaction.user.id, odaId: guildId },
                 { $set: { backgroundImage: url } },
                 { upsert: true, new: true, setDefaultsOnInsert: true }
             );
-            return interaction.reply({ content: '✅ Arkaplan resmi güncellendi!', ephemeral: true });
+            return interaction.reply({ content: '✅ Arkaplan resmi güncellendi!', flags: MessageFlags.Ephemeral });
         }
 
         // --- PROFİL GÖRÜNTÜLEME ---

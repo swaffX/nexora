@@ -1,4 +1,5 @@
 const path = require('path');
+const { MessageFlags } = require('discord.js');
 const { Guild } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
 const { embeds } = require(path.join(__dirname, '..', '..', '..', 'shared', 'embeds'));
 
@@ -9,10 +10,10 @@ module.exports = {
         const member = interaction.member;
 
         if (!guildSettings.register.enabled) {
-            return interaction.reply({ content: 'Kayıt sistemi şu an kapalı.', ephemeral: true });
+            return interaction.reply({ content: 'Kayıt sistemi şu an kapalı.', flags: MessageFlags.Ephemeral });
         }
 
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         const registeredRole = guildSettings.register.registeredRoleId;
         const unregisteredRole = guildSettings.register.unregisteredRoleId;

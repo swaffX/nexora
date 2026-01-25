@@ -1,4 +1,4 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits, AttachmentBuilder } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits, AttachmentBuilder , MessageFlags } = require('discord.js');
 const Ticket = require('../../../shared/models/Ticket');
 const fs = require('fs');
 
@@ -16,7 +16,7 @@ module.exports = {
         // Kontrol: Zaten açık ticketi var mı?
         const existingTicket = await Ticket.findOne({ guildId: guild.id, userId: member.id, status: 'OPEN' });
         if (existingTicket) {
-            return interaction.reply({ content: `Zaten açık bir talebiniz var: <#${existingTicket.channelId}>`, ephemeral: true });
+            return interaction.reply({ content: `Zaten açık bir talebiniz var: <#${existingTicket.channelId}>`, flags: MessageFlags.Ephemeral });
         }
 
         // Ticket ID belirle
@@ -92,17 +92,17 @@ module.exports = {
 
             await channel.send({ content: `<@${member.id}> | @here`, embeds: [embed], components: [row] });
 
-            return interaction.reply({ content: `Biletiniz oluşturuldu: <#${channel.id}>`, ephemeral: true });
+            return interaction.reply({ content: `Biletiniz oluşturuldu: <#${channel.id}>`, flags: MessageFlags.Ephemeral });
 
         } catch (error) {
             console.error(error);
-            return interaction.reply({ content: 'Bilet oluşturulurken bir hata oluştu.', ephemeral: true });
+            return interaction.reply({ content: 'Bilet oluşturulurken bir hata oluştu.', flags: MessageFlags.Ephemeral });
         }
     },
 
     async closeTicket(interaction) {
         const ticket = await Ticket.findOne({ channelId: interaction.channelId });
-        if (!ticket) return interaction.reply({ content: 'Bu kanal bir bilet kanalı değil.', ephemeral: true });
+        if (!ticket) return interaction.reply({ content: 'Bu kanal bir bilet kanalı değil.', flags: MessageFlags.Ephemeral });
 
         // Onay iste
         if (!interaction.customId.includes('_confirm')) {
@@ -117,7 +117,7 @@ module.exports = {
                         .setLabel('İptal')
                         .setStyle(ButtonStyle.Secondary)
                 );
-            return interaction.reply({ content: 'Talebi kapatmak istediğinize emin misiniz?', components: [row], ephemeral: true });
+            return interaction.reply({ content: 'Talebi kapatmak istediğinize emin misiniz?', components: [row], flags: MessageFlags.Ephemeral });
         }
 
         // Kapatma işlemi
@@ -151,7 +151,7 @@ module.exports = {
                         .setLabel('Evet, Kapat')
                         .setStyle(ButtonStyle.Danger)
                 );
-            await interaction.reply({ content: 'Talebi kapatmak istediğinize emin misiniz?', components: [row], ephemeral: true });
+            await interaction.reply({ content: 'Talebi kapatmak istediğinize emin misiniz?', components: [row], flags: MessageFlags.Ephemeral });
         } else if (customId === 'ticket_close_confirm') {
             const ticket = await Ticket.findOne({ channelId: interaction.channelId });
             if (!ticket) return interaction.channel.delete(); // DB'de yoksa direkt sil
@@ -163,7 +163,7 @@ module.exports = {
             await interaction.reply('Talep kapatılıyor...');
             setTimeout(() => interaction.channel.delete(), 5000);
         } else if (customId === 'ticket_transcript') {
-            await interaction.deferReply({ ephemeral: true });
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
             try {
                 const messages = await interaction.channel.messages.fetch({ limit: 100 });

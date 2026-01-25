@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder , MessageFlags } = require('discord.js');
 const path = require('path');
 const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const { ITEMS, ItemType } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'gameData'));
@@ -17,7 +17,7 @@ module.exports = {
         const itemQuery = interaction.options.getString('item').toLowerCase();
 
         let user = await User.findOne({ odasi: interaction.user.id, odaId: interaction.guild.id });
-        if (!user || user.inventory.length === 0) return interaction.reply({ content: '🎒 Çantan boş!', ephemeral: true });
+        if (!user || user.inventory.length === 0) return interaction.reply({ content: '🎒 Çantan boş!', flags: MessageFlags.Ephemeral });
 
         // Eşyaları Rarity'ye göre sırala (Inventory ile aynı sıra olması ŞART)
         const sortedInv = user.inventory.sort((a, b) => {
@@ -41,14 +41,14 @@ module.exports = {
         }
 
         if (!slot) {
-            return interaction.reply({ content: '❌ Bu eşya bulunamadı! `/inventory` yazıp sıra numarasına bak.', ephemeral: true });
+            return interaction.reply({ content: '❌ Bu eşya bulunamadı! `/inventory` yazıp sıra numarasına bak.', flags: MessageFlags.Ephemeral });
         }
 
         const item = ITEMS[slot.itemId];
 
         // Sadece KUTULAR kullanılabilir (şimdilik)
         if (item.type !== ItemType.BOX) {
-            return interaction.reply({ content: `🚫 **${item.name}** kullanılamaz, sadece satılabilir (/sell).`, ephemeral: true });
+            return interaction.reply({ content: `🚫 **${item.name}** kullanılamaz, sadece satılabilir (/sell).`, flags: MessageFlags.Ephemeral });
         }
 
         // Eşyayı eksilt

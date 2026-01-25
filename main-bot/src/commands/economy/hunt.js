@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder , MessageFlags } = require('discord.js');
 const path = require('path');
 const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const { ITEMS, ItemType } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'gameData'));
@@ -19,7 +19,7 @@ module.exports = {
             const expiration = interaction.client.huntCooldowns.get(interaction.user.id) + cooldownAmount;
             if (now < expiration) {
                 const timeLeft = (expiration - now) / 1000;
-                return interaction.reply({ content: `🕒 Avlanmak için **${Math.ceil(timeLeft / 60)} dakika** beklemelisin.`, ephemeral: true });
+                return interaction.reply({ content: `🕒 Avlanmak için **${Math.ceil(timeLeft / 60)} dakika** beklemelisin.`, flags: MessageFlags.Ephemeral });
             }
         }
 

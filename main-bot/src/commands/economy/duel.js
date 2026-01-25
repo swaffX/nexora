@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle , MessageFlags } = require('discord.js');
 const path = require('path');
 const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const { ITEMS } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'gameData'));
@@ -15,15 +15,15 @@ module.exports = {
         const betAmount = interaction.options.getInteger('bahis');
         const challenger = interaction.user;
 
-        if (opponent.id === challenger.id) return interaction.reply({ content: 'Kendinle savaşamazsın, deli olma!', ephemeral: true });
-        if (opponent.bot) return interaction.reply({ content: 'Botlarla savaşamazsın.', ephemeral: true });
+        if (opponent.id === challenger.id) return interaction.reply({ content: 'Kendinle savaşamazsın, deli olma!', flags: MessageFlags.Ephemeral });
+        if (opponent.bot) return interaction.reply({ content: 'Botlarla savaşamazsın.', flags: MessageFlags.Ephemeral });
 
         // DATABASE CHECK
         const p1 = await User.findOne({ odasi: challenger.id, odaId: interaction.guild.id });
         const p2 = await User.findOne({ odasi: opponent.id, odaId: interaction.guild.id });
 
-        if (!p1 || p1.balance < betAmount) return interaction.reply({ content: '❌ Senin paran yetersiz!', ephemeral: true });
-        if (!p2 || p2.balance < betAmount) return interaction.reply({ content: `❌ **${opponent.username}** kullanıcısının parası yetersiz.`, ephemeral: true });
+        if (!p1 || p1.balance < betAmount) return interaction.reply({ content: '❌ Senin paran yetersiz!', flags: MessageFlags.Ephemeral });
+        if (!p2 || p2.balance < betAmount) return interaction.reply({ content: `❌ **${opponent.username}** kullanıcısının parası yetersiz.`, flags: MessageFlags.Ephemeral });
 
         // TEKLİF EMBED
         const embed = new EmbedBuilder()
@@ -51,7 +51,7 @@ module.exports = {
             // ACCEPT
             // Paraları Kilitle (Double check balance again just in case)
             if (p1.balance < betAmount || p2.balance < betAmount) {
-                return i.reply({ content: 'Bakiye hatası oluştu, savaş iptal.', ephemeral: true });
+                return i.reply({ content: 'Bakiye hatası oluştu, savaş iptal.', flags: MessageFlags.Ephemeral });
             }
 
             p1.balance -= betAmount;

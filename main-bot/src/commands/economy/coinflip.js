@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder , MessageFlags } = require('discord.js');
 const path = require('path');
 const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 
@@ -42,7 +42,7 @@ module.exports = {
             const checkUser = await User.findOne({ odasi: userId, odaId: guildId });
             return interaction.reply({
                 content: `🚫 **Yetersiz Bakiye!**\nMevcut paran: **${checkUser ? checkUser.balance.toLocaleString() : 0}** NexCoin\nGereken: **${amount.toLocaleString()}** NexCoin`,
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
