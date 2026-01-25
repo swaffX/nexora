@@ -14,7 +14,7 @@ module.exports = {
             activities: [{
                 name: 'made by swaff',
                 type: ActivityType.Streaming,
-                url: 'https://guns.lol/swaff'
+                url: 'https://www.twitch.tv/swaffval'
             }],
             status: 'online'
         });
