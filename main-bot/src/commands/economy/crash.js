@@ -79,7 +79,8 @@ module.exports = {
             new ButtonBuilder().setCustomId('crash_cashout').setLabel('Nakit Çek 💰').setStyle(ButtonStyle.Success)
         );
 
-        msg = await interaction.reply({ embeds: [generateEmbed(1.0, 'running')], components: [row], fetchReply: true });
+        await interaction.reply({ embeds: [generateEmbed(1.0, 'running')], components: [row] });
+        msg = await interaction.fetchReply();
 
         // Oyun Loop'u
         const intervalTime = 1500; // 1.5 saniyede bir güncelle (Discord rate limit için)

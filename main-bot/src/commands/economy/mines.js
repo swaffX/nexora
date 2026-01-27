@@ -149,11 +149,12 @@ module.exports = {
             .setDescription(`**Bahis:** ${amount}\n**Çarpan:** 1.00x\n\nKutulara tıkla, elmasları bul!`)
             .setFooter({ text: 'House Edge: %5' });
 
-        const msg = await interaction.reply({
+        await interaction.reply({
             embeds: [embed],
-            components: generateComponents(revealedIndices, false),
-            withResponse: true
+            components: generateComponents(revealedIndices, false)
         });
+
+        const msg = await interaction.fetchReply();
 
         const collector = msg.createMessageComponentCollector({
             filter: i => i.user.id === userId,

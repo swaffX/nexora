@@ -39,7 +39,8 @@ Açılan pencereye bahis miktarını girmen yeterli.
 
         const row = new ActionRowBuilder().addComponents(select);
 
-        const reply = await interaction.reply({ embeds: [embed], components: [row], fetchReply: true });
+        await interaction.reply({ embeds: [embed], components: [row] });
+        const reply = await interaction.fetchReply();
 
         // Collector
         const filter = i => i.customId === 'casino_menu' && i.user.id === interaction.user.id;

@@ -101,11 +101,12 @@ module.exports = {
         );
 
         // Oyunu Başlat
-        const reply = await interaction.reply({
+        const replyResponse = await interaction.reply({
             embeds: [generateEmbed(true)],
-            components: gameOver ? [] : [buttons],
-            fetchReply: true
+            components: gameOver ? [] : [buttons]
         });
+
+        const reply = await interaction.fetchReply();
 
         if (gameOver) {
             return endGame(interaction, reply, playerHand, dealerHand, amount, deck, userId, guildId, 'natural');
