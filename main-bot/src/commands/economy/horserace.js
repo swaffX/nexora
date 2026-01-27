@@ -75,7 +75,11 @@ module.exports = {
 
                 // Finish çizgisi kontrolü
                 if (spaces >= trackLength) {
-                    track += `🏁|${HORSES[i].icon} **${HORSES[i].name}** (KAZANDI!)\n`;
+                    if (finished && i === winnerIndex) {
+                        track += `🏁|${HORSES[i].icon} **${HORSES[i].name}** (🏆 KAZANDI!)\n`;
+                    } else {
+                        track += `🏁|${HORSES[i].icon} **${HORSES[i].name}**\n`;
+                    }
                 } else {
                     track += `🏁|${'-'.repeat(spaces)}${HORSES[i].icon}${'.'.repeat(Math.max(0, remaining - 1))}|🚩 **${HORSES[i].name}**\n`;
                 }
