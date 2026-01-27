@@ -6,6 +6,20 @@ const { User } = require(path.join(__dirname, '..', '..', '..', 'shared', 'model
 module.exports = {
     name: Events.GuildMemberAdd,
     async execute(member) {
+        // 🛡️ GUARD: RAID PROTECTION
+        try {
+            const guard = require('../handlers/guardHandler');
+            const raidCheck = await guard.checkJoinRaid(member);
+
+            // Eğer koruma aktifse (Kick/Ban atıldıysa veya atılacaksa)
+            if (raidCheck && raidCheck.protected) {
+                // Log kanalına bilgi verilebilir
+                return; // Hoş geldiniz mesajı atma
+            }
+        } catch (e) {
+            console.error('Guard Raid Check Error:', e);
+        }
+
         const guild = member.guild;
         const channelId = '1464206305853177917'; // Kayıt/Hoşgeldin Kanalı
 

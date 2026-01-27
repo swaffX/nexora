@@ -114,6 +114,45 @@ module.exports = {
         }
 
         return false;
+    },
+
+    // 3. JOIN RAID PROTECTION (Hızlı Giriş Koruması)
+    checkJoinRaid: async (member) => {
+        const guildId = member.guild.id;
+        const now = Date.now();
+
+        // Join Cache Initialize
+        if (!joinMap.has(guildId)) {
+            joinMap.set(guildId, []);
+        }
+
+        const joins = joinMap.get(guildId);
+
+        // Süresi dolanları temizle (10 sn)
+        const recentJoins = joins.filter(t => now - t < 10000);
+        recentJoins.push(now);
+        joinMap.set(guildId, recentJoins);
+
+        // EŞİK KONTROLÜ (10 saniyede 5+ giriş)
+        if (recentJoins.length > 5) {
+            // RAID MODU AKTİF!
+            // Hesap Yaşı Kontrolü (3 Gün = 259200000 ms)
+            const accountAge = now - member.user.createdTimestamp;
+            const isNewAccount = accountAge < 259200000;
+
+            if (isNewAccount) {
+                // Şüpheli BOT -> KICK
+                try {
+                    await member.kick('🛡️ Nexora Guard: Anti-Raid (Hesap çok yeni ve hızlı giriş yapıldı)');
+                    return { protected: true, type: 'kick', user: member.user.tag };
+                } catch (e) { console.error('Raid kick error:', e); }
+            } else {
+                // Eski Hesap -> İZİN VER (Gerçek kullanıcı olabilir)
+                return { protected: false, type: 'safe', user: member.user.tag };
+            }
+        }
+
+        return false;
     }
 };
 
