@@ -74,242 +74,215 @@ module.exports = {
                 await doc2.save();
 
                 // OYUN DÖNGÜSÜNÜ BAŞLAT
-                startGameLoop(i, author, targetUser, amount, interaction.guild.id);
+                const gameMsg = await interaction.fetchReply();
+                runGamePhase1_Input(gameMsg, author, targetUser, amount, interaction.guild.id, 1);
             }
         });
     }
 };
 
-async function startGameLoop(interaction, p1, p2, amount, guildId) {
-    let round = 1;
-    let winner = null;
+// 1. FAZ: SAYI TUTMA
+async function runGamePhase1_Input(message, p1, p2, amount, guildId, round) {
+    try {
+        const gameState = {
+            p1: { id: p1.id, name: p1.username, number: null },
+            p2: { id: p2.id, name: p2.username, number: null }
+        };
 
-    // Ana döngü yerine rekürsif fonksiyon kullanalım çünkü interaction/modal wait yapısı karmaşık
-    // Ancak burada tek bir akış içinde state yönetmek daha temiz.
-
-    // Mesaj referansı
-    let gameMsg = await interaction.update({ content: `🎲 **TUR ${round} BAŞLIYOR!**\nSayılarınızı tutmanız bekleniyor...`, embeds: [], components: [createNumberInputRow()] });
-    // fetchReply gerekebilir update sonrası
-    gameMsg = await interaction.fetchReply();
-
-    // Oyun State
-    const gameState = {
-        p1: { id: p1.id, number: null, guess: null },
-        p2: { id: p2.id, number: null, guess: null }
-    };
-
-    // 1. INPUT PHASE (Sayı Tutma)
-    // Butona basınca Modal açılacak.
-    const inputCollector = gameMsg.createMessageComponentCollector({ componentType: ComponentType.Button, time: 60000 });
-
-    inputCollector.on('collect', async btn => {
-        if (btn.user.id !== p1.id && btn.user.id !== p2.id) return btn.reply({ content: 'Sen oyuncu değilsin.', flags: MessageFlags.Ephemeral });
-
-        // Eğer zaten sayı tuttuysa uyar
-        const playerState = btn.user.id === p1.id ? gameState.p1 : gameState.p2;
-        if (playerState.number !== null) return btn.reply({ content: 'Zaten bir sayı tuttun!', flags: MessageFlags.Ephemeral });
-
-        // Modal Aç
-        const modal = new ModalBuilder()
-            .setCustomId(`mind_input_${btn.user.id}`)
-            .setTitle('Bir Sayı Tut (1-100)');
-
-        const input = new TextInputBuilder()
-            .setCustomId('secret_num')
-            .setLabel('Sayın kaç olsun?')
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder('1 ile 100 arasında bir sayı gir')
-            .setRequired(true)
-            .setMaxLength(3);
-
-        modal.addComponents(new ActionRowBuilder().addComponents(input));
-        await btn.showModal(modal);
-
-        // Modal Cevabını Bekle (Global event handler kullanmadan burada bekleyebiliriz: awaitModalSubmit)
-        try {
-            const modalSubmit = await btn.awaitModalSubmit({ time: 30000, filter: m => m.customId === `mind_input_${btn.user.id}` });
-
-            const num = parseInt(modalSubmit.fields.getTextInputValue('secret_num'));
-            if (isNaN(num) || num < 1 || num > 100) {
-                await modalSubmit.reply({ content: '❌ Geçersiz sayı! 1-100 arası olmalı. Tekrar butona bas.', flags: MessageFlags.Ephemeral });
-                return;
-            }
-
-            playerState.number = num;
-            await modalSubmit.reply({ content: `🔒 Sayını **${num}** olarak tuttun. Rakip bekleniyor...`, flags: MessageFlags.Ephemeral });
-
-            // İkisi de tuttu mu?
-            if (gameState.p1.number !== null && gameState.p2.number !== null) {
-                inputCollector.stop();
-                startGuessPhase(gameMsg, gameState, p1, p2, amount, guildId, round);
-            }
-
-        } catch (e) {
-            // Zaman aşımı vs.
-            console.error(e);
-        }
-    });
-}
-
-function createNumberInputRow() {
-    return new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('pick_num').setLabel('Bir Sayı Tut').setStyle(ButtonStyle.Primary).setEmoji('🔢')
-    );
-}
-
-async function startGuessPhase(message, gameState, p1, p2, amount, guildId, round) {
-    // 2. GUESS PHASE
-    const embed = new EmbedBuilder()
-        .setColor('#3498db')
-        .setTitle(`🤔 TAHMİN ZAMANI (Tur ${round})`)
-        .setDescription(`İki taraf da sayısını tuttu!\n\n**Soru:** Rakibinin sayısı, senin sayından **BÜYÜK** mü **KÜÇÜK** mü?`)
-        .setFooter({ text: 'Stratejik düşün...' });
-
-    const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('guess_higher').setLabel('Daha BÜYÜK (⬆️)').setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId('guess_lower').setLabel('Daha KÜÇÜK (⬇️)').setStyle(ButtonStyle.Danger)
-    );
-
-    await message.edit({ content: '', embeds: [embed], components: [row] });
-
-    const guessCollector = message.createMessageComponentCollector({ componentType: ComponentType.Button, time: 60000 });
-
-    guessCollector.on('collect', async btn => {
-        if (btn.user.id !== p1.id && btn.user.id !== p2.id) return btn.reply({ content: 'Sıranı bekle.', flags: MessageFlags.Ephemeral });
-
-        const playerState = btn.user.id === p1.id ? gameState.p1 : gameState.p2;
-        if (playerState.guess) return btn.reply({ content: 'Zaten tahmin yaptın.', flags: MessageFlags.Ephemeral });
-
-        playerState.guess = btn.customId === 'guess_higher' ? 'higher' : 'lower';
-
-        await btn.reply({ content: `Tahminin alındı: **${playerState.guess === 'higher' ? 'BÜYÜK' : 'KÜÇÜK'}**`, flags: MessageFlags.Ephemeral });
-
-        if (gameState.p1.guess && gameState.p2.guess) {
-            guessCollector.stop();
-            resolveRound(message, gameState, p1, p2, amount, guildId, round);
-        }
-    });
-}
-
-async function resolveRound(message, gameState, p1, p2, amount, guildId, round) {
-    // Logic
-    // P1 Guess: Does P2 > P1 ?
-    const p1_is_correct = (gameState.p1.guess === 'higher' && gameState.p2.number > gameState.p1.number) ||
-        (gameState.p1.guess === 'lower' && gameState.p2.number < gameState.p1.number);
-
-    // P2 Guess: Does P1 > P2 ?
-    const p2_is_correct = (gameState.p2.guess === 'higher' && gameState.p1.number > gameState.p2.number) ||
-        (gameState.p2.guess === 'lower' && gameState.p1.number < gameState.p2.number);
-
-    // Eşitlik durumu? "Eşit" butonu yok, yani eşitse ikisi de bilememiş sayılır (veya özel kural).
-    // Basitlik için: Eşitse Lower da Higher da yanlıştır.
-
-    let resultEmbed = new EmbedBuilder()
-        .setTitle(`⚖️ TUR ${round} SONUCU`)
-        .addFields(
-            { name: `${p1.username}`, value: `Sayı: **${gameState.p1.number}**\nTahmin: ${gameState.p1.guess === 'higher' ? '⬆️' : '⬇️'}\n**${p1_is_correct ? '✅ BİLDİ' : '❌ BİLEMEDİ'}**`, inline: true },
-            { name: `${p2.username}`, value: `Sayı: **${gameState.p2.number}**\nTahmin: ${gameState.p2.guess === 'higher' ? '⬆️' : '⬇️'}\n**${p2_is_correct ? '✅ BİLDİ' : '❌ BİLEMEDİ'}**`, inline: true }
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('pick_num').setLabel('Bir Sayı Tut (Gizli)').setStyle(ButtonStyle.Primary).setEmoji('🔢')
         );
 
-    // Kazanan Belirle
-    if (p1_is_correct && !p2_is_correct) {
-        // P1 WINS
-        const winAmount = amount * 2;
-        await User.findOneAndUpdate({ odasi: p1.id, odaId: guildId }, { $inc: { balance: winAmount } });
+        await message.edit({
+            content: `🏁 **TUR ${round} BAŞLIYOR!**\nHer ikiniz de **1-100** arasında gizli bir sayı tutun.`,
+            embeds: [],
+            components: [row]
+        });
 
-        resultEmbed.setColor('#2ecc71').setDescription(`🎉 **KAZANAN:** <@${p1.id}>\n💰 **Ödül:** ${winAmount} NexCoin`);
-        await message.edit({ embeds: [resultEmbed], components: [] });
+        // Sadece 'pick_num' butonunu dinle
+        const filter = i => i.customId === 'pick_num';
+        const collector = message.createMessageComponentCollector({ filter, componentType: ComponentType.Button, time: 60000 });
 
-    } else if (p2_is_correct && !p1_is_correct) {
-        // P2 WINS
-        const winAmount = amount * 2;
-        await User.findOneAndUpdate({ odasi: p2.id, odaId: guildId }, { $inc: { balance: winAmount } });
+        collector.on('collect', async btn => {
+            if (btn.user.id !== p1.id && btn.user.id !== p2.id) {
+                return btn.reply({ content: '❌ Bu oyun senin değil.', flags: MessageFlags.Ephemeral });
+            }
 
-        resultEmbed.setColor('#2ecc71').setDescription(`🎉 **KAZANAN:** <@${p2.id}>\n💰 **Ödül:** ${winAmount} NexCoin`);
-        await message.edit({ embeds: [resultEmbed], components: [] });
+            const player = btn.user.id === p1.id ? gameState.p1 : gameState.p2;
 
+            // Zaten tuttuysa
+            if (player.number !== null) {
+                return btn.reply({ content: '✅ Sen zaten sayını tuttun, rakibi bekle.', flags: MessageFlags.Ephemeral });
+            }
+
+            // MODAL AÇ (Hemen!)
+            const modal = new ModalBuilder()
+                .setCustomId(`md_input_${btn.user.id}_r${round}`)
+                .setTitle(`Tur ${round}: Sayı Tut`);
+
+            const input = new TextInputBuilder()
+                .setCustomId('secret_num')
+                .setLabel('Sayı (1-100)')
+                .setStyle(TextInputStyle.Short)
+                .setRequired(true)
+                .setMaxLength(3);
+
+            modal.addComponents(new ActionRowBuilder().addComponents(input));
+
+            try {
+                await btn.showModal(modal);
+
+                // Modal Cevabını Bekle
+                const submit = await btn.awaitModalSubmit({ time: 30000, filter: m => m.customId === `md_input_${btn.user.id}_r${round}` });
+
+                const num = parseInt(submit.fields.getTextInputValue('secret_num'));
+
+                if (isNaN(num) || num < 1 || num > 100) {
+                    await submit.reply({ content: '❌ Geçersiz sayı! 1-100 arası olmalı.', flags: MessageFlags.Ephemeral });
+                    return;
+                }
+
+                player.number = num;
+                await submit.reply({ content: `🔒 Sayı tutuldu! (${num})`, flags: MessageFlags.Ephemeral });
+
+                // İkisi de Hazır mı?
+                if (gameState.p1.number !== null && gameState.p2.number !== null) {
+                    collector.stop(); // Bu fazı bitir
+
+                    // AYNI SAYI KONTROLÜ (İstek üzerine eklendi)
+                    if (gameState.p1.number === gameState.p2.number) {
+                        return finishGameDraw(message, gameState, p1, p2, amount, guildId);
+                    }
+
+                    // 2. Faza Geç
+                    runGamePhase2_Guess(message, gameState, p1, p2, amount, guildId, round);
+                }
+
+            } catch (err) {
+                // Modal timeout vs.
+            }
+        });
+
+    } catch (e) { console.error(e); }
+}
+
+// 2. FAZ: TAHMİN ETME
+async function runGamePhase2_Guess(message, gameState, p1, p2, amount, guildId, round) {
+    try {
+        // State'e tahminleri ekle
+        gameState.p1.guess = null;
+        gameState.p2.guess = null;
+
+        const embed = new EmbedBuilder()
+            .setColor('#3498db')
+            .setTitle(`🤔 TAHMİN ZAMANI (Tur ${round})`)
+            .setDescription(`İki taraf da sayısını tuttu!\n\n**Soru:** Rakibinin sayısı, senin sayından **BÜYÜK (⬆️)** mü **KÜÇÜK (⬇️)** mü?`)
+            .setFooter({ text: 'Doğru bilen kazanır, ikiniz de bilirseniz yeni tur!' });
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('guess_higher').setLabel('Daha BÜYÜK').setStyle(ButtonStyle.Success).setEmoji('⬆️'),
+            new ButtonBuilder().setCustomId('guess_lower').setLabel('Daha KÜÇÜK').setStyle(ButtonStyle.Danger).setEmoji('⬇️')
+        );
+
+        await message.edit({ content: '', embeds: [embed], components: [row] });
+
+        // Sadece tahmin butonlarını dinle
+        const filter = i => ['guess_higher', 'guess_lower'].includes(i.customId);
+        const collector = message.createMessageComponentCollector({ filter, componentType: ComponentType.Button, time: 60000 });
+
+        collector.on('collect', async btn => {
+            if (btn.user.id !== p1.id && btn.user.id !== p2.id) return btn.reply({ content: 'Sıranı bekle.', flags: MessageFlags.Ephemeral });
+
+            const player = btn.user.id === p1.id ? gameState.p1 : gameState.p2;
+
+            if (player.guess) return btn.reply({ content: 'Zaten tahmin yaptın.', flags: MessageFlags.Ephemeral });
+
+            // Hızlı işlem için defer (Unknown interaction fix)
+            await btn.deferUpdate();
+
+            player.guess = btn.customId === 'guess_higher' ? 'higher' : 'lower';
+            await btn.followUp({ content: `✅ Tahminin alındı: **${player.guess === 'higher' ? 'BÜYÜK' : 'KÜÇÜK'}**`, flags: MessageFlags.Ephemeral });
+
+            // İkisi de Tahmin Yaptı mı?
+            if (gameState.p1.guess && gameState.p2.guess) {
+                collector.stop(); // Faz bitti
+                resolveRound(message, gameState, p1, p2, amount, guildId, round);
+            }
+        });
+
+    } catch (e) { console.error(e); }
+}
+
+// SONUÇLAMA
+async function resolveRound(message, gameState, p1, p2, amount, guildId, round) {
+    // P1 Doğru mu? (P2'nin sayısı P1'e göre ne?)
+    // Eğer P1 'higher' dediyse ve P2 > P1 ise DOĞRU.
+    const p1_real_relation = gameState.p2.number > gameState.p1.number ? 'higher' : 'lower';
+    const p1_won = gameState.p1.guess === p1_real_relation;
+
+    // P2 Doğru mu?
+    const p2_real_relation = gameState.p1.number > gameState.p2.number ? 'higher' : 'lower';
+    const p2_won = gameState.p2.guess === p2_real_relation;
+
+    const resultEmbed = new EmbedBuilder()
+        .setTitle(`⚖️ TUR ${round} SONUCU`)
+        .addFields(
+            {
+                name: `${gameState.p1.name}`,
+                value: `Sayı: **${gameState.p1.number}**\nTahmin: ${gameState.p1.guess === 'higher' ? '⬆️' : '⬇️'}\nSonuç: ${p1_won ? '✅ BİLDİ' : '❌ BİLEMEDİ'}`,
+                inline: true
+            },
+            {
+                name: `${gameState.p2.name}`,
+                value: `Sayı: **${gameState.p2.number}**\nTahmin: ${gameState.p2.guess === 'higher' ? '⬆️' : '⬇️'}\nSonuç: ${p2_won ? '✅ BİLDİ' : '❌ BİLEMEDİ'}`,
+                inline: true
+            }
+        );
+
+    // KAZANAN VAR MI?
+    if (p1_won && !p2_won) {
+        finishGameWin(message, p1, amount, guildId, resultEmbed);
+    } else if (p2_won && !p1_won) {
+        finishGameWin(message, p2, amount, guildId, resultEmbed);
     } else {
-        // DRAW (Both correct or Both wrong)
-        resultEmbed.setColor('#e67e22').setDescription('🤝 **BERABERE!** Kimse (veya herkes) bildi.\n\n🔄 **Yeni tur başlıyor...**');
+        // BERABERE (İkisi de bildi veya ikisi de bilemedi) -> YENİ TUR
+        resultEmbed.setColor('#e67e22').setDescription('🤝 **BERABERE!** Yeni tur başlıyor... 🔄');
         await message.edit({ embeds: [resultEmbed], components: [] });
 
+        // 3 sn bekle ve yeni tura (FAZ 1) dön
         setTimeout(() => {
-            // Restart Loop
-            // Reset State for next round
-            // Fonksiyonu tekrar çağırmak yerine, döngüyü yeniden başlatacak bir yapı lazım.
-            // Ancak JS'de recursion ile yapalım.
-            startGameLoop({ update: async (opts) => await message.edit(opts), fetchReply: async () => message, guild: { id: guildId } }, p1, p2, amount, guildId);
-            // Note: interaction mockluyoruz çünkü startGameLoop interaction.update bekliyor.
-            // message.edit interaction.update ile benzer işlev görür (eğer reply ise).
-            // En temizi sıfırdan "startGuessPhase" değil "startGameLoop" çağırmak.
-            // Ama startGameLoop'da "createMessageComponentCollector" message üzerinden çağrılıyor.
-            // Mock obje biraz sakat olabilir. 
-            // Direct message referansıyla devam edelim.
-
-            // YENİ TUR LOGIC (Refactored for recursion)
-            restartGame(message, p1, p2, amount, guildId, round + 1);
-
+            runGamePhase1_Input(message, p1, p2, amount, guildId, round + 1);
         }, 3000);
     }
 }
 
-async function restartGame(message, p1, p2, amount, guildId, round) {
-    // Reset state and show inputs again
-    const gameState = {
-        p1: { id: p1.id, number: null, guess: null },
-        p2: { id: p2.id, number: null, guess: null }
-    };
+// BİTİŞ: BERABERE (AYNI SAYI)
+async function finishGameDraw(message, gameState, p1, p2, amount, guildId) {
+    // Paraları İade Et
+    await User.findOneAndUpdate({ odasi: p1.id, odaId: guildId }, { $inc: { balance: amount } });
+    await User.findOneAndUpdate({ odasi: p2.id, odaId: guildId }, { $inc: { balance: amount } });
 
-    await message.edit({ content: `🎲 **TUR ${round} BAŞLIYOR!**\nSayılarınızı tekrar tutun...`, embeds: [], components: [createNumberInputRow()] });
+    const embed = new EmbedBuilder()
+        .setColor('#95a5a6')
+        .setTitle('🤝 OYUN BİTTİ - BERABERE!')
+        .setDescription(`İkiniz de **${gameState.p1.number}** sayısını tuttunuz!\n\n💸 **Paralar iade edildi.**`);
 
-    // Re-bind Input Collector logic...
-    // Kod tekrarını önlemek için input collector logic'ini ayrıştırabilirdik ama 
-    // şimdilik kopyalayalım veya startGameLoop'u modifiye edelim.
-    // En iyisi startGameLoop'u parametre olarak 'message' alacak hale getirmek.
+    await message.edit({ content: '', embeds: [embed], components: [] });
+}
 
-    // Basitlik adina: startGameLoop logic'ini buraya duplicate etmek yerine,
-    // execute içindeki çağrıyı da buna yönlendirelim.
-    // Ancak interaction vs message farkı var.
+// BİTİŞ: KAZANAN
+async function finishGameWin(message, winner, amount, guildId, resultEmbed) {
+    const winAmount = amount * 2;
+    await User.findOneAndUpdate({ odasi: winner.id, odaId: guildId }, { $inc: { balance: winAmount } });
 
-    // ÇÖZÜM: Input collectoru tekrar tanımlıyoruz (Hızlı çözüm)
-    const inputCollector = message.createMessageComponentCollector({ componentType: ComponentType.Button, time: 60000 });
+    resultEmbed.setColor('#2ecc71')
+        .setDescription(`🎉 **KAZANAN:** <@${winner.id}>\n💰 **Ödül:** ${winAmount} NexCoin`);
 
-    inputCollector.on('collect', async btn => {
-        if (btn.user.id !== p1.id && btn.user.id !== p2.id) return btn.reply({ content: 'Sen oyuncu değilsin.', flags: MessageFlags.Ephemeral });
+    await message.edit({ embeds: [resultEmbed], components: [] });
 
-        const playerState = btn.user.id === p1.id ? gameState.p1 : gameState.p2;
-        if (playerState.number !== null) return btn.reply({ content: 'Zaten bir sayı tuttun!', flags: MessageFlags.Ephemeral });
-
-        const modal = new ModalBuilder()
-            .setCustomId(`mind_input_${btn.user.id}_r${round}`) // Unique ID per round
-            .setTitle(`Tur ${round}: Sayı Tut (1-100)`);
-
-        const input = new TextInputBuilder()
-            .setCustomId('secret_num')
-            .setLabel('Sayın kaç olsun?')
-            .setStyle(TextInputStyle.Short)
-            .setRequired(true)
-            .setMaxLength(3);
-
-        modal.addComponents(new ActionRowBuilder().addComponents(input));
-        await btn.showModal(modal);
-
-        try {
-            const modalSubmit = await btn.awaitModalSubmit({ time: 30000, filter: m => m.customId === `mind_input_${btn.user.id}_r${round}` });
-            const num = parseInt(modalSubmit.fields.getTextInputValue('secret_num'));
-
-            if (isNaN(num) || num < 1 || num > 100) {
-                await modalSubmit.reply({ content: 'Geçersiz sayı.', flags: MessageFlags.Ephemeral });
-                return;
-            }
-
-            playerState.number = num;
-            await modalSubmit.reply({ content: `🔒 Sayını **${num}** olarak tuttun.`, flags: MessageFlags.Ephemeral });
-
-            if (gameState.p1.number !== null && gameState.p2.number !== null) {
-                inputCollector.stop();
-                startGuessPhase(message, gameState, p1, p2, amount, guildId, round);
-            }
-        } catch (e) { }
-    });
+    // Quest
+    try {
+        const { updateQuestProgress } = require('../../utils/questManager');
+        await updateQuestProgress({ odasi: winner.id, odaId: guildId }, 'gamble', 1);
+    } catch (e) { }
 }
