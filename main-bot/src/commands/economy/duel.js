@@ -130,6 +130,9 @@ module.exports = {
                             return move.reply({ content: '⏳ Sıra sende değil!', flags: MessageFlags.Ephemeral });
                         }
 
+                        // HIZLI CEVAP: Etkileşimi hemen kabul et
+                        await move.deferUpdate();
+
                         const attacker = game.turn === game.p1.id ? game.p1 : game.p2;
                         const defender = game.turn === game.p1.id ? game.p2 : game.p1;
                         let log = '';
@@ -180,7 +183,7 @@ module.exports = {
                                 .setDescription(`👑 **KAZANAN:** <@${attacker.id}>\n💀 **Kaybeden:** <@${defender.id}>\n\n💰 **Ödül:** ${winAmount} NexCoin`)
                                 .addFields({ name: 'Son Durum', value: game.logs.slice(-3).join('\n') });
 
-                            await move.update({ embeds: [finishEmbed], components: [] });
+                            await move.editReply({ embeds: [finishEmbed], components: [] });
 
                             // Quest Update
                             try {
@@ -191,13 +194,11 @@ module.exports = {
                         } else {
                             // SIRA DEĞİŞTİR
                             game.turn = defender.id;
-                            await move.update({ embeds: [getGameEmbed()], components: [getGameRow(game.turn)] });
+                            await move.editReply({ embeds: [getGameEmbed()], components: [getGameRow(game.turn)] });
                         }
                     } catch (e) {
                         console.error('Duel Game Error:', e);
-                        if (!move.replied && !move.deferred) {
-                            await move.reply({ content: '⚠️ Bir hata oluştu.', flags: MessageFlags.Ephemeral });
-                        }
+                        // deferUpdate yapıldığı için followUp veya editReply gerekebilir ama hata durumunda sessiz kalabiliriz.
                     }
                 });
             }
