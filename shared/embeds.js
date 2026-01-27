@@ -115,11 +115,26 @@ ${formatList(data.voice, 'voice')}
 
     verify: () => {
         return new EmbedBuilder()
-            .setColor(colors.success)
-            .setTitle('✅ Sunucu Kayıt İşlemi')
-            .setDescription('Sunucumuza erişmek için lütfen aşağıdaki butona tıklayarak kaydınızı tamamlayın.\n\nKuralları okuduğunuzu ve kabul ettiğinizi beyan edersiniz.')
-            .setFooter({ text: 'Nexora Security' });
-        // Placeholder thumbnail KALDIRILDI
+            .setColor(0x2B2D31) // Koyu Gri / Siyah Tema
+            .setTitle('🚀 NEXORA\'ya Katıl')
+            .setDescription(`
+Merhabalar, **Nexora** sunucusuna hoş geldiniz!
+Sunucumuza erişim sağlamak ve topluluğumuzun bir parçası olmak için kayıt olmanız gerekmektedir.
+
+**🔐 Neden Kayıt Olmalıyım?**
+• 🛡️ Sunucu güvenliğini sağlamak için.
+• 💬 Sohbet odalarına ve sesli kanallara erişim için.
+• 🎉 Etkinliklere ve çekilişlere katılabilmek için.
+• 🤖 Gelişmiş bot özelliklerini kullanabilmek için.
+
+**📜 Nasıl Kayıt Olurum?**
+Aşağıdaki **"Kayıt Ol"** butonuna tıklayarak saniyeler içinde kaydınızı tamamlayabilirsiniz.
+Butona tıkladığınızda sunucu kurallarını okumuş ve kabul etmiş sayılırsınız.
+
+_Keyifli vakit geçirmeniz dileğiyle!_
+            `)
+            .setImage('https://cdn.discordapp.com/attachments/531892263652032522/1464235225818075147/standard_2.gif?ex=69795812&is=69780692&hm=38d32a4728d978f24f28e48049aa6d6a8b9be3d9daf7e8caae19b02b40ed691c&')
+            .setFooter({ text: 'Nexora Security Systems • Güvenli Kayıt', iconURL: 'https://cdn.discordapp.com/emojis/1131182289455648839.gif' });
     },
 
     goodbye: (member, message) => {
