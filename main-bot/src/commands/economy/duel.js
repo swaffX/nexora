@@ -125,72 +125,79 @@ module.exports = {
                 const gameCollector = msg.createMessageComponentCollector({ time: 300000 }); // 5 dakika max oyun süresi
 
                 gameCollector.on('collect', async move => {
-                    if (move.user.id !== game.turn) {
-                        return move.reply({ content: '⏳ Sıra sende değil!', flags: MessageFlags.Ephemeral });
-                    }
+                    try {
+                        if (move.user.id !== game.turn) {
+                            return move.reply({ content: '⏳ Sıra sende değil!', flags: MessageFlags.Ephemeral });
+                        }
 
-                    const attacker = game.turn === game.p1.id ? game.p1 : game.p2;
-                    const defender = game.turn === game.p1.id ? game.p2 : game.p1;
-                    let log = '';
-                    let damage = 0;
+                        const attacker = game.turn === game.p1.id ? game.p1 : game.p2;
+                        const defender = game.turn === game.p1.id ? game.p2 : game.p1;
+                        let log = '';
+                        let damage = 0;
 
-                    // HAMLE LOGIĞI
-                    if (move.customId === 'atk') {
-                        damage = Math.floor(Math.random() * (20 - 12 + 1)) + 12; // 12-20
-                        const isCrit = Math.random() < 0.10; // %10 Crit
-                        if (isCrit) { damage = Math.floor(damage * 1.5); log = `🎯 **KRİTİK!** ${attacker.name}, ${defender.name}'a **${damage}** hasar vurdu!`; }
-                        else { log = `🗡️ ${attacker.name}, ${defender.name}'a **${damage}** hasar vurdu.`; }
+                        // HAMLE LOGIĞI
+                        if (move.customId === 'atk') {
+                            damage = Math.floor(Math.random() * (20 - 12 + 1)) + 12; // 12-20
+                            const isCrit = Math.random() < 0.10; // %10 Crit
+                            if (isCrit) { damage = Math.floor(damage * 1.5); log = `🎯 **KRİTİK!** ${attacker.name}, ${defender.name}'a **${damage}** hasar vurdu!`; }
+                            else { log = `🗡️ ${attacker.name}, ${defender.name}'a **${damage}** hasar vurdu.`; }
 
-                        defender.hp -= damage;
-                    }
-                    else if (move.customId === 'hv_atk') {
-                        // %40 Iskalar
-                        if (Math.random() < 0.40) {
-                            log = `💨 ${attacker.name} ağır bir darbe denedi ama **ISKALADI!**`;
-                        } else {
-                            damage = Math.floor(Math.random() * (50 - 30 + 1)) + 30; // 30-50
-                            log = `🪓 **GÜM!** ${attacker.name}, ${defender.name}'ın kafasına **${damage}** vurdu!`;
                             defender.hp -= damage;
                         }
-                    }
-                    else if (move.customId === 'heal') {
-                        if (attacker.potions > 0) {
-                            const heal = Math.floor(Math.random() * (30 - 15 + 1)) + 15; // 15-30
-                            attacker.hp = Math.min(attacker.hp + heal, 100);
-                            attacker.potions--;
-                            log = `🧪 ${attacker.name} iksir içti ve **${heal}** can yeniledi.`;
+                        else if (move.customId === 'hv_atk') {
+                            // %40 Iskalar
+                            if (Math.random() < 0.40) {
+                                log = `💨 ${attacker.name} ağır bir darbe denedi ama **ISKALADI!**`;
+                            } else {
+                                damage = Math.floor(Math.random() * (50 - 30 + 1)) + 30; // 30-50
+                                log = `🪓 **GÜM!** ${attacker.name}, ${defender.name}'ın kafasına **${damage}** vurdu!`;
+                                defender.hp -= damage;
+                            }
                         }
-                    }
+                        else if (move.customId === 'heal') {
+                            if (attacker.potions > 0) {
+                                const heal = Math.floor(Math.random() * (30 - 15 + 1)) + 15; // 15-30
+                                attacker.hp = Math.min(attacker.hp + heal, 100);
+                                attacker.potions--;
+                                log = `🧪 ${attacker.name} iksir içti ve **${heal}** can yeniledi.`;
+                            }
+                        }
 
-                    game.logs.push(log);
+                        game.logs.push(log);
 
-                    // ÖLÜM KONTROLÜ
-                    if (defender.hp <= 0) {
-                        defender.hp = 0;
-                        gameCollector.stop('finished');
+                        // ÖLÜM KONTROLÜ
+                        if (defender.hp <= 0) {
+                            defender.hp = 0;
+                            gameCollector.stop('finished');
 
-                        const winAmount = amount * 2;
-                        // Winner'a para ver
-                        await User.findOneAndUpdate({ odasi: attacker.id, odaId: guildId }, { $inc: { balance: winAmount } });
+                            const winAmount = amount * 2;
+                            // Winner'a para ver
+                            await User.findOneAndUpdate({ odasi: attacker.id, odaId: guildId }, { $inc: { balance: winAmount } });
 
-                        const finishEmbed = new EmbedBuilder()
-                            .setColor('#f1c40f')
-                            .setTitle('🏆 DÜELLO BİTTİ!')
-                            .setDescription(`👑 **KAZANAN:** <@${attacker.id}>\n💀 **Kaybeden:** <@${defender.id}>\n\n💰 **Ödül:** ${winAmount} NexCoin`)
-                            .addFields({ name: 'Son Durum', value: game.logs.slice(-3).join('\n') });
+                            const finishEmbed = new EmbedBuilder()
+                                .setColor('#f1c40f')
+                                .setTitle('🏆 DÜELLO BİTTİ!')
+                                .setDescription(`👑 **KAZANAN:** <@${attacker.id}>\n💀 **Kaybeden:** <@${defender.id}>\n\n💰 **Ödül:** ${winAmount} NexCoin`)
+                                .addFields({ name: 'Son Durum', value: game.logs.slice(-3).join('\n') });
 
-                        await move.update({ embeds: [finishEmbed], components: [] });
+                            await move.update({ embeds: [finishEmbed], components: [] });
 
-                        // Quest Update
-                        try {
-                            const { updateQuestProgress } = require('../../utils/questManager');
-                            await updateQuestProgress({ odasi: attacker.id, odaId: guildId }, 'gamble', 1);
-                        } catch (e) { }
+                            // Quest Update
+                            try {
+                                const { updateQuestProgress } = require('../../utils/questManager');
+                                await updateQuestProgress({ odasi: attacker.id, odaId: guildId }, 'gamble', 1);
+                            } catch (e) { }
 
-                    } else {
-                        // SIRA DEĞİŞTİR
-                        game.turn = defender.id;
-                        await move.update({ embeds: [getGameEmbed()], components: [getGameRow(game.turn)] });
+                        } else {
+                            // SIRA DEĞİŞTİR
+                            game.turn = defender.id;
+                            await move.update({ embeds: [getGameEmbed()], components: [getGameRow(game.turn)] });
+                        }
+                    } catch (e) {
+                        console.error('Duel Game Error:', e);
+                        if (!move.replied && !move.deferred) {
+                            await move.reply({ content: '⚠️ Bir hata oluştu.', flags: MessageFlags.Ephemeral });
+                        }
                     }
                 });
             }
