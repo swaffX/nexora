@@ -1,4 +1,4 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits, AttachmentBuilder , MessageFlags } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits, AttachmentBuilder, MessageFlags } = require('discord.js');
 const Ticket = require('../../../shared/models/Ticket');
 const fs = require('fs');
 
@@ -42,20 +42,15 @@ module.exports = {
                 name: channelName,
                 type: ChannelType.GuildText,
                 parent: category.id,
+                parent: category.id,
                 permissionOverwrites: [
-                    {
-                        id: guild.id,
-                        deny: [PermissionFlagsBits.ViewChannel]
-                    },
-                    {
-                        id: member.id,
-                        allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.AttachFiles]
-                    },
-                    {
-                        id: interaction.client.user.id,
-                        allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels]
-                    }
-                    // Buraya yetkili rolü de eklenebilir
+                    { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+                    { id: member.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.AttachFiles] },
+                    { id: interaction.client.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels] },
+
+                    // Yetkili Rolleri
+                    { id: '1463875320242507877', allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels] }, // Rol 1
+                    { id: '1463875319357509695', allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels] }  // Rol 2
                 ]
             });
 
@@ -74,6 +69,7 @@ module.exports = {
                 .setTitle(`${TICKET_CATEGORIES[type].label} #${ticketNu}`)
                 .setDescription(`Merhaba <@${member.id}>,\n\nDestek talebiniz oluşturuldu. Yetkililer en kısa sürede sizinle ilgilenecektir.\nLütfen sorununuzu detaylı bir şekilde açıklayın.`)
                 .setColor('#2f3136')
+                .setImage('https://cdn.discordapp.com/attachments/531892263652032522/1464235225818075147/standard_2.gif?ex=69795812&is=69780692&hm=38d32a4728d978f24f28e48049aa6d6a8b9be3d9daf7e8caae19b02b40ed691c&')
                 .setTimestamp();
 
             const row = new ActionRowBuilder()
@@ -137,6 +133,12 @@ module.exports = {
         if (!interaction.isButton()) return;
 
         const { customId } = interaction;
+
+        if (customId === 'create_ticket') {
+            // Verify panelinden gelen Destek butonu -> Destek Talebi olarak işlem görür
+            await this.createTicket(interaction, 'support');
+            return;
+        }
 
         if (customId.startsWith('ticket_create_')) {
             const type = customId.replace('ticket_create_', '');

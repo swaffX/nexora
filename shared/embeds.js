@@ -122,10 +122,10 @@ Merhabalar, **Nexora** sunucusuna hoş geldiniz!
 Sunucumuza erişim sağlamak ve topluluğumuzun bir parçası olmak için kayıt olmanız gerekmektedir.
 
 **🔐 Neden Kayıt Olmalıyım?**
-• 🛡️ Sunucu güvenliğini sağlamak için.
-• 💬 Sohbet odalarına ve sesli kanallara erişim için.
-• 🎉 Etkinliklere ve çekilişlere katılabilmek için.
-• 🤖 Gelişmiş bot özelliklerini kullanabilmek için.
+• <a:Loading:1246429704655732756> Sunucu güvenliğini sağlamak için.
+• <a:Loading:1246429704655732756> Sohbet odalarına ve sesli kanallara erişim için.
+• <a:Loading:1246429704655732756> Etkinliklere ve çekilişlere katılabilmek için.
+• <a:Loading:1246429704655732756> Gelişmiş bot özelliklerini kullanabilmek için.
 
 **📜 Nasıl Kayıt Olurum?**
 Aşağıdaki **"Kayıt Ol"** butonuna tıklayarak saniyeler içinde kaydınızı tamamlayabilirsiniz.

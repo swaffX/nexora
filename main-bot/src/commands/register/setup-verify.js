@@ -14,17 +14,17 @@ module.exports = {
                     .setCustomId('verify_user')
                     .setLabel('Kayıt Ol')
                     .setStyle(ButtonStyle.Success) // Yeşil renk kayıt için daha davetkar
-                    .setEmoji('📝'),
+                    .setEmoji('<a:welcome3:1246429706346303489>'),
                 new ButtonBuilder()
                     .setLabel('Kurallar')
                     .setStyle(ButtonStyle.Secondary)
-                    .setCustomId('rules_modal') // Modal açtırabiliriz veya link verebiliriz
+                    .setCustomId('rules_modal')
                     .setEmoji('📜'),
                 new ButtonBuilder()
                     .setLabel('Destek')
                     .setStyle(ButtonStyle.Danger)
-                    .setCustomId('create_ticket') // Ticket sistemine bağlayabiliriz
-                    .setEmoji('🆘')
+                    .setCustomId('create_ticket')
+                    .setEmoji('🎫') // 🆘 yerine daha uygun bir bilet emojisi
             );
 
         await interaction.channel.send({ embeds: [embeds.verify()], components: [row] });
