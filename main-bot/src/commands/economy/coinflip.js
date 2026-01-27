@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder , MessageFlags } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
 const path = require('path');
 const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 
@@ -10,11 +10,10 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('coinflip')
         .setDescription('Bahisli Yazı Tura Oyunu')
-        .addIntegerOption(option =>
+        .addStringOption(option =>
             option.setName('miktar')
-                .setDescription('Bahis miktarı')
-                .setRequired(true)
-                .setMinValue(50))
+                .setDescription('Bahis miktarı (veya \'all\')')
+                .setRequired(true))
         .addStringOption(option =>
             option.setName('secim')
                 .setDescription('Yazı mı Tura mı?')
@@ -22,12 +21,27 @@ module.exports = {
                 .addChoices({ name: '🟡 Yazı', value: 'yazi' }, { name: '⚪ Tura', value: 'tura' })),
 
     async execute(interaction) {
-        const amount = interaction.options.getInteger('miktar');
+        const amountInput = interaction.options.getString('miktar');
         const choice = interaction.options.getString('secim');
         const userId = interaction.user.id;
         const guildId = interaction.guild.id;
 
-        // 1. Bakiye Kontrolü
+        // Kullanıcıyı önceden çek (all logic için) - Ancak atomik işlemden önce bir okuma
+        let userCheck = await User.findOne({ odasi: userId, odaId: guildId });
+        if (!userCheck) {
+            return interaction.reply({ content: '❌ Kaydınız bulunamadı.', flags: MessageFlags.Ephemeral });
+        }
+
+        let amount = 0;
+        if (['all', 'hepsi', 'tümü'].includes(amountInput.toLowerCase())) {
+            amount = userCheck.balance;
+        } else {
+            amount = parseInt(amountInput);
+            if (isNaN(amount) || amount < 50) {
+                return interaction.reply({ content: '❌ Geçersiz miktar. Minimum 50 olmalı.', flags: MessageFlags.Ephemeral });
+            }
+        }
+
         // 1. & 2. ATOMİK İŞLEM (Bakiye Kontrol + Düşüm)
         let user = await User.findOneAndUpdate(
             { odasi: userId, odaId: guildId, balance: { $gte: amount } },
@@ -36,12 +50,8 @@ module.exports = {
         );
 
         if (!user) {
-            // User yoksa oluştur (Balance 0) veya yetersiz bakiye
-            // Eğer user hiç yoksa findOneAndUpdate null döner, bu durumda create edip tekrar kontrol etmek yerine
-            // direkt hata dönmek daha güvenli. Oyun oynamak için önce para kazanmalı.
-            const checkUser = await User.findOne({ odasi: userId, odaId: guildId });
             return interaction.reply({
-                content: `🚫 **Yetersiz Bakiye!**\nMevcut paran: **${checkUser ? checkUser.balance.toLocaleString() : 0}** NexCoin\nGereken: **${amount.toLocaleString()}** NexCoin`,
+                content: `🚫 **Yetersiz Bakiye!**\nMevcut paran: **${userCheck.balance.toLocaleString()}** NexCoin\nGereken: **${amount.toLocaleString()}** NexCoin`,
                 flags: MessageFlags.Ephemeral
             });
         }

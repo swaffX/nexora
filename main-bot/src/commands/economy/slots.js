@@ -7,19 +7,45 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('slots')
         .setDescription('Slot makinesini çevir')
-        .addIntegerOption(opt =>
+        .addStringOption(opt =>
             opt.setName('bahis')
-                .setDescription('Bahis miktarı')
-                .setMinValue(10)
-                .setMaxValue(50000)
+                .setDescription('Bahis miktarı (veya \'all\')')
                 .setRequired(true)),
 
     async execute(interaction) {
-        const bet = interaction.options.getInteger('bahis');
+        const betInput = interaction.options.getString('bahis');
         const userId = interaction.user.id;
         const guildId = interaction.guild.id;
 
-        // 1. Bakiye Kontrol ve Düşüm (Atomik)
+        // Kullanıcıyı bul
+        let user = await User.findOne({ odasi: userId, odaId: guildId });
+        if (!user) {
+            return interaction.reply({
+                content: `❌ Henüz hesabın oluşmamış. Bir mesaj atarak oluşturabilirsin.`,
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        // Miktar Hesapla
+        let bet = 0;
+        if (['all', 'hepsi', 'tümü'].includes(betInput.toLowerCase())) {
+            bet = user.balance;
+        } else {
+            bet = parseInt(betInput);
+            if (isNaN(bet)) {
+                return interaction.reply({ content: '❌ Geçerli bir sayı veya \'all\' girmelisin.', flags: MessageFlags.Ephemeral });
+            }
+        }
+
+        if (bet < 10) {
+            return interaction.reply({ content: '❌ Minimum bahis miktarı **10** NexCoin.', flags: MessageFlags.Ephemeral });
+        }
+
+        if (bet > 50000 && betInput.toLowerCase() !== 'all') { // 'all' limiti aşabilir
+            // İsteğe bağlı max limit kontrolü buraya
+        }
+
+        // Bakiye Kontrol ve Düşüm (Atomik)
         const userData = await User.findOneAndUpdate(
             { odasi: userId, odaId: guildId, balance: { $gte: bet } },
             { $inc: { balance: -bet } },
@@ -27,9 +53,8 @@ module.exports = {
         );
 
         if (!userData) {
-            const current = await User.findOne({ odasi: userId, odaId: guildId });
             return interaction.reply({
-                embeds: [embeds.error('Yetersiz Bakiye', `Bu bahis için **${(bet - (current?.balance || 0)).toLocaleString()} NexCoin** eksiğiniz var.`)]
+                embeds: [embeds.error('Yetersiz Bakiye', `Bu bahis için **${(bet - (user?.balance || 0)).toLocaleString()} NexCoin** eksiğiniz var.`)]
             });
         }
 

@@ -1,23 +1,22 @@
-const { SlashCommandBuilder, EmbedBuilder , MessageFlags } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
 const User = require('../../../../shared/models/User');
 
 const HORSES = [
     { name: 'Gülbatur', icon: '🐎', speed: { min: 4, max: 9 } },
-    { name: 'Şahbatur', icon: '🦄', speed: { min: 3, max: 10 } },
+    { name: 'Şahbatur', icon: '🦄', speed: { min: 4, max: 10 } }, // Min arttırıldı
     { name: 'Rüzgar', icon: '🦓', speed: { min: 5, max: 8 } },
-    { name: 'Fırtına', icon: '🐂', speed: { min: 2, max: 12 } },
-    { name: 'Yıldırım', icon: '🐆', speed: { min: 6, max: 7 } } // Stabil
+    { name: 'Fırtına', icon: '🐂', speed: { min: 3, max: 9 } }, // Max düşürüldü (Nerf)
+    { name: 'Yıldırım', icon: '🐆', speed: { min: 5, max: 8 } }
 ];
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('horserace')
         .setDescription('At yarışı oynayarak bahis yap!')
-        .addIntegerOption(option =>
+        .addStringOption(option =>
             option.setName('bahis')
-                .setDescription('Bahis miktarı')
-                .setRequired(true)
-                .setMinValue(100))
+                .setDescription('Bahis miktarı (veya \'all\')')
+                .setRequired(true))
         .addIntegerOption(option =>
             option.setName('at')
                 .setDescription('Hangi ata oynuyorsun? (1-5)')
@@ -26,9 +25,23 @@ module.exports = {
                 .setMaxValue(5)),
 
     async execute(interaction) {
-        const amount = interaction.options.getInteger('bahis');
+        const amountInput = interaction.options.getString('bahis');
         const horseIndex = interaction.options.getInteger('at') - 1;
         const selectedHorse = HORSES[horseIndex];
+
+        // Kullanıcı Kontrol
+        let userCheck = await User.findOne({ odasi: interaction.user.id, odaId: interaction.guild.id });
+        if (!userCheck) return interaction.reply({ content: '❌ Hesabınız yok.', flags: MessageFlags.Ephemeral });
+
+        let amount = 0;
+        if (['all', 'hepsi', 'tümü'].includes(amountInput.toLowerCase())) {
+            amount = userCheck.balance;
+        } else {
+            amount = parseInt(amountInput);
+            if (isNaN(amount) || amount < 100) {
+                return interaction.reply({ content: '❌ Geçersiz miktar. Minimum 100 olmalı.', flags: MessageFlags.Ephemeral });
+            }
+        }
 
         // 1. Bakiye Kontrol (Atomik)
         const user = await User.findOneAndUpdate(
@@ -86,7 +99,14 @@ module.exports = {
 
             if (finishers.length > 0) {
                 // En uzağa gideni bul (Beraberlik çözümü)
-                const winner = finishers.sort((a, b) => b.pos - a.pos)[0]; // En yüksek pozisyon
+                // Sort descending by position
+                finishers.sort((a, b) => b.pos - a.pos);
+
+                // Eğer tam eşitlik varsa rastgele birini seç
+                const topPos = finishers[0].pos;
+                const topHorses = finishers.filter(f => f.pos === topPos);
+                const winner = topHorses[Math.floor(Math.random() * topHorses.length)]; // Random pick if tie
+
                 winnerIndex = winner.index;
                 finished = true;
             }

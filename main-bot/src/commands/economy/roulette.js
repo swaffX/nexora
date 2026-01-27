@@ -1,4 +1,4 @@
-const { SlashCommandBuilder , MessageFlags } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const User = require('../../../../shared/models/User');
 
 module.exports = {
@@ -9,17 +9,30 @@ module.exports = {
             option.setName('choice')
                 .setDescription('Bahis seçimin: kırmızı, siyah, yeşil veya 0-36 arası bir sayı')
                 .setRequired(true))
-        .addIntegerOption(option =>
+        .addStringOption(option =>
             option.setName('amount')
-                .setDescription('Bahis miktarı')
-                .setRequired(true)
-                .setMinValue(10)), // Min 10 coin
+                .setDescription('Bahis miktarı (veya \'all\')')
+                .setRequired(true)), // String oldu
 
     async execute(interaction) {
         const choiceInput = interaction.options.getString('choice').toLowerCase();
-        const amount = interaction.options.getInteger('amount');
+        const amountInput = interaction.options.getString('amount');
         const guildId = interaction.guild.id;
         const userId = interaction.user.id;
+
+        // User Check
+        let userCheck = await User.findOne({ odasi: userId, odaId: guildId });
+        if (!userCheck) return interaction.reply({ content: '❌ Hesabınız yok.', flags: MessageFlags.Ephemeral });
+
+        let amount = 0;
+        if (['all', 'hepsi', 'tümü'].includes(amountInput.toLowerCase())) {
+            amount = userCheck.balance;
+        } else {
+            amount = parseInt(amountInput);
+            if (isNaN(amount) || amount < 10) {
+                return interaction.reply({ content: '❌ Geçersiz miktar. Minimum 10 olmalı.', flags: MessageFlags.Ephemeral });
+            }
+        }
 
         // Validasyon
         let betType = 'unknown'; // 'color' or 'number'
@@ -48,8 +61,7 @@ module.exports = {
         }
 
         // Bakiye Kontrolü
-        // ATOMİK İŞLEM: Bakiye kontrolü ve düşümü tek seferde
-        // Bu sayede "Race Condition" engellenir (Aynı anda 2 kere tıklayıp parayı çifte harcama vb.)
+        // ATOMİK İŞLEM
         const user = await User.findOneAndUpdate(
             { odasi: userId, odaId: guildId, balance: { $gte: amount } }, // Şart: Parası yetiyor mu?
             { $inc: { balance: -amount } }, // İşlem: Düş
@@ -57,11 +69,7 @@ module.exports = {
         );
 
         if (!user) {
-            // User bulunamadı veya parası yetmedi (döndürülen değer null olur)
-            // Ancak user hiç yoksa oluşturup sonra bakiye 0 diye hata vermek daha kullanıcı dostu olabilir ama
-            // oyun komutu olduğu için bakiyesi 0 olan adamın DB'de olup olmaması çok fark etmez.
-            const checkUser = await User.findOne({ odasi: userId, odaId: guildId });
-            return interaction.reply({ content: `❌ Yetersiz bakiye! Mevcut: **${checkUser ? checkUser.balance : 0}**`, flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: `❌ Yetersiz bakiye! Mevcut: **${userCheck.balance}**`, flags: MessageFlags.Ephemeral });
         }
 
         // ÇEVİR
