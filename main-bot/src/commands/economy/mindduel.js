@@ -86,12 +86,24 @@ async function runGamePhase1_Input(message, p1, p2, amount, guildId, round) {
     try {
         // Her oyuncu için FARKLI ve RASTGELE aralıklar oluşturuyoruz.
 
-        // Yardımcı Fonksiyon: Aralık Üret
+        // Yardımcı Fonksiyon: Aralık Üret (Kaotik ve Kesişen)
         const generateRanges = () => {
-            const low_min = Math.floor(Math.random() * 10) + 1;   // 1-10
-            const low_max = Math.floor(Math.random() * 10) + 40;  // 40-50
-            const high_min = Math.floor(Math.random() * 10) + 51; // 51-60
-            const high_max = Math.floor(Math.random() * 10) + 90; // 90-100
+            // Anti-Exploit Logic:
+            // Aralıklar artık 0-50 gibi sabit değil.
+            // Birbirine geçen, riskli bölgeler.
+
+            // Low: Genelde 1-45 arası ama bazen 15-55'e kayabilir.
+            const low_center = Math.floor(Math.random() * 30) + 15; // 15-45 arası merkez
+            const low_span = Math.floor(Math.random() * 10) + 10;   // +/- 10-20
+            const low_min = Math.max(1, low_center - low_span);
+            const low_max = Math.min(100, low_center + low_span);
+
+            // High: Genelde 55-100 arası ama bazen 45-85'e inebilir.
+            const high_center = Math.floor(Math.random() * 30) + 55; // 55-85 arası merkez
+            const high_span = Math.floor(Math.random() * 10) + 10;
+            const high_min = Math.max(1, high_center - high_span);
+            const high_max = Math.min(100, high_center + high_span);
+
             return {
                 low: { min: low_min, max: low_max },
                 high: { min: high_min, max: high_max }
