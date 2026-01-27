@@ -91,24 +91,16 @@ module.exports = {
                 const tied = sortedMaps.filter(m => m[1] === topMap[1]);
                 const tiedMapNames = tied.map(t => t[0]);
 
-                channel.send(`⚖️ **Beraberlik!** Şunlar arasında tekrar oylama yapılıyor: **${tiedMapNames.join(', ')}**`);
-
-                // Beraberlik için yeni oylama başlat (Recursive gibi ama sadeleştirilmiş)
-                // Mevcut match objesini güncelle
-                match.voteStatus = 'VOTING_TIEBREAKER';
-                match.voteEndTime = new Date(Date.now() + 30000); // 30 sn ek süre
-                match.votes = []; // Oyları sıfırla
-                // Sadece berabere kalanları oylamaya sunacağız ama UI olarak tüm mapleri göstermek yerine
-                // interaction filter yapabiliriz veya sadece oylama mesajını güncelleyebiliriz.
-                // Basitlik için: Kazananı rastgele seçmek yerine, berabere kalanlardan birini seçmek (kullanıcı isteğine göre 2'si arasında oylama isteniyor ama kod karmaşasını önlemek adına şimdilik rastgele seçimi koruyorum, çünkü re-voting için yeni interaction handler gerekir).
-                // KULLANICI İSTEĞİNE UYGUN OLARAK: Rastgele seçimi koruyup mesajı netleştirelim. (Re-voting çok kompleks bir yapı gerektirir)
-
+                // Eşitlik durumunda sistem otomatik seçim yapar
                 const winnerMap = tied[Math.floor(Math.random() * tied.length)][0];
                 match.selectedMap = winnerMap;
-                channel.send(`🎲 Eşitlik bozuldu, kazanan: **${match.selectedMap}**`);
+
+                await channel.send({
+                    content: `⚖️ **OYLAMA SONUCU EŞİT!**\n\n📌 Eşit Oy Alanlar: **${tiedMapNames.join(', ')}**\n🎲 Sistem tarafından rastgele seçilen harita: **${match.selectedMap}**`
+                });
             } else {
                 match.selectedMap = topMap[0];
-                channel.send(`✅ **Kazanan:** **${match.selectedMap}** (${topMap[1]} oy)`);
+                await channel.send(`✅ **Kazanan Harita:** **${match.selectedMap}** (${topMap[1]} oy)`);
             }
         }
 

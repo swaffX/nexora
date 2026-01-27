@@ -1,0 +1,375 @@
+// Neurovia Music Dashboard - Landing Page Styles
+
+.landing {
+    // ========================================
+    // NAVIGATION
+    // ========================================
+
+    &-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: $z-sticky;
+        padding: $space-4 0;
+        @include glass-dark;
+
+        .container {
+            @include flex-between;
+        }
+
+        &__logo {
+            display: flex;
+            align-items: center;
+            gap: $space-3;
+            font-size: $font-size-xl;
+            font-weight: $font-weight-bold;
+
+            img {
+                width: 40px;
+                height: 40px;
+            }
+
+            span {
+                @include text-gradient;
+            }
+        }
+
+        &__links {
+            display: none;
+            gap: $space-8;
+
+            @include md {
+                display: flex;
+            }
+
+            a {
+                color: $text-secondary;
+                font-weight: $font-weight-medium;
+                transition: color $transition-fast;
+
+                &:hover {
+                    color: $text-primary;
+                }
+            }
+        }
+
+        &__actions {
+            display: flex;
+            gap: $space-3;
+        }
+    }
+
+    // ========================================
+    // HERO SECTION
+    // ========================================
+
+    &-hero {
+        min-height: 100vh;
+        @include flex-center;
+        text-align: center;
+        padding: $space-20 0;
+        position: relative;
+        overflow: hidden;
+
+        // Animated background elements
+        &::before {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba($primary, 0.15) 0%, transparent 70%);
+            top: 10%;
+            left: -10%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        &::after {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba($secondary, 0.15) 0%, transparent 70%);
+            bottom: 10%;
+            right: -10%;
+            animation: float 8s ease-in-out infinite reverse;
+        }
+
+        &__content {
+            position: relative;
+            z-index: 1;
+            max-width: 800px;
+            @include slide-up;
+        }
+
+        &__badge {
+            display: inline-flex;
+            align-items: center;
+            gap: $space-2;
+            padding: $space-2 $space-4;
+            background: $bg-glass;
+            border: 1px solid $border-color;
+            border-radius: $radius-full;
+            font-size: $font-size-sm;
+            color: $text-secondary;
+            margin-bottom: $space-6;
+
+            .dot {
+                width: 8px;
+                height: 8px;
+                background: $success;
+                border-radius: 50%;
+                animation: pulse 2s infinite;
+            }
+        }
+
+        &__title {
+            font-size: $font-size-4xl;
+            margin-bottom: $space-6;
+
+            @include md {
+                font-size: $font-size-5xl;
+            }
+
+            .highlight {
+                @include text-gradient;
+            }
+        }
+
+        &__subtitle {
+            font-size: $font-size-lg;
+            color: $text-secondary;
+            margin-bottom: $space-8;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+
+            @include md {
+                font-size: $font-size-xl;
+            }
+        }
+
+        &__buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: $space-4;
+        }
+
+        &__stats {
+            display: flex;
+            justify-content: center;
+            gap: $space-8;
+            margin-top: $space-12;
+
+            @include md {
+                gap: $space-16;
+            }
+        }
+
+        &__stat {
+            text-align: center;
+
+            &-value {
+                font-size: $font-size-3xl;
+                font-weight: $font-weight-bold;
+                @include text-gradient;
+
+                @include md {
+                    font-size: $font-size-4xl;
+                }
+            }
+
+            &-label {
+                font-size: $font-size-sm;
+                color: $text-muted;
+                margin-top: $space-1;
+            }
+        }
+    }
+
+    // ========================================
+    // FEATURES SECTION
+    // ========================================
+
+    &-features {
+        padding: $space-20 0;
+        background: linear-gradient(180deg, transparent 0%, rgba($bg-surface, 0.5) 100%);
+
+        &__header {
+            text-align: center;
+            margin-bottom: $space-12;
+        }
+
+        &__title {
+            font-size: $font-size-3xl;
+            margin-bottom: $space-4;
+        }
+
+        &__subtitle {
+            color: $text-secondary;
+            font-size: $font-size-lg;
+        }
+
+        &__grid {
+            display: grid;
+            gap: $space-6;
+
+            @include md {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            @include lg {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+    }
+
+    &-feature {
+        @include card-hover;
+        text-align: center;
+
+        &__icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto $space-4;
+            @include flex-center;
+            background: $gradient-primary;
+            border-radius: $radius-xl;
+            font-size: $font-size-2xl;
+        }
+
+        &__title {
+            font-size: $font-size-lg;
+            font-weight: $font-weight-semibold;
+            margin-bottom: $space-3;
+        }
+
+        &__desc {
+            color: $text-secondary;
+            font-size: $font-size-sm;
+            line-height: $line-height-relaxed;
+        }
+    }
+
+    // ========================================
+    // COMMANDS SECTION
+    // ========================================
+
+    &-commands {
+        padding: $space-20 0;
+
+        &__header {
+            text-align: center;
+            margin-bottom: $space-12;
+        }
+
+        &__grid {
+            display: grid;
+            gap: $space-4;
+
+            @include md {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            @include lg {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+    }
+
+    &-command {
+        @include card;
+        @include flex-start;
+        gap: $space-4;
+
+        &__name {
+            font-family: $font-mono;
+            font-size: $font-size-sm;
+            color: $primary;
+            background: rgba($primary, 0.1);
+            padding: $space-1 $space-2;
+            border-radius: $radius-sm;
+        }
+
+        &__desc {
+            color: $text-secondary;
+            font-size: $font-size-sm;
+        }
+    }
+
+    // ========================================
+    // CTA SECTION
+    // ========================================
+
+    &-cta {
+        padding: $space-20 0;
+        text-align: center;
+
+        &__card {
+            @include gradient-border($radius-2xl);
+            padding: $space-12;
+            text-align: center;
+        }
+
+        &__title {
+            font-size: $font-size-3xl;
+            margin-bottom: $space-4;
+        }
+
+        &__subtitle {
+            color: $text-secondary;
+            margin-bottom: $space-8;
+        }
+    }
+
+    // ========================================
+    // FOOTER
+    // ========================================
+
+    &-footer {
+        padding: $space-8 0;
+        border-top: 1px solid $border-color;
+
+        .container {
+            @include flex-between;
+            flex-wrap: wrap;
+            gap: $space-4;
+        }
+
+        &__logo {
+            display: flex;
+            align-items: center;
+            gap: $space-2;
+
+            img {
+                width: 24px;
+                height: 24px;
+            }
+
+            span {
+                font-weight: $font-weight-semibold;
+            }
+        }
+
+        &__links {
+            display: flex;
+            gap: $space-6;
+
+            a {
+                color: $text-muted;
+                font-size: $font-size-sm;
+                transition: color $transition-fast;
+
+                &:hover {
+                    color: $text-primary;
+                }
+            }
+        }
+
+        &__copyright {
+            color: $text-muted;
+            font-size: $font-size-sm;
+        }
+    }
+}

@@ -1,0 +1,421 @@
+// Neurovia Music Dashboard - UI Components
+
+// ========================================
+// BUTTONS
+// ========================================
+
+.btn {
+    @include btn-base;
+
+    &--primary {
+        @include btn-primary;
+    }
+
+    &--secondary {
+        @include btn-secondary;
+    }
+
+    &--ghost {
+        @include btn-ghost;
+    }
+
+    &--danger {
+        @include btn-base;
+        background: $error;
+        color: $text-primary;
+
+        &:hover:not(:disabled) {
+            background: darken($error, 10%);
+        }
+    }
+
+    &--lg {
+        padding: $space-4 $space-8;
+        font-size: $font-size-base;
+    }
+
+    &--sm {
+        padding: $space-2 $space-4;
+        font-size: $font-size-xs;
+    }
+
+    &--icon {
+        padding: $space-3;
+
+        svg {
+            width: 20px;
+            height: 20px;
+        }
+    }
+}
+
+// Discord button specifically
+.btn-discord {
+    @include btn-base;
+    background: #5865F2;
+    color: white;
+    padding: $space-4 $space-8;
+    font-size: $font-size-base;
+
+    &:hover {
+        background: #4752c4;
+        transform: translateY(-2px);
+    }
+
+    svg {
+        width: 24px;
+        height: 24px;
+    }
+}
+
+// ========================================
+// CARDS
+// ========================================
+
+.card {
+    @include card;
+
+    &--hover {
+        @include card-hover;
+    }
+
+    &--glass {
+        @include glass;
+        border-radius: $radius-xl;
+        padding: $space-6;
+    }
+
+    &--gradient {
+        @include gradient-border;
+        padding: $space-6;
+    }
+
+    &__header {
+        @include flex-between;
+        margin-bottom: $space-4;
+        padding-bottom: $space-4;
+        border-bottom: 1px solid $border-color;
+    }
+
+    &__title {
+        font-size: $font-size-lg;
+        font-weight: $font-weight-semibold;
+    }
+
+    &__body {
+        // Default body styles
+    }
+
+    &__footer {
+        margin-top: $space-4;
+        padding-top: $space-4;
+        border-top: 1px solid $border-color;
+    }
+}
+
+// ========================================
+// FORMS
+// ========================================
+
+.form-group {
+    margin-bottom: $space-4;
+
+    label {
+        display: block;
+        margin-bottom: $space-2;
+        font-size: $font-size-sm;
+        font-weight: $font-weight-medium;
+        color: $text-secondary;
+    }
+}
+
+.form-input {
+    @include input;
+}
+
+.form-select {
+    @include input;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23a1a1aa'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right $space-3 center;
+    background-size: 16px;
+    padding-right: $space-10;
+}
+
+.form-checkbox {
+    display: flex;
+    align-items: center;
+    gap: $space-3;
+    cursor: pointer;
+
+    input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: $primary;
+        cursor: pointer;
+    }
+}
+
+.form-range {
+    width: 100%;
+    height: 6px;
+    background: $bg-dark;
+    border-radius: $radius-full;
+    appearance: none;
+
+    &::-webkit-slider-thumb {
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        background: $primary;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: transform $transition-fast;
+
+        &:hover {
+            transform: scale(1.2);
+        }
+    }
+}
+
+// ========================================
+// BADGES
+// ========================================
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: $space-1 $space-3;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    border-radius: $radius-full;
+
+    &--primary {
+        background: rgba($primary, 0.2);
+        color: $primary;
+    }
+
+    &--secondary {
+        background: rgba($secondary, 0.2);
+        color: $secondary;
+    }
+
+    &--success {
+        background: rgba($success, 0.2);
+        color: $success;
+    }
+
+    &--warning {
+        background: rgba($warning, 0.2);
+        color: $warning;
+    }
+
+    &--error {
+        background: rgba($error, 0.2);
+        color: $error;
+    }
+}
+
+// ========================================
+// AVATAR
+// ========================================
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid $border-color;
+
+    &--sm {
+        width: 32px;
+        height: 32px;
+    }
+
+    &--lg {
+        width: 56px;
+        height: 56px;
+    }
+
+    &--xl {
+        width: 80px;
+        height: 80px;
+    }
+}
+
+// ========================================
+// DROPDOWN
+// ========================================
+
+.dropdown {
+    position: relative;
+
+    &__menu {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        min-width: 200px;
+        margin-top: $space-2;
+        background: $bg-surface;
+        border: 1px solid $border-color;
+        border-radius: $radius-lg;
+        box-shadow: $shadow-lg;
+        z-index: $z-dropdown;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all $transition-fast;
+    }
+
+    &.active .dropdown__menu {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    &__item {
+        display: flex;
+        align-items: center;
+        gap: $space-3;
+        padding: $space-3 $space-4;
+        color: $text-secondary;
+        transition: all $transition-fast;
+
+        &:hover {
+            background: $bg-surface-hover;
+            color: $text-primary;
+        }
+
+        &:first-child {
+            border-radius: $radius-lg $radius-lg 0 0;
+        }
+
+        &:last-child {
+            border-radius: 0 0 $radius-lg $radius-lg;
+        }
+    }
+
+    &__divider {
+        height: 1px;
+        background: $border-color;
+        margin: $space-2 0;
+    }
+}
+
+// ========================================
+// LOADING SPINNER
+// ========================================
+
+.spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid $border-color;
+    border-top-color: $primary;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+
+    &--sm {
+        width: 16px;
+        height: 16px;
+        border-width: 2px;
+    }
+
+    &--lg {
+        width: 40px;
+        height: 40px;
+        border-width: 4px;
+    }
+}
+
+// ========================================
+// TOAST / NOTIFICATIONS
+// ========================================
+
+.toast {
+    position: fixed;
+    bottom: $space-6;
+    right: $space-6;
+    padding: $space-4 $space-6;
+    background: $bg-surface;
+    border: 1px solid $border-color;
+    border-radius: $radius-lg;
+    box-shadow: $shadow-lg;
+    z-index: $z-tooltip;
+    @include slide-up;
+
+    &--success {
+        border-left: 3px solid $success;
+    }
+
+    &--error {
+        border-left: 3px solid $error;
+    }
+
+    &--warning {
+        border-left: 3px solid $warning;
+    }
+}
+
+// ========================================
+// MODAL
+// ========================================
+
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: $z-modal;
+    @include flex-center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all $transition-fast;
+
+    &.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    &__backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(4px);
+    }
+
+    &__content {
+        position: relative;
+        width: 100%;
+        max-width: 500px;
+        max-height: 90vh;
+        margin: $space-4;
+        background: $bg-surface;
+        border: 1px solid $border-color;
+        border-radius: $radius-xl;
+        overflow: hidden;
+        transform: scale(0.95);
+        transition: transform $transition-fast;
+    }
+
+    &.active .modal__content {
+        transform: scale(1);
+    }
+
+    &__header {
+        @include flex-between;
+        padding: $space-6;
+        border-bottom: 1px solid $border-color;
+    }
+
+    &__body {
+        padding: $space-6;
+        overflow-y: auto;
+    }
+
+    &__footer {
+        @include flex-between;
+        padding: $space-6;
+        border-top: 1px solid $border-color;
+        gap: $space-3;
+    }
+}

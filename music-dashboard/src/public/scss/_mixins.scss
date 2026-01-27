@@ -1,0 +1,265 @@
+// Neurovia Music Dashboard - SCSS Mixins
+
+// ========================================
+// RESPONSIVE BREAKPOINTS
+// ========================================
+
+@mixin sm {
+    @media (min-width: $breakpoint-sm) {
+        @content;
+    }
+}
+
+@mixin md {
+    @media (min-width: $breakpoint-md) {
+        @content;
+    }
+}
+
+@mixin lg {
+    @media (min-width: $breakpoint-lg) {
+        @content;
+    }
+}
+
+@mixin xl {
+    @media (min-width: $breakpoint-xl) {
+        @content;
+    }
+}
+
+// ========================================
+// FLEXBOX
+// ========================================
+
+@mixin flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@mixin flex-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+@mixin flex-start {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+@mixin flex-col {
+    display: flex;
+    flex-direction: column;
+}
+
+// ========================================
+// GLASSMORPHISM
+// ========================================
+
+@mixin glass {
+    background: $bg-glass;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid $border-color;
+}
+
+@mixin glass-dark {
+    background: rgba(10, 10, 10, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid $border-color;
+}
+
+// ========================================
+// GRADIENT BORDER
+// ========================================
+
+@mixin gradient-border($radius: $radius-lg) {
+    position: relative;
+    background: $bg-surface;
+    border-radius: $radius;
+
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        padding: 1px;
+        background: $gradient-primary;
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+    }
+}
+
+// ========================================
+// BUTTONS
+// ========================================
+
+@mixin btn-base {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: $space-2;
+    padding: $space-3 $space-6;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    border-radius: $radius-lg;
+    border: none;
+    cursor: pointer;
+    transition: all $transition-normal;
+    text-decoration: none;
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+}
+
+@mixin btn-primary {
+    @include btn-base;
+    background: $gradient-primary;
+    color: $text-primary;
+    box-shadow: $shadow-glow-sm;
+
+    &:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: $shadow-glow;
+    }
+
+    &:active:not(:disabled) {
+        transform: translateY(0);
+    }
+}
+
+@mixin btn-secondary {
+    @include btn-base;
+    background: $bg-surface;
+    color: $text-primary;
+    border: 1px solid $border-color;
+
+    &:hover:not(:disabled) {
+        background: $bg-surface-hover;
+        border-color: $border-hover;
+    }
+}
+
+@mixin btn-ghost {
+    @include btn-base;
+    background: transparent;
+    color: $text-secondary;
+
+    &:hover:not(:disabled) {
+        background: $bg-glass;
+        color: $text-primary;
+    }
+}
+
+// ========================================
+// CARDS
+// ========================================
+
+@mixin card {
+    background: $bg-surface;
+    border: 1px solid $border-color;
+    border-radius: $radius-xl;
+    padding: $space-6;
+    transition: all $transition-normal;
+}
+
+@mixin card-hover {
+    @include card;
+
+    &:hover {
+        border-color: $border-hover;
+        transform: translateY(-4px);
+        box-shadow: $shadow-lg;
+    }
+}
+
+// ========================================
+// INPUTS
+// ========================================
+
+@mixin input {
+    width: 100%;
+    padding: $space-3 $space-4;
+    background: $bg-dark;
+    border: 1px solid $border-color;
+    border-radius: $radius-md;
+    color: $text-primary;
+    font-size: $font-size-sm;
+    transition: all $transition-fast;
+
+    &::placeholder {
+        color: $text-muted;
+    }
+
+    &:focus {
+        outline: none;
+        border-color: $primary;
+        box-shadow: 0 0 0 3px rgba($primary, 0.2);
+    }
+}
+
+// ========================================
+// SCROLLBAR
+// ========================================
+
+@mixin scrollbar {
+    &::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: $bg-dark;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: $bg-surface-hover;
+        border-radius: $radius-full;
+
+        &:hover {
+            background: $text-muted;
+        }
+    }
+}
+
+// ========================================
+// TEXT UTILITIES
+// ========================================
+
+@mixin text-gradient {
+    background: $gradient-primary;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+@mixin truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+// ========================================
+// ANIMATIONS
+// ========================================
+
+@mixin fade-in($duration: 0.3s) {
+    animation: fadeIn $duration ease-out;
+}
+
+@mixin slide-up($duration: 0.4s) {
+    animation: slideUp $duration ease-out;
+}
+
+@mixin pulse {
+    animation: pulse 2s infinite;
+}

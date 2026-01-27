@@ -73,6 +73,26 @@ module.exports = {
             env: {
                 NODE_ENV: "production"
             }
+        },
+        {
+            name: "music-bot",
+            cwd: "./music-bot",
+            script: "./src/index.js",
+            watch: false,
+            ignore_watch: ["node_modules", "logs"],
+            env: {
+                NODE_ENV: "production"
+            }
+        },
+        {
+            name: "music-dashboard",
+            cwd: "./music-dashboard",
+            script: "./src/app.js",
+            watch: false,
+            ignore_watch: ["node_modules", "logs"],
+            env: {
+                NODE_ENV: "production"
+            }
         }
     ]
 };

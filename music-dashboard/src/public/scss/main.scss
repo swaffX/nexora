@@ -1,0 +1,19 @@
+// Neurovia Music Dashboard - Main SCSS Entry Point
+// Modern Dark Theme with Glassmorphism Effects
+
+// Import Google Fonts
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+// Variables & Mixins (must be first)
+@import 'variables';
+@import 'mixins';
+
+// Base Styles
+@import 'base';
+
+// UI Components
+@import 'components';
+
+// Page-specific Styles
+@import 'landing';
+@import 'dashboard';

@@ -1,0 +1,81 @@
+<%- include('partials/sidebar') %>
+
+    <main class="dashboard-main">
+        <div class="dashboard-header">
+            <div>
+                <h1 class="dashboard-header__title">Playlistlerim</h1>
+                <p class="dashboard-header__subtitle">
+                    <%= playlists.length %> playlist
+                </p>
+            </div>
+        </div>
+
+        <% if (playlists.length> 0) { %>
+            <div class="dashboard-playlists">
+                <% playlists.forEach(playlist=> { %>
+                    <div class="dashboard-playlist"
+                        onclick="window.location='/dashboard/playlists/<%= playlist._id %>'">
+                        <div class="dashboard-playlist__header">
+                            <span class="dashboard-playlist__name">
+                                <%= playlist.name %>
+                            </span>
+                            <span class="badge badge--primary">
+                                <%= playlist.tracks.length %> şarkı
+                            </span>
+                        </div>
+
+                        <p class="dashboard-playlist__tracks">
+                            <% if (playlist.tracks.length> 0) { %>
+                                <%= playlist.tracks.slice(0, 3).map(t=> t.title.substring(0, 30)).join(', ') %><%=
+                                        playlist.tracks.length> 3 ? '...' : '' %>
+                                        <% } else { %>
+                                            Henüz şarkı yok
+                                            <% } %>
+                        </p>
+
+                        <div class="dashboard-playlist__actions" onclick="event.stopPropagation();">
+                            <button class="btn btn--ghost btn--sm"
+                                onclick="deletePlaylist('<%= playlist._id %>', '<%= playlist.name %>')">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                    <% }) %>
+            </div>
+            <% } else { %>
+                <div class="empty-state">
+                    <div class="empty-state__icon">📚</div>
+                    <h3 class="empty-state__title">Henüz playlist yok</h3>
+                    <p class="empty-state__desc">Discord'da <code>/playlist create</code> komutu ile playlist
+                        oluşturabilirsin.</p>
+                </div>
+                <% } %>
+    </main>
+
+    <!-- Mobile Toggle -->
+    <button class="dashboard-toggle" onclick="toggleSidebar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12h18M3 6h18M3 18h18" />
+        </svg>
+    </button>
+
+    <script>
+        function toggleSidebar() {
+            document.querySelector('.dashboard-sidebar').classList.toggle('active');
+        }
+
+        async function deletePlaylist(id, name) {
+            if (!confirm(`"${name}" playlistini silmek istediğinize emin misiniz?`)) return;
+
+            try {
+                const response = await fetch(`/api/playlists/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Playlist silinemedi!');
+                }
+            } catch (err) {
+                alert('Bir hata oluştu!');
+            }
+        }
+    </script>

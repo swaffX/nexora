@@ -1,0 +1,112 @@
+<%- include('partials/sidebar') %>
+
+    <main class="dashboard-main">
+        <div class="dashboard-header">
+            <div>
+                <h1 class="dashboard-header__title">Dashboard</h1>
+                <p class="dashboard-header__subtitle">Hoş geldin, <%= user.username %>!</p>
+            </div>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="dashboard-stats">
+            <div class="dashboard-stat">
+                <div class="dashboard-stat__icon">📚</div>
+                <div class="dashboard-stat__value">
+                    <%= musicUser.playlists ? musicUser.playlists.length : 0 %>
+                </div>
+                <div class="dashboard-stat__label">Playlist</div>
+            </div>
+
+            <div class="dashboard-stat">
+                <div class="dashboard-stat__icon">🎵</div>
+                <div class="dashboard-stat__value">
+                    <%= musicUser.stats ? musicUser.stats.totalListened || 0 : 0 %>
+                </div>
+                <div class="dashboard-stat__label">Dinlenen Şarkı</div>
+            </div>
+
+            <div class="dashboard-stat">
+                <div class="dashboard-stat__icon">⏱️</div>
+                <div class="dashboard-stat__value">
+                    <%= Math.floor((musicUser.stats ? musicUser.stats.totalTime || 0 : 0) / 3600) %>
+                </div>
+                <div class="dashboard-stat__label">Saat</div>
+            </div>
+
+            <div class="dashboard-stat">
+                <div class="dashboard-stat__icon">🔧</div>
+                <div class="dashboard-stat__value">
+                    <%= guilds.length %>
+                </div>
+                <div class="dashboard-stat__label">Yönetilen Sunucu</div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <h3 class="card__title" style="margin-bottom: 1rem;">Hızlı Erişim</h3>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <a href="/dashboard/playlists" class="btn btn--primary">
+                    📚 Playlistlerim
+                </a>
+                <a href="/dashboard/profile" class="btn btn--secondary">
+                    👤 Profilim
+                </a>
+                <a href="https://discord.com/api/oauth2/authorize?client_id=773539215098249246&permissions=3147776&scope=bot%20applications.commands"
+                    class="btn btn--secondary" target="_blank">
+                    ➕ Sunucuya Ekle
+                </a>
+            </div>
+        </div>
+
+        <!-- Managed Servers -->
+        <% if (guilds.length> 0) { %>
+            <div class="card">
+                <h3 class="card__title" style="margin-bottom: 1rem;">Sunucularım</h3>
+                <div style="display: grid; gap: 1rem;">
+                    <% guilds.forEach(guild=> { %>
+                        <a href="/dashboard/servers/<%= guild.id %>" class="dashboard-sidebar__server"
+                            style="text-decoration: none;">
+                            <% if (guild.icon) { %>
+                                <img src="https://cdn.discordapp.com/icons/<%= guild.id %>/<%= guild.icon %>.png"
+                                    alt="<%= guild.name %>">
+                                <% } else { %>
+                                    <div
+                                        style="width: 36px; height: 36px; border-radius: 50%; background: #333; display: flex; align-items: center; justify-content: center;">
+                                        <%= guild.name.charAt(0) %>
+                                    </div>
+                                    <% } %>
+                                        <span class="dashboard-sidebar__server-name">
+                                            <%= guild.name %>
+                                        </span>
+                                        <span style="color: #666; margin-left: auto;">⚙️</span>
+                        </a>
+                        <% }) %>
+                </div>
+            </div>
+            <% } else { %>
+                <div class="empty-state">
+                    <div class="empty-state__icon">🔌</div>
+                    <h3 class="empty-state__title">Henüz sunucu yok</h3>
+                    <p class="empty-state__desc">Botun ekli olduğu bir sunucuda yönetici olmalısınız.</p>
+                    <a href="https://discord.com/api/oauth2/authorize?client_id=773539215098249246&permissions=3147776&scope=bot%20applications.commands"
+                        class="btn btn--primary" target="_blank">
+                        Discord'a Ekle
+                    </a>
+                </div>
+                <% } %>
+    </main>
+
+    <!-- Mobile Toggle -->
+    <button class="dashboard-toggle" onclick="toggleSidebar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12h18M3 6h18M3 18h18" />
+        </svg>
+    </button>
+
+    <script>
+        function toggleSidebar() {
+            document.querySelector('.dashboard-sidebar').classList.toggle('active');
+        }
+    </script>

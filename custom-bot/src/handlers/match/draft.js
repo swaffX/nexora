@@ -118,26 +118,23 @@ module.exports = {
         match.availablePlayerIds = match.availablePlayerIds.filter(id => id !== randomPlayer);
         await match.save();
 
-        if (channel) await channel.send(`⏳ **Süre doldu!** <@${randomPlayer}> otomatik seçildi.`);
+        if (channel) {
+            await channel.send({ content: `⏳ **Süre Doldu!**\nSistem otomatik olarak **<@${randomPlayer}>** oyuncusunu seçti.` });
 
-        // UI Güncelle (sahte interaction ile veya direkt channel.send ile)
-        // updateDraftUI genelde interaction bekler, ama biz channel gönderip sendNew=true diyebiliriz.
-        // ama updateDraftUI channel.send yapacaksa 'sendNew' mantığı biraz değişmeli.
-        // Fake interaction objesi yapmak lazım.
+            // UI'ı güncellemek için normal akışı çağırıyoruz, ancak "sendNew" flag'i ile
+            // Fake interaction yerine dummy obje oluşturup sadece gerekli dataları paslıyoruz
+            const dummyInteraction = {
+                channel: channel,
+                guild: channel.guild,
+                user: { id: "SYSTEM" }, // Sistem tarafından tetiklendi
+                replied: false,
+                deferred: false,
+                isMessageComponent: () => false
+            };
 
-        const fakeInteraction = {
-            channel: channel,
-            guild: channel.guild,
-            replied: true, // Zaten reply edildi varsay ki yeni mesaj atsın
-            deferred: true,
-            isMessageComponent: () => false,
-            update: () => { }, // Boş
-            reply: () => { },
-            channelId: channel.id
-        };
-
-        // sendNew=true yaparak yeni mesaj attıralım
-        await this.updateDraftUI(fakeInteraction, match, true);
+            // sendNew=true ile yeni mesaj attırarak eski mesaj karmaşasından kurtuluyoruz
+            await this.updateDraftUI(dummyInteraction, match, true);
+        }
     },
 
     async handlePlayerPick(interaction) {

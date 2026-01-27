@@ -1,0 +1,86 @@
+<%- include('partials/sidebar') %>
+
+    <main class="dashboard-main">
+        <div class="dashboard-profile">
+            <div class="dashboard-profile__header">
+                <img src="https://cdn.discordapp.com/avatars/<%= user.id %>/<%= user.avatar %>.png?size=256"
+                    alt="Avatar">
+                <div class="dashboard-profile__header-info">
+                    <h2>
+                        <%= user.username %>
+                    </h2>
+                    <p>Discord Profili</p>
+                </div>
+            </div>
+
+            <div class="dashboard-profile__stats">
+                <div class="dashboard-stat">
+                    <div class="dashboard-stat__icon">🎵</div>
+                    <div class="dashboard-stat__value">
+                        <%= musicUser.stats ? musicUser.stats.totalListened || 0 : 0 %>
+                    </div>
+                    <div class="dashboard-stat__label">Toplam Şarkı</div>
+                </div>
+
+                <div class="dashboard-stat">
+                    <div class="dashboard-stat__icon">⏱️</div>
+                    <div class="dashboard-stat__value">
+                        <%= Math.floor((musicUser.stats ? musicUser.stats.totalTime || 0 : 0) / 3600) %> saat
+                    </div>
+                    <div class="dashboard-stat__label">Dinleme Süresi</div>
+                </div>
+
+                <div class="dashboard-stat">
+                    <div class="dashboard-stat__icon">📚</div>
+                    <div class="dashboard-stat__value">
+                        <%= musicUser.playlists ? musicUser.playlists.length : 0 %>
+                    </div>
+                    <div class="dashboard-stat__label">Playlist</div>
+                </div>
+            </div>
+
+            <!-- Top Tracks -->
+            <div class="card" style="margin-top: 2rem;">
+                <h3 class="card__title" style="margin-bottom: 1rem;">🏆 En Çok Dinlediğin Şarkılar</h3>
+
+                <% if (musicUser.stats && musicUser.stats.topTracks && musicUser.stats.topTracks.length> 0) { %>
+                    <div class="dashboard-tracks">
+                        <% musicUser.stats.topTracks.slice(0, 10).forEach((track, index)=> { %>
+                            <div class="dashboard-track">
+                                <div class="dashboard-track__info">
+                                    <span class="dashboard-track__number" style="font-weight: 600; color: #1DB954;">
+                                        <%= index + 1 %>
+                                    </span>
+                                    <div class="dashboard-track__details">
+                                        <div class="dashboard-track__title">
+                                            <%= track.title %>
+                                        </div>
+                                        <div class="dashboard-track__duration">
+                                            <%= track.playCount %> kez dinlendi
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <% }) %>
+                    </div>
+                    <% } else { %>
+                        <div class="empty-state" style="padding: 2rem;">
+                            <p style="color: #71717a;">Henüz şarkı dinlemedin. Discord'da /play komutu ile başla!</p>
+                        </div>
+                        <% } %>
+            </div>
+        </div>
+    </main>
+
+    <!-- Mobile Toggle -->
+    <button class="dashboard-toggle" onclick="toggleSidebar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12h18M3 6h18M3 18h18" />
+        </svg>
+    </button>
+
+    <script>
+        function toggleSidebar() {
+            document.querySelector('.dashboard-sidebar').classList.toggle('active');
+        }
+    </script>

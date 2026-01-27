@@ -14,6 +14,10 @@ const Tournament = require('./Tournament');
 const Ticket = require('./Ticket');
 const Penal = require('./Penal');
 
+// Music Bot Models
+const MusicUser = require('./MusicUser');
+const MusicGuild = require('./MusicGuild');
+
 module.exports = {
     User,
     Guild,
@@ -29,5 +33,9 @@ module.exports = {
     Match,
     Tournament,
     Ticket,
-    Penal
+    Penal,
+
+    // Music Bot
+    MusicUser,
+    MusicGuild
 };
