@@ -24,6 +24,18 @@ module.exports = {
             }
         }
 
+        // Autocomplete Handling
+        if (interaction.isAutocomplete()) {
+            const command = client.commands.get(interaction.commandName);
+            if (!command) return;
+
+            try {
+                await command.autocomplete(interaction, client);
+            } catch (error) {
+                console.error('Autocomplete Error:', error);
+            }
+        }
+
         // Buton tıklamaları
         if (interaction.isButton()) {
             try {

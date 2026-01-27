@@ -16,9 +16,9 @@ Açılan pencereye bahis miktarını girmen yeterli.
 **🎲 Oyunlar:**
             `)
             .addFields(
-                { name: '🔥 Popüler', value: 'Crash, Mines, Blackjack', inline: true },
+                { name: '🔥 Popüler', value: 'Plinko, Crash, Mines, Blackjack', inline: true },
                 { name: '💰 Klasik', value: 'Rulet, Slot, Yazı Tura', inline: true },
-                { name: '⚔️ Aksiyon', value: 'Rus Ruleti, At Yarışı', inline: true }
+                { name: '⚔️ Aksiyon', value: 'Rus Ruleti, High-Low, Cups, RPS', inline: true }
             )
             .setImage('https://cdn.discordapp.com/attachments/531892263652032522/1464235225818075147/standard_2.gif?ex=69795812&is=69780692&hm=38d32a4728d978f24f28e48049aa6d6a8b9be3d9daf7e8caae19b02b40ed691c&')
             .setFooter({ text: 'Şans seninle olsun! | /daily ile günlük paranı al.' });
@@ -27,10 +27,14 @@ Açılan pencereye bahis miktarını girmen yeterli.
             .setCustomId('casino_menu')
             .setPlaceholder('Bir oyun seç ve OYNA!')
             .addOptions(
+                new StringSelectMenuOptionBuilder().setLabel('Plinko').setValue('plinko').setEmoji('🟢').setDescription('Topu bırak, x5.6 kazan!'),
                 new StringSelectMenuOptionBuilder().setLabel('Crash (Aviator)').setValue('crash').setEmoji('🚀').setDescription('Çarpan yükselirken kaç!'),
                 new StringSelectMenuOptionBuilder().setLabel('Mines (Mayın)').setValue('mines').setEmoji('💣').setDescription('Elmasları bul, bombadan kaç.'),
                 new StringSelectMenuOptionBuilder().setLabel('Blackjack (21)').setValue('blackjack').setEmoji('🃏').setDescription('Krupiyeyi yen, 21 yap.'),
-                new StringSelectMenuOptionBuilder().setLabel('Rus Ruleti').setValue('russian-roulette').setEmoji('🔫').setDescription('Ya hep ya hiç!'), // Komut adı: russian-roulette
+                new StringSelectMenuOptionBuilder().setLabel('High-Low').setValue('highlow').setEmoji('🃏').setDescription('Büyük mü Küçük mü?'),
+                new StringSelectMenuOptionBuilder().setLabel('Cups (Bul Karayı)').setValue('cups').setEmoji('🥤').setDescription('Top hangi bardakta?'),
+                new StringSelectMenuOptionBuilder().setLabel('Taş Kağıt Makas').setValue('rps').setEmoji('✂️').setDescription('Bota karşı oyna.'),
+                new StringSelectMenuOptionBuilder().setLabel('Rus Ruleti').setValue('russian-roulette').setEmoji('🔫').setDescription('Ya hep ya hiç!'),
                 new StringSelectMenuOptionBuilder().setLabel('At Yarışı').setValue('horserace').setEmoji('🐎').setDescription('Favori atına bahis yap.'),
                 new StringSelectMenuOptionBuilder().setLabel('Slot Makinesi').setValue('slots').setEmoji('🎰').setDescription('Çarkları çevir, 777 yakala.'),
                 new StringSelectMenuOptionBuilder().setLabel('Rulet').setValue('roulette').setEmoji('🎱').setDescription('Renk veya sayıya oyna.'),
@@ -51,6 +55,7 @@ Açılan pencereye bahis miktarını girmen yeterli.
 
             // MODAL TANIMLARI
             const modalData = {
+                'plinko': { title: '🟢 Plinko', inputs: [{ id: 'bahis', label: 'Bahis', style: TextInputStyle.Short }] },
                 'crash': { title: '🚀 Crash Başlat', inputs: [{ id: 'bahis', label: 'Bahis (veya all)', style: TextInputStyle.Short }] },
                 'mines': { title: '💣 Mines Başlat', inputs: [{ id: 'bahis', label: 'Bahis', style: TextInputStyle.Short }, { id: 'bombalar', label: 'Bomba Sayısı (1-15)', style: TextInputStyle.Short }] },
                 'blackjack': { title: '🃏 Blackjack Başlat', inputs: [{ id: 'bahis', label: 'Bahis (veya all)', style: TextInputStyle.Short }] },
@@ -58,7 +63,10 @@ Açılan pencereye bahis miktarını girmen yeterli.
                 'horserace': { title: '🐎 At Yarışı', inputs: [{ id: 'bahis', label: 'Bahis', style: TextInputStyle.Short }, { id: 'at', label: 'At Numarası (1-5)', style: TextInputStyle.Short }] },
                 'slots': { title: '🎰 Slot Çevir', inputs: [{ id: 'bahis', label: 'Bahis (veya all)', style: TextInputStyle.Short }] },
                 'roulette': { title: '🎱 Rulet Oyna', inputs: [{ id: 'amount', label: 'Bahis', style: TextInputStyle.Short }, { id: 'choice', label: 'Seçim (kırmızı, siyah, sayı)', style: TextInputStyle.Short }] }, // Roulette command uses 'amount' & 'choice'
-                'coinflip': { title: '🪙 Yazı Tura', inputs: [{ id: 'miktar', label: 'Bahis', style: TextInputStyle.Short }, { id: 'secim', label: 'yazi / tura', style: TextInputStyle.Short }] } // Coinflip uses 'miktar' & 'secim'
+                'coinflip': { title: '🪙 Yazı Tura', inputs: [{ id: 'miktar', label: 'Bahis', style: TextInputStyle.Short }, { id: 'secim', label: 'yazi / tura', style: TextInputStyle.Short }] }, // Coinflip uses 'miktar' & 'secim'
+                'highlow': { title: '🃏 High-Low', inputs: [{ id: 'bahis', label: 'Bahis', style: TextInputStyle.Short }] },
+                'cups': { title: '🥤 Cups', inputs: [{ id: 'bahis', label: 'Bahis', style: TextInputStyle.Short }] },
+                'rps': { title: '✂️ Taş Kağıt Makas', inputs: [{ id: 'bahis', label: 'Bahis', style: TextInputStyle.Short }] }
             }[val];
 
             if (modalData) {

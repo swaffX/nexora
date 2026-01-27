@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder , MessageFlags } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
 const path = require('path');
 const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const { ITEMS, ItemType } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'gameData'));
@@ -11,7 +11,34 @@ module.exports = {
             option.setName('item')
                 .setDescription('Kullanılacak eşyanın IDsi veya ismi')
                 .setRequired(true)
-                .setAutocomplete(true)), // Autocomplete handler gerekebilir ama şimdilik düz string
+                .setAutocomplete(true)),
+
+    async autocomplete(interaction) {
+        const focusedValue = interaction.options.getFocused().toLowerCase();
+
+        // Kullanıcının envanterini çek
+        // Optimization: Lean query or limit user data if possible, but finding one user is fast.
+        const user = await User.findOne({ odasi: interaction.user.id, odaId: interaction.guild.id });
+
+        if (!user || !user.inventory || user.inventory.length === 0) {
+            return interaction.respond([]);
+        }
+
+        // Filtrele ve Formatla
+        const choices = user.inventory
+            .map(slot => {
+                const item = ITEMS[slot.itemId];
+                if (!item) return null;
+                return {
+                    name: `${item.emoji} ${item.name} (x${slot.amount})`,
+                    value: item.id // itemId gönderiyoruz
+                };
+            })
+            .filter(choice => choice && choice.name.toLowerCase().includes(focusedValue))
+            .slice(0, 25); // Discord max 25
+
+        await interaction.respond(choices);
+    },
 
     async execute(interaction) {
         const itemQuery = interaction.options.getString('item').toLowerCase();

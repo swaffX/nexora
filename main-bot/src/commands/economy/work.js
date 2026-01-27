@@ -1,6 +1,7 @@
-const { SlashCommandBuilder, EmbedBuilder , MessageFlags } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js');
 const path = require('path');
 const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
+const { ITEMS } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'gameData'));
 
 const JOBS = [
     { name: 'Yazılımcı', text: 'kod yazarak', min: 100, max: 500, emoji: '💻' },
@@ -9,7 +10,7 @@ const JOBS = [
     { name: 'Tasarımcı', text: 'logo tasarlayarak', min: 150, max: 600, emoji: '🎨' },
     { name: 'Madenci', text: 'kripto kazarak', min: 300, max: 1000, emoji: '⛏️' },
     { name: 'Barmen', text: 'içki servis ederek', min: 80, max: 300, emoji: '🍺' },
-    { name: 'Hacker', text: 'bir bankayı soyarak', min: 1000, max: 2000, chance: 0.1 }, // Rare logic handled explicitly
+    { name: 'Hacker', text: 'bir bankayı soyarak', min: 1000, max: 3000, chance: 0.05 },
 ];
 
 module.exports = {
@@ -24,14 +25,9 @@ module.exports = {
         let user = await User.findOne({ odasi: userId, odaId: guildId });
         if (!user) user = new User({ odasi: userId, odaId: guildId });
 
-        // Cooldown Check (Örn: 5 Dakika)
+        // Cooldown Check (5 Dakika)
         const now = Date.now();
         const cooldownTime = 5 * 60 * 1000;
-
-        // Veritabanına lastWork gibi bir alan eklemek gerekir. 
-        // Şimdilik client.cooldowns kullanabiliriz ama restartta sıfırlanır.
-        // Veritabanı en sağlıklısıdır.
-        // User şemasında 'lastWork' yoksa, eklenmiş varsayalım (Mongoose esnektir).
 
         if (user.lastWork && now - user.lastWork < cooldownTime) {
             const remaining = cooldownTime - (now - user.lastWork);
@@ -43,38 +39,44 @@ module.exports = {
             });
         }
 
-        // Rastgele İş Seçimi
+        // Job Logic
         let job = JOBS[Math.floor(Math.random() * JOBS.length)];
-
-        // Hacker is rare
         if (job.name === 'Hacker' && Math.random() > job.chance) {
-            // Fallback to simpler job
-            job = JOBS[0];
+            job = JOBS[Math.floor(Math.random() * (JOBS.length - 1))]; // Retry without hacker
         }
 
         const earnings = Math.floor(Math.random() * (job.max - job.min + 1)) + job.min;
-
         user.balance += earnings;
         user.lastWork = now;
 
-        // %10 Şansla Kutu Düşürme
-        let droppedBox = null;
-        if (Math.random() < 0.10) {
-            droppedBox = 'wooden_box';
-            // Inventory init check
-            if (!user.inventory) user.inventory = [];
+        // --- DROP SISTEMI V2 ---
+        let droppedItem = null;
+        const roll = Math.random() * 1000; // 0 - 1000
 
-            const existing = user.inventory.find(i => i.itemId === droppedBox);
+        // Tiered Drop Chances
+        if (roll > 998) droppedItem = 'crypto_box';        // %0.2
+        else if (roll > 990) droppedItem = 'golden_box';   // %0.8
+        else if (roll > 940) droppedItem = 'metal_box';    // %5
+        else if (roll > 840) droppedItem = 'wooden_box';   // %10
+        else if (roll > 690) {                             // %15 Chance for Junk
+            const junks = ['plastic_bottle', 'old_boot', 'stick', 'stone', 'copper_wire'];
+            droppedItem = junks[Math.floor(Math.random() * junks.length)];
+        }
+
+        if (droppedItem) {
+            if (!user.inventory) user.inventory = [];
+            const existing = user.inventory.find(i => i.itemId === droppedItem);
             if (existing) existing.amount++;
-            else user.inventory.push({ itemId: droppedBox, amount: 1 });
+            else user.inventory.push({ itemId: droppedItem, amount: 1 });
         }
 
         await user.save();
 
         let description = `${job.emoji} Bugün **${job.text}** tam olarak **${earnings} NexCoin** kazandın!\n\n💰 **Cüzdan:** ${user.balance.toLocaleString()}`;
 
-        if (droppedBox) {
-            description += `\n\n🎁 **Şanslı Günün!** Çalışırken yerlerde bir **Ahşap Kutu** 📦 buldun!\nÇantanı kontrol et: \`/inventory\``;
+        if (droppedItem) {
+            const itemData = ITEMS[droppedItem];
+            description += `\n\n🎁 **Şanslı Günün!** Çalışırken bir **${itemData.emoji} ${itemData.name}** buldun!\nÇantanı kontrol et: \`/inventory\``;
         }
 
         const embed = new EmbedBuilder()
