@@ -26,7 +26,14 @@ module.exports = {
 
     async execute(interaction) {
         const amountInput = interaction.options.getString('bahis');
-        const horseIndex = interaction.options.getInteger('at') - 1;
+        const horseChoice = interaction.options.getInteger('at'); // Modal'dan veya komuttan gelir
+
+        // Validasyon: At seçimi geçerli mi?
+        if (!horseChoice || isNaN(horseChoice) || horseChoice < 1 || horseChoice > 5) {
+            return interaction.reply({ content: '❌ Lütfen 1 ile 5 arasında geçerli bir at numarası girin.', flags: MessageFlags.Ephemeral });
+        }
+
+        const horseIndex = horseChoice - 1;
         const selectedHorse = HORSES[horseIndex];
 
         // Kullanıcı Kontrol

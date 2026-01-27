@@ -19,9 +19,14 @@ module.exports = {
 
     async execute(interaction) {
         const betInput = interaction.options.getString('bahis');
-        const bombCount = interaction.options.getInteger('bombalar');
+        let bombCount = interaction.options.getInteger('bombalar');
         const userId = interaction.user.id;
         const guildId = interaction.guild.id;
+
+        // Validasyon: Bomba sayısı
+        if (!bombCount || isNaN(bombCount) || bombCount < 1 || bombCount > 15) {
+            return interaction.reply({ content: '❌ Bomba sayısı 1 ile 15 arasında olmalıdır.', flags: MessageFlags.Ephemeral });
+        }
 
         // User Check
         let userCheck = await User.findOne({ odasi: userId, odaId: guildId });
