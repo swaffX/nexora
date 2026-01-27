@@ -48,7 +48,8 @@ module.exports = {
             .setDescription('Altıpatlar döndürülüyor... 🔄')
             .setThumbnail('https://rec-data.kaleyra.io/img/calendar/giphy.gif'); // Dönme efekti (temsili)
 
-        const msg = await interaction.reply({ embeds: [embed], fetchReply: true });
+        await interaction.reply({ embeds: [embed] });
+        const msg = await interaction.fetchReply();
 
         // Spin...
         setTimeout(async () => {

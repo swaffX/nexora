@@ -62,6 +62,12 @@ module.exports = {
                     await controlHandler.handleButton(interaction);
                 }
 
+                // Plinko Replay -> action=plinko
+                if (action === 'plinko') {
+                    const command = client.commands.get('plinko');
+                    if (command) await command.execute(interaction, client);
+                }
+
                 // verify_user -> action=verify
                 if (action === 'verify') {
                     const verifyHandler = require('../handlers/verifyHandler');

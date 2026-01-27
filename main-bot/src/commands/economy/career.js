@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ComponentType , MessageFlags } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ComponentType, MessageFlags } = require('discord.js');
 const path = require('path');
 const User = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models', 'User'));
 const { JOBS, calculateSalary, requiredXP } = require('../../utils/jobs');
@@ -86,7 +86,8 @@ module.exports = {
                     .addOptions(options)
             );
 
-            const msg = await interaction.reply({ embeds: [embed], components: [row], fetchReply: true });
+            await interaction.reply({ embeds: [embed], components: [row] });
+            const msg = await interaction.fetchReply();
 
             // Collector
             const filter = i => i.user.id === interaction.user.id;
