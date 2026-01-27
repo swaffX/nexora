@@ -52,9 +52,9 @@ module.exports = {
             .setDescription(`Bahis: **${amount}** NexCoin\n\nTop hangi bardağın altında? Şansını dene! (Kazanma: x2.5)`);
 
         const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('cup_1').setLabel('Bardak 1').setStyle(ButtonStyle.Secondry).setEmoji('🥤'),
-            new ButtonBuilder().setCustomId('cup_2').setLabel('Bardak 2').setStyle(ButtonStyle.Secondry).setEmoji('🥤'),
-            new ButtonBuilder().setCustomId('cup_3').setLabel('Bardak 3').setStyle(ButtonStyle.Secondry).setEmoji('🥤')
+            new ButtonBuilder().setCustomId('cup_1').setLabel('Bardak 1').setStyle(ButtonStyle.Secondary).setEmoji('🥤'),
+            new ButtonBuilder().setCustomId('cup_2').setLabel('Bardak 2').setStyle(ButtonStyle.Secondary).setEmoji('🥤'),
+            new ButtonBuilder().setCustomId('cup_3').setLabel('Bardak 3').setStyle(ButtonStyle.Secondary).setEmoji('🥤')
         );
 
         await interaction.reply({ embeds: [embed], components: [row] });

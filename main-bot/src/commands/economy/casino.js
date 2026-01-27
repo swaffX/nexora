@@ -27,7 +27,6 @@ Açılan pencereye bahis miktarını girmen yeterli.
             .setCustomId('casino_menu')
             .setPlaceholder('Bir oyun seç ve OYNA!')
             .addOptions(
-                new StringSelectMenuOptionBuilder().setLabel('Plinko').setValue('plinko').setEmoji('🟢').setDescription('Topu bırak, x5.6 kazan!'),
                 new StringSelectMenuOptionBuilder().setLabel('Crash (Aviator)').setValue('crash').setEmoji('🚀').setDescription('Çarpan yükselirken kaç!'),
                 new StringSelectMenuOptionBuilder().setLabel('Mines (Mayın)').setValue('mines').setEmoji('💣').setDescription('Elmasları bul, bombadan kaç.'),
                 new StringSelectMenuOptionBuilder().setLabel('Blackjack (21)').setValue('blackjack').setEmoji('🃏').setDescription('Krupiyeyi yen, 21 yap.'),
@@ -55,7 +54,6 @@ Açılan pencereye bahis miktarını girmen yeterli.
 
             // MODAL TANIMLARI
             const modalData = {
-                'plinko': { title: '🟢 Plinko', inputs: [{ id: 'bahis', label: 'Bahis', style: TextInputStyle.Short }] },
                 'crash': { title: '🚀 Crash Başlat', inputs: [{ id: 'bahis', label: 'Bahis (veya all)', style: TextInputStyle.Short }] },
                 'mines': { title: '💣 Mines Başlat', inputs: [{ id: 'bahis', label: 'Bahis', style: TextInputStyle.Short }, { id: 'bombalar', label: 'Bomba Sayısı (1-15)', style: TextInputStyle.Short }] },
                 'blackjack': { title: '🃏 Blackjack Başlat', inputs: [{ id: 'bahis', label: 'Bahis (veya all)', style: TextInputStyle.Short }] },
