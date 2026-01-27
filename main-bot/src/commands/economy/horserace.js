@@ -2,11 +2,11 @@ const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require('discord.js'
 const User = require('../../../../shared/models/User');
 
 const HORSES = [
-    { name: 'Gülbatur', icon: '🐎', speed: { min: 4, max: 9 } },
-    { name: 'Şahbatur', icon: '🦄', speed: { min: 4, max: 10 } }, // Min arttırıldı
-    { name: 'Rüzgar', icon: '🦓', speed: { min: 5, max: 8 } },
-    { name: 'Fırtına', icon: '🐂', speed: { min: 3, max: 9 } }, // Max düşürüldü (Nerf)
-    { name: 'Yıldırım', icon: '🐆', speed: { min: 5, max: 8 } }
+    { name: 'Gülbatur', icon: '🐎' },
+    { name: 'Şahbatur', icon: '🦄' },
+    { name: 'Rüzgar', icon: '🦓' },
+    { name: 'Fırtına', icon: '🐂' },
+    { name: 'Yıldırım', icon: '🐆' }
 ];
 
 module.exports = {
@@ -90,8 +90,9 @@ module.exports = {
 
             // Atları hareket ettir
             for (let i = 0; i < HORSES.length; i++) {
-                const move = Math.random() * (HORSES[i].speed.max - HORSES[i].speed.min) + HORSES[i].speed.min;
-                positions[i] += move / 2; // Hızı dengele
+                // Her at her turda 1 ile 6 birim arası rastgele ilerler (Tam şans)
+                const move = Math.floor(Math.random() * 6) + 1;
+                positions[i] += move / 2; // Görsel ölçekleme
             }
 
             // Bitiş Kontrolü (Hepsini hareket ettirdikten sonra)
