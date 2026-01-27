@@ -41,14 +41,12 @@ module.exports = {
         if (opponent.id === author.id) return interaction.reply({ content: 'Kendi kendine yarışamazsın.', flags: MessageFlags.Ephemeral });
         if (opponent.bot) return interaction.reply({ content: 'Botlar senden hızlı yazar.', flags: MessageFlags.Ephemeral });
 
-        // Bakiye Kontrolü
         const authorData = await User.findOne({ odasi: author.id, odaId: interaction.guild.id });
         if (!authorData || authorData.balance < amount) return interaction.reply({ content: '❌ Yetersiz bakiye!', flags: MessageFlags.Ephemeral });
 
         const opponentData = await User.findOne({ odasi: opponent.id, odaId: interaction.guild.id });
         if (!opponentData || opponentData.balance < amount) return interaction.reply({ content: '❌ Rakibinin parası yetmiyor.', flags: MessageFlags.Ephemeral });
 
-        // Davet
         const embed = new EmbedBuilder()
             .setColor('#3498db')
             .setTitle('⌨️ KELİME SAVAŞI')
@@ -60,41 +58,42 @@ module.exports = {
             new ButtonBuilder().setCustomId('decline_type').setLabel('Reddet').setStyle(ButtonStyle.Danger)
         );
 
-        const msg = await interaction.reply({ content: `<@${opponent.id}>`, embeds: [embed], components: [row], fetchReply: true });
+        // FIX: fetchReply
+        await interaction.reply({ content: `<@${opponent.id}>`, embeds: [embed], components: [row] });
+        const msg = await interaction.fetchReply();
 
         const collector = msg.createMessageComponentCollector({ componentType: ComponentType.Button, time: 30000 });
 
         collector.on('collect', async i => {
-            if (i.user.id !== opponent.id) {
-                if (i.user.id === author.id && i.customId === 'decline_type') { }
-                else return i.reply({ content: 'Bu düello senin için değil.', flags: MessageFlags.Ephemeral });
-            }
+            try {
+                if (i.replied || i.deferred) return;
 
-            if (i.customId === 'decline_type') {
-                collector.stop('declined');
-                return i.update({ content: '❌ Düello reddedildi.', embeds: [], components: [] });
-            }
+                if (i.user.id !== opponent.id) {
+                    if (i.user.id === author.id && i.customId === 'decline_type') { }
+                    else return i.reply({ content: 'Bu düello senin için değil.', flags: MessageFlags.Ephemeral });
+                }
 
-            if (i.customId === 'accept_type') {
-                collector.stop('accepted');
-                await i.deferUpdate();
-                startTypeGame(msg, author, opponent, amount, interaction.guild.id, interaction.channel);
-            }
+                if (i.customId === 'decline_type') {
+                    collector.stop('declined');
+                    return i.update({ content: '❌ Düello reddedildi.', embeds: [], components: [] });
+                }
+
+                if (i.customId === 'accept_type') {
+                    collector.stop('accepted');
+                    await i.deferUpdate();
+                    startTypeGame(msg, author, opponent, amount, interaction.guild.id, interaction.channel);
+                }
+            } catch (e) { }
         });
     }
 };
 
 async function startTypeGame(message, p1, p2, amount, guildId, channel) {
-    // Paraları Kes
     await User.findOneAndUpdate({ odasi: p1.id, odaId: guildId }, { $inc: { balance: -amount } });
     await User.findOneAndUpdate({ odasi: p2.id, odaId: guildId }, { $inc: { balance: -amount } });
 
-    // Rastgele Cümle Seç
-    // Cümleyi biraz "Invisible Character" (Zero Width Space) ile modifiye edelim ki Copy-Paste zorlaşsın mı? 
-    // Şimdilik hayır, normal kullanıcıyı bezdirir.
     const targetSentence = SENTENCES[Math.floor(Math.random() * SENTENCES.length)];
 
-    // Geri Sayım
     await message.edit({ content: 'HAZIRLANIN...', embeds: [], components: [] });
 
     setTimeout(async () => { await message.edit({ content: '3...' }); }, 1000);
@@ -105,22 +104,20 @@ async function startTypeGame(message, p1, p2, amount, guildId, channel) {
         const embed = new EmbedBuilder()
             .setColor('#f1c40f')
             .setTitle('🔥 YAZ BAKALIM! 🔥')
-            .setDescription(`Aşağıdaki cümleyi **AYNEN** yaz:\n\n\`${targetSentence}\``); // Code block içinde göster
+            .setDescription(`Aşağıdaki cümleyi **AYNEN** yaz:\n\n\`${targetSentence}\``);
 
         await message.edit({ content: `✍️ **BAŞLA!** <@${p1.id}> vs <@${p2.id}>`, embeds: [embed] });
 
-        // Message Collector Başlat
         const filter = m => (m.author.id === p1.id || m.author.id === p2.id) && m.content === targetSentence;
 
-        // İlk doğru yazanı al
         const winnerCollector = channel.createMessageCollector({ filter, time: 30000, max: 1 });
 
         winnerCollector.on('collect', async m => {
             const winner = m.author;
+            // Diğer oyuncu kaybeden
             const loser = m.author.id === p1.id ? p2 : p1;
             const winAmount = amount * 2;
 
-            // Ödül
             await User.findOneAndUpdate({ odasi: winner.id, odaId: guildId }, { $inc: { balance: winAmount } });
 
             const winEmbed = new EmbedBuilder()
@@ -130,7 +127,6 @@ async function startTypeGame(message, p1, p2, amount, guildId, channel) {
 
             await message.edit({ content: `🏆 Kazanan: <@${winner.id}>`, embeds: [winEmbed] });
 
-            // Quest
             try {
                 const { updateQuestProgress } = require('../../utils/questManager');
                 await updateQuestProgress({ odasi: winner.id, odaId: guildId }, 'gamble', 1);
@@ -139,7 +135,6 @@ async function startTypeGame(message, p1, p2, amount, guildId, channel) {
 
         winnerCollector.on('end', async (collected, reason) => {
             if (reason === 'time' && collected.size === 0) {
-                // Berabere (İade)
                 await User.findOneAndUpdate({ odasi: p1.id, odaId: guildId }, { $inc: { balance: amount } });
                 await User.findOneAndUpdate({ odasi: p2.id, odaId: guildId }, { $inc: { balance: amount } });
 

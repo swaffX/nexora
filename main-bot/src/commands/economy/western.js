@@ -23,15 +23,13 @@ module.exports = {
         if (opponent.id === author.id) return interaction.reply({ content: 'Kendinle düello atamazsın kovboy. 🤠', flags: MessageFlags.Ephemeral });
         if (opponent.bot) return interaction.reply({ content: 'Botlarla düello atamazsın.', flags: MessageFlags.Ephemeral });
 
-        // Bakiye Kontrolü (Author)
+        // Bakiye Kontrolü
         const authorData = await User.findOne({ odasi: author.id, odaId: interaction.guild.id });
         if (!authorData || authorData.balance < amount) return interaction.reply({ content: '❌ Yetersiz bakiye!', flags: MessageFlags.Ephemeral });
 
-        // Bakiye Kontrolü (Opponent)
         const opponentData = await User.findOne({ odasi: opponent.id, odaId: interaction.guild.id });
         if (!opponentData || opponentData.balance < amount) return interaction.reply({ content: '❌ Rakibinin parası yetmiyor.', flags: MessageFlags.Ephemeral });
 
-        // Meydan Okuma Embed
         const embed = new EmbedBuilder()
             .setColor('#e67e22')
             .setTitle('🤠 Vahşi Batı Düellosu')
@@ -43,29 +41,35 @@ module.exports = {
             new ButtonBuilder().setCustomId('decline_duel').setLabel('Reddet').setStyle(ButtonStyle.Danger)
         );
 
-        const msg = await interaction.reply({ content: `<@${opponent.id}>`, embeds: [embed], components: [row], fetchReply: true });
+        // FIX: fetchReply yerine ayrı çağrı
+        await interaction.reply({ content: `<@${opponent.id}>`, embeds: [embed], components: [row] });
+        const msg = await interaction.fetchReply();
 
         const collector = msg.createMessageComponentCollector({ componentType: ComponentType.Button, time: 30000 });
 
         collector.on('collect', async i => {
-            if (i.user.id !== opponent.id) {
-                if (i.user.id === author.id && i.customId === 'decline_duel') {
-                    // Yazan kişi iptal edebilir
-                } else {
-                    return i.reply({ content: 'Bu düello senin için değil.', flags: MessageFlags.Ephemeral });
+            try {
+                if (i.replied || i.deferred) return;
+
+                if (i.user.id !== opponent.id) {
+                    if (i.user.id === author.id && i.customId === 'decline_duel') {
+                        // OK
+                    } else {
+                        return i.reply({ content: 'Bu düello senin için değil.', flags: MessageFlags.Ephemeral });
+                    }
                 }
-            }
 
-            if (i.customId === 'decline_duel') {
-                collector.stop('declined');
-                return i.update({ content: '❌ Düello reddedildi veya iptal edildi.', embeds: [], components: [] });
-            }
+                if (i.customId === 'decline_duel') {
+                    collector.stop('declined');
+                    return i.update({ content: '❌ Düello reddedildi veya iptal edildi.', embeds: [], components: [] });
+                }
 
-            if (i.customId === 'accept_duel') {
-                collector.stop('accepted');
-                await i.deferUpdate();
-                startGame(msg, author, opponent, amount, interaction.guild.id);
-            }
+                if (i.customId === 'accept_duel') {
+                    collector.stop('accepted');
+                    await i.deferUpdate();
+                    startGame(msg, author, opponent, amount, interaction.guild.id);
+                }
+            } catch (e) { console.error(e); }
         });
 
         collector.on('end', (collected, reason) => {
@@ -77,29 +81,24 @@ module.exports = {
 };
 
 async function startGame(message, p1, p2, amount, guildId) {
-    // Paraları Kes (Atomik)
     await User.findOneAndUpdate({ odasi: p1.id, odaId: guildId }, { $inc: { balance: -amount } });
     await User.findOneAndUpdate({ odasi: p2.id, odaId: guildId }, { $inc: { balance: -amount } });
 
-    let gameState = 'waiting'; // waiting, ready, fire, ended
+    let gameState = 'waiting';
 
     const embed = new EmbedBuilder()
         .setColor('#f1c40f')
         .setTitle('🤠 HAZIRLANIN...')
         .setDescription(`Sırt sırta verdiniz... 3 adım atın...\n\n**Silahına davranma!** 🔥 butonu çıkınca BAS!\n\n*(Erken basarsan, silahın tutukluk yapar ve kaybedersin)*`);
 
-    // Sahte buton (Erken basanı yakalamak için)
     const waitRow = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('shoot').setLabel('✋ Bekle...').setStyle(ButtonStyle.Secondary).setDisabled(false) // Disabled false yapıp tuzağa düşürelim mi? Evet.
+        new ButtonBuilder().setCustomId('shoot').setLabel('✋ Bekle...').setStyle(ButtonStyle.Secondary).setDisabled(false)
     );
 
-    // Başlangıç Mesajı
     await message.edit({ content: `🔫 <@${p1.id}> vs <@${p2.id}>`, embeds: [embed], components: [waitRow] });
 
-    // Rastgele Bekleme Süresi (3 ile 8 saniye arası)
     const delay = Math.floor(Math.random() * 5000) + 3000;
 
-    // Collector'ı hemen başlatıyoruz ki erken basanları yakalayalım
     const collector = message.createMessageComponentCollector({ componentType: ComponentType.Button, time: 20000 });
 
     let fireTimeout = setTimeout(async () => {
@@ -120,32 +119,40 @@ async function startGame(message, p1, p2, amount, guildId) {
 
 
     collector.on('collect', async btn => {
-        if (btn.user.id !== p1.id && btn.user.id !== p2.id) return btn.reply({ content: 'Kenardan izle evlat.', flags: MessageFlags.Ephemeral });
+        try {
+            if (btn.replied || btn.deferred) return; // Güvenlik
 
-        // Oyun zaten bittiyse (Double click protection)
-        if (gameState === 'ended') return;
+            if (btn.user.id !== p1.id && btn.user.id !== p2.id) return btn.reply({ content: 'Kenardan izle evlat.', flags: MessageFlags.Ephemeral });
 
-        // 1. ERKEN BASMA (PENALTY)
-        if (gameState === 'waiting') {
-            gameState = 'ended';
-            clearTimeout(fireTimeout);
-            collector.stop();
+            // FIX: Mutlaka etkileşimi onayla
+            await btn.deferUpdate();
 
-            const loser = btn.user;
-            const winner = btn.user.id === p1.id ? p2 : p1;
+            if (gameState === 'ended') return;
 
-            return endGame(message, winner, loser, amount, guildId, 'early_fail');
-        }
+            // 1. ERKEN BASMA (PENALTY)
+            if (gameState === 'waiting') {
+                gameState = 'ended';
+                clearTimeout(fireTimeout);
+                collector.stop();
 
-        // 2. DOĞRU ZAMAN (FIRE)
-        if (gameState === 'fire') {
-            gameState = 'ended';
-            collector.stop();
+                const loser = btn.user;
+                const winner = btn.user.id === p1.id ? p2 : p1;
 
-            const winner = btn.user;
-            const loser = btn.user.id === p1.id ? p2 : p1;
+                return endGame(message, winner, loser, amount, guildId, 'early_fail');
+            }
 
-            return endGame(message, winner, loser, amount, guildId, 'hit');
+            // 2. DOĞRU ZAMAN (FIRE)
+            if (gameState === 'fire') {
+                gameState = 'ended';
+                collector.stop();
+
+                const winner = btn.user;
+                const loser = btn.user.id === p1.id ? p2 : p1;
+
+                return endGame(message, winner, loser, amount, guildId, 'hit');
+            }
+        } catch (e) {
+            if (e.code !== 'InteractionCollectorError') console.error(e);
         }
     });
 }
