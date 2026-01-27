@@ -81,20 +81,39 @@ module.exports = {
     }
 };
 
-// 1. FAZ: SAYI TUTMA
+// 1. FAZ: SAYI TUTMA (Gelişmiş Aralık Sistemi)
 async function runGamePhase1_Input(message, p1, p2, amount, guildId, round) {
     try {
+        // RASTGELE ARALIK BELİRLEME (Anti-Spam Logic)
+        // Oyunun heyecanlı olması için iki aralık birbirine yakın olmalı ("Savaş Alanı").
+        // Rastgele bir merkez (Center) seçiyoruz (20-80 arası)
+        const battleCenter = Math.floor(Math.random() * 60) + 20;
+
+        // P1 ve P2 için bu merkezin etrafında aralıklar oluşturuyoruz.
+        // Örn center 50 ise: P1 [35-65], P2 [40-60] gibi.
+        const p1_min = Math.max(1, battleCenter - Math.floor(Math.random() * 15) - 10);
+        const p1_max = Math.min(100, battleCenter + Math.floor(Math.random() * 15) + 10);
+
+        const p2_min = Math.max(1, battleCenter - Math.floor(Math.random() * 15) - 10);
+        const p2_max = Math.min(100, battleCenter + Math.floor(Math.random() * 15) + 10);
+
         const gameState = {
-            p1: { id: p1.id, name: p1.username, number: null },
-            p2: { id: p2.id, name: p2.username, number: null }
+            p1: {
+                id: p1.id, name: p1.username, number: null,
+                range: { min: p1_min, max: p1_max }
+            },
+            p2: {
+                id: p2.id, name: p2.username, number: null,
+                range: { min: p2_min, max: p2_max }
+            }
         };
 
         const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('pick_num').setLabel('Bir Sayı Tut (Gizli)').setStyle(ButtonStyle.Primary).setEmoji('🔢')
+            new ButtonBuilder().setCustomId('pick_num').setLabel('Sayı Tut (Sana Özel)').setStyle(ButtonStyle.Primary).setEmoji('🎯')
         );
 
         await message.edit({
-            content: `🏁 **TUR ${round} BAŞLIYOR!**\nHer ikiniz de **1-100** arasında gizli bir sayı tutun.`,
+            content: `🏁 **TUR ${round} BAŞLIYOR!**\nSistem her iki oyuncuya da **özel bir sayı aralığı** atadı.\nButona tıklayarak sana verilen görev aralığını görebilirsin.`,
             embeds: [],
             components: [row]
         });
@@ -115,15 +134,16 @@ async function runGamePhase1_Input(message, p1, p2, amount, guildId, round) {
                 return btn.reply({ content: '✅ Sen zaten sayını tuttun, rakibi bekle.', flags: MessageFlags.Ephemeral });
             }
 
-            // MODAL AÇ (Hemen!)
+            // MODAL AÇ
             const modal = new ModalBuilder()
                 .setCustomId(`md_input_${btn.user.id}_r${round}`)
-                .setTitle(`Tur ${round}: Sayı Tut`);
+                .setTitle(`Görev: ${player.range.min} - ${player.range.max} Arası`);
 
             const input = new TextInputBuilder()
                 .setCustomId('secret_num')
-                .setLabel('Sayı (1-100)')
+                .setLabel(`Sayı Gir (${player.range.min}-${player.range.max})`)
                 .setStyle(TextInputStyle.Short)
+                .setPlaceholder(`${player.range.min} ile ${player.range.max} arasında bir sayı...`)
                 .setRequired(true)
                 .setMaxLength(3);
 
@@ -137,19 +157,19 @@ async function runGamePhase1_Input(message, p1, p2, amount, guildId, round) {
 
                 const num = parseInt(submit.fields.getTextInputValue('secret_num'));
 
-                if (isNaN(num) || num < 1 || num > 100) {
-                    await submit.reply({ content: '❌ Geçersiz sayı! 1-100 arası olmalı.', flags: MessageFlags.Ephemeral });
+                // DİNAMİK ARALIK KONTROLÜ
+                if (isNaN(num) || num < player.range.min || num > player.range.max) {
+                    await submit.reply({ content: `❌ **HATA!** Sadece **${player.range.min}** ile **${player.range.max}** arasında bir sayı tutabilirsin!`, flags: MessageFlags.Ephemeral });
                     return;
                 }
 
                 player.number = num;
-                await submit.reply({ content: `🔒 Sayı tutuldu! (${num})`, flags: MessageFlags.Ephemeral });
+                await submit.reply({ content: `🔒 Sayı kilitlendi: **${num}** (Gizli)`, flags: MessageFlags.Ephemeral });
 
                 // İkisi de Hazır mı?
                 if (gameState.p1.number !== null && gameState.p2.number !== null) {
                     collector.stop(); // Bu fazı bitir
 
-                    // AYNI SAYI KONTROLÜ (İstek üzerine eklendi)
                     if (gameState.p1.number === gameState.p2.number) {
                         return finishGameDraw(message, gameState, p1, p2, amount, guildId);
                     }
@@ -173,10 +193,28 @@ async function runGamePhase2_Guess(message, gameState, p1, p2, amount, guildId, 
         gameState.p1.guess = null;
         gameState.p2.guess = null;
 
+        let description = `İki taraf da sayısını tuttu!\n\n**Soru:** Rakibinin sayısı, senin sayından **BÜYÜK (⬆️)** mü **KÜÇÜK (⬇️)** mü?`;
+
+        // 🕵️ İPUCU SİSTEMİ (Anti-Exploit)
+        // Eğer biri uçlarda (1-15 veya 86-100) sayı tuttuysa rakibe ipucu ver.
+        let hints = [];
+
+        // P1 Kontrol
+        if (gameState.p1.number <= 15) hints.push(`⚠️ **İPUCU:** ${gameState.p1.name} **ÇOK DÜŞÜK (1-15)** bir sayı tuttu!`);
+        else if (gameState.p1.number >= 86) hints.push(`⚠️ **İPUCU:** ${gameState.p1.name} **ÇOK YÜKSEK (86-100)** bir sayı tuttu!`);
+
+        // P2 Kontrol
+        if (gameState.p2.number <= 15) hints.push(`⚠️ **İPUCU:** ${gameState.p2.name} **ÇOK DÜŞÜK (1-15)** bir sayı tuttu!`);
+        else if (gameState.p2.number >= 86) hints.push(`⚠️ **İPUCU:** ${gameState.p2.name} **ÇOK YÜKSEK (86-100)** bir sayı tuttu!`);
+
+        if (hints.length > 0) {
+            description += `\n\n${hints.join('\n')}`;
+        }
+
         const embed = new EmbedBuilder()
             .setColor('#3498db')
             .setTitle(`🤔 TAHMİN ZAMANI (Tur ${round})`)
-            .setDescription(`İki taraf da sayısını tuttu!\n\n**Soru:** Rakibinin sayısı, senin sayından **BÜYÜK (⬆️)** mü **KÜÇÜK (⬇️)** mü?`)
+            .setDescription(description)
             .setFooter({ text: 'Doğru bilen kazanır, ikiniz de bilirseniz yeni tur!' });
 
         const row = new ActionRowBuilder().addComponents(
