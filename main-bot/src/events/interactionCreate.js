@@ -29,6 +29,16 @@ module.exports = {
             try {
                 const [action, ...args] = interaction.customId.split('_');
 
+                // Tournament Button Handler (tour_join_ID)
+                if (action === 'tour') {
+                    const tournamentHandler = require('../handlers/tournamentHandler');
+                    const [type, tourId] = args; // tour_join_ID -> split -> tour (action), join (args[0]), ID (args[1])
+                    // Fix split logic: customId "tour_join_123" -> action="tour", args=["join", "123"]
+                    if (args[0] === 'join') await tournamentHandler.handleJoin(interaction, args[1]);
+                    if (args[0] === 'leave') await tournamentHandler.handleLeave(interaction, args[1]);
+                    return;
+                }
+
                 if (action === 'giveaway') {
                     const giveawayHandler = require('../handlers/giveawayHandler');
                     await giveawayHandler.handleButton(interaction, args, client);
@@ -136,9 +146,52 @@ module.exports = {
             }
         }
 
-        // Modal Submit
+        // Modal Submit GLOBAL HANDLER
         if (interaction.isModalSubmit()) {
             try {
+                // CASINO MODAL HANDLER
+                if (interaction.customId.startsWith('casino_modal_')) {
+                    const commandName = interaction.customId.replace('casino_modal_', '');
+                    const command = client.commands.get(commandName);
+
+                    if (command) {
+                        try {
+                            const fields = interaction.fields;
+
+                            // Interaction'ı 'sanki slash command gibi' modifiye et
+                            // Orijinal interaction'ı bozmadan, execute fonksiyonuna
+                            // 'options' özelliğini inject ediyoruz.
+                            // Ancak JS objeleri referansla geçtiği için dikkatli olmalıyız.
+                            // En güvenli yol: Proxy kullanmak veya execute fonksiyonunun options'ı okuyan kısmını
+                            // overwrite etmek. Basitçe interaction'a options metodlarını ekleyelim.
+
+                            interaction.options = {
+                                getString: (name) => {
+                                    try { return fields.getTextInputValue(name); } catch (e) { return null; }
+                                },
+                                getInteger: (name) => {
+                                    try {
+                                        const val = fields.getTextInputValue(name);
+                                        return val ? parseInt(val) : null;
+                                    } catch (e) { return null; }
+                                },
+                                getUser: () => interaction.user,
+                                getMember: () => interaction.member,
+                                get: (name) => { return { value: fields.getTextInputValue(name) }; } // Genel get
+                            };
+
+                            await command.execute(interaction, client);
+                            logger.command(interaction.user.tag, `MODAL:${commandName}`, interaction.guild?.name);
+                        } catch (err) {
+                            console.error(err);
+                            await interaction.reply({ content: '❌ Oyun başlatılamadı: ' + err.message, flags: MessageFlags.Ephemeral });
+                        }
+                    } else {
+                        await interaction.reply({ content: '❌ Oyun bulunamadı.', flags: MessageFlags.Ephemeral });
+                    }
+                    return; // Casino modal işlemi bitti
+                }
+
                 if (interaction.customId.startsWith('modal_voice_')) {
                     const voiceMasterHandler = require('../handlers/voiceMasterHandler');
                     await voiceMasterHandler.handleModal(interaction);
@@ -151,18 +204,6 @@ module.exports = {
             } catch (error) {
                 logger.error('Modal interaction hatası:', error);
             }
-        }
-
-        // Tournament Button Handler (Extra check since we are inside button block mostly)
-        // Note: Better to move this into the main isButton block, but adding here for safety if missed
-        if (interaction.isButton() && interaction.customId.startsWith('tour_')) {
-            try {
-                const tournamentHandler = require('../handlers/tournamentHandler');
-                const [action, type, tourId] = interaction.customId.split('_'); // tour_join_ID
-
-                if (type === 'join') await tournamentHandler.handleJoin(interaction, tourId);
-                if (type === 'leave') await tournamentHandler.handleLeave(interaction, tourId);
-            } catch (e) { console.error(e); }
         }
     }
 };

@@ -12,9 +12,9 @@ module.exports = {
                 .setRequired(true))
         .addIntegerOption(option =>
             option.setName('bombalar')
-                .setDescription('Kaç adet bomba olsun? (1-24)')
+                .setDescription('Kaç adet bomba olsun? (1-15)')
                 .setMinValue(1)
-                .setMaxValue(24)
+                .setMaxValue(15) // 20 kutuya indirdiğimiz için bombayı da azaltalım güvenli olsun
                 .setRequired(true)),
 
     async execute(interaction) {
@@ -27,7 +27,7 @@ module.exports = {
         let userCheck = await User.findOne({ odasi: userId, odaId: guildId });
         if (!userCheck) return interaction.reply({ content: '❌ Kaydınız yok.', flags: MessageFlags.Ephemeral });
 
-        let amount = 0;
+        let amount = 0; // Check "all" logic
         if (['all', 'hepsi', 'tümü'].includes(betInput.toLowerCase())) {
             amount = userCheck.balance;
         } else {
@@ -45,7 +45,12 @@ module.exports = {
         if (!user) return interaction.reply({ content: '❌ Yetersiz bakiye!', flags: MessageFlags.Ephemeral });
 
         // OYUN MANTIĞI START
-        const gridSize = 25; // 5x5
+        // 5x5 = 25 Buton (Discord Max: 5 Row x 5 Components = 25)
+        // ANCAK: Biz Cashout butonu da ekleyeceğiz. Bu yüzden 5. satırı feda etmeliyiz.
+        // Yeni Grid: 5x4 = 20 Kutu. 1 Satır kontroller için.
+
+        const gridSize = 20; // 5 columns x 4 rows
+        const maxClicks = gridSize - bombCount;
         let grid = Array(gridSize).fill('safe');
 
         // Bombaları yerleştir
@@ -62,55 +67,46 @@ module.exports = {
         let gameOver = false;
         let currentMultiplier = 1.0;
 
-        // Çarpan Hesaplama Fonksiyonu
-        // Formül: Multiplier = Multiplier * (TotalRemaining / SafeRemaining)
-        // Basitleştirilmiş versiyon: Her adımda sabit veya artan oran
-        // Daha güvenli: House Edge (%1) ile hesapla
-
         const calculateNextMultiplier = (step) => {
-            // Basit Kümulatif Olasılık
-            // (25 - bomb) / 25 -> şans
-            // Adım başı risk artar
-            // Şimdilik basit bir artış kullanalım:
-            // 1 bomba için her adım x1.03, 10 bomba için x1.3 gibi.
-
-            // Gerçekçi olması için:
-            // 25 kutu, N bomba.
-            // 1. adım şansı: (25-N)/25. Fair Payout: 1 / Şans
-            // x0.95 House Edge
+            // (Total - Bomb) / Total -> Kazanma şansı
+            // Örn: 20 kutu, 5 bomba.
+            // 1. adım: 15/20 şans.
+            // Payout = 1 / Probability * 0.95 edge
 
             let probability = 1;
+            // Kümülatif şans:
+            // 1. elmas: (20-N)/20
+            // 2. elmas: (19-N)/19 ...
+
             for (let i = 0; i <= step; i++) {
-                probability *= (25 - bombCount - i) / (25 - i);
+                probability *= (gridSize - bombCount - i) / (gridSize - i);
             }
             return (0.95 / probability);
         };
 
         // Butonları Oluştur
-        const generateRows = (revealMask = [], revealAll = false) => {
+        const generateComponents = (revealMask = [], revealAll = false) => {
             const rows = [];
-            for (let i = 0; i < 5; i++) {
+            // 4 Satır Kutu (0-19)
+            for (let i = 0; i < 4; i++) {
                 const row = new ActionRowBuilder();
                 for (let j = 0; j < 5; j++) {
                     const index = i * 5 + j;
                     const btn = new ButtonBuilder().setCustomId(`mine_${index}`);
 
                     if (revealAll) {
-                        // Oyun bitti, hepsini göster
                         btn.setDisabled(true);
                         if (grid[index] === 'bomb') {
                             btn.setStyle(ButtonStyle.Danger).setEmoji('💣');
                         } else if (revealMask.includes(index)) {
                             btn.setStyle(ButtonStyle.Success).setEmoji('💎');
                         } else {
-                            btn.setStyle(ButtonStyle.Secondary).setEmoji('🟦'); // Açılmamış safe
-                            btn.setDisabled(true); // Disable
+                            btn.setStyle(ButtonStyle.Secondary).setEmoji('🟦');
+                            btn.setDisabled(true);
                         }
                     } else if (revealMask.includes(index)) {
-                        // Açılmış kutu
                         btn.setStyle(ButtonStyle.Success).setEmoji('💎').setDisabled(true);
                     } else {
-                        // Kapalı kutu
                         btn.setStyle(ButtonStyle.Secondary).setEmoji('🟦');
                     }
                     row.addComponents(btn);
@@ -118,17 +114,25 @@ module.exports = {
                 rows.push(row);
             }
 
-            // Cashout Butonu (Extra Row)
-            if (!revealAll) {
-                const actionRow = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder()
-                        .setCustomId('mines_cashout')
-                        .setLabel(`Nakit Çek (${(amount * calculateNextMultiplier(revealedCount - 1)).toFixed(0)})`) // Prediction calculation fix needed in display
-                        .setStyle(ButtonStyle.Primary)
-                        .setDisabled(revealedCount === 0) // Hiç açmadan çekemezsin
-                );
-                return [...rows, actionRow];
-            }
+            // 5. Satır: Kontrol (Cashout)
+            const controlRow = new ActionRowBuilder();
+
+            const nextMult = calculateNextMultiplier(revealedCount - 1);
+            // revealedCount 0 iken cashout yok
+            // revealedCount 1 iken step 0 çarpanını alırız
+
+            const potentialWin = Math.floor(amount * nextMult);
+
+            controlRow.addComponents(
+                new ButtonBuilder()
+                    .setCustomId('mines_cashout')
+                    .setLabel(gameOver ? 'Oyun Bitti' : `Nakit Çek: ${potentialWin}`)
+                    .setStyle(ButtonStyle.Primary)
+                    .setEmoji('💰')
+                    .setDisabled(revealedCount === 0 || gameOver || revealAll)
+            );
+
+            rows.push(controlRow);
             return rows;
         };
 
@@ -137,13 +141,13 @@ module.exports = {
         const embed = new EmbedBuilder()
             .setColor('#2ecc71')
             .setTitle(`💣 MINES [${bombCount} Bomba]`)
-            .setDescription(`Bahis: **${amount}** | Çarpan: **1.00x**\nKutulara tıkla, elmasları bul!`)
-            .setFooter({ text: 'Dilediğin zaman çekilebilirsin.' });
+            .setDescription(`**Bahis:** ${amount}\n**Çarpan:** 1.00x\n\nKutulara tıkla, elmasları bul!`)
+            .setFooter({ text: 'House Edge: %5' });
 
         const msg = await interaction.reply({
             embeds: [embed],
-            components: generateRows(revealedIndices, false),
-            fetchReply: true
+            components: generateComponents(revealedIndices, false),
+            withResponse: true
         });
 
         const collector = msg.createMessageComponentCollector({
@@ -154,15 +158,16 @@ module.exports = {
         collector.on('collect', async i => {
             if (i.customId === 'mines_cashout') {
                 gameOver = true;
-                const winAmt = Math.floor(amount * currentMultiplier);
+                const finalMult = calculateNextMultiplier(revealedCount - 1);
+                const winAmt = Math.floor(amount * finalMult);
 
                 await User.findOneAndUpdate({ odasi: userId, odaId: guildId }, { $inc: { balance: winAmt } });
 
-                embed.setTitle('💰 KAZANDIN!');
-                embed.setDescription(`Tebrikler! **${winAmt}** NexCoin hesabına eklendi.\nÇarpan: **${currentMultiplier.toFixed(2)}x**`);
+                embed.setTitle('💰 NAKİT ÇEKİLDİ!');
+                embed.setDescription(`**Kazanılan:** ${winAmt} NexCoin\n**Çarpan:** ${finalMult.toFixed(2)}x`);
                 embed.setColor('#f1c40f');
 
-                await i.update({ embeds: [embed], components: generateRows(revealedIndices, true) });
+                await i.update({ embeds: [embed], components: generateComponents(revealedIndices, true) });
                 collector.stop();
                 return;
             }
@@ -171,42 +176,36 @@ module.exports = {
             const index = parseInt(i.customId.split('_')[1]);
 
             if (grid[index] === 'bomb') {
-                // BOM!
                 gameOver = true;
-                embed.setTitle('💥 BOOOOM!');
-                embed.setDescription(`Bombaya bastın! **${amount}** NexCoin kül oldu...`);
+                embed.setTitle('💥 PATLADI!');
+                embed.setDescription(`Malesef bombaya bastın ve **${amount}** NexCoin kaybettin.`);
                 embed.setColor('#e74c3c');
 
-                await i.update({ embeds: [embed], components: generateRows(revealedIndices, true) }); // Reveal all
+                await i.update({ embeds: [embed], components: generateComponents(revealedIndices, true) });
                 collector.stop();
             } else {
-                // ELMAS
                 revealedIndices.push(index);
                 revealedCount++;
 
-                // Yeni çarpan hesapla
-                // index count starts 0 in math logic above, but revealedCount is 1 now.
-                // call with revealedCount-1 to match 0-based step if needed, or just adjust formula.
-                // Basit mantık: Her güvenli adımda çarpanı güncelle
+                // Calculate logic for display
                 currentMultiplier = calculateNextMultiplier(revealedCount - 1);
 
-                embed.setDescription(`Bahis: **${amount}** | Çarpan: **${currentMultiplier.toFixed(2)}x**\nKazanç: **${Math.floor(amount * currentMultiplier)}**`);
+                embed.setDescription(`**Bahis:** ${amount}\n**Çarpan:** ${currentMultiplier.toFixed(2)}x\n**Potansiyel:** ${Math.floor(amount * currentMultiplier)}`);
 
-                // Eğer tüm elmaslar bulunduysa auto-win
-                if (revealedCount === (25 - bombCount)) {
+                // Auto Win if clear
+                if (revealedCount === (gridSize - bombCount)) {
                     gameOver = true;
-                    // Auto Cashout
                     const winAmt = Math.floor(amount * currentMultiplier);
                     await User.findOneAndUpdate({ odasi: userId, odaId: guildId }, { $inc: { balance: winAmt } });
 
-                    embed.setTitle('🏆 TÜMÜNÜ BULDUN!');
+                    embed.setTitle('🏆 MÜKEMMEL!');
+                    embed.setDescription(`Tüm elmasları buldun!\n**Kazanılan:** ${winAmt}`);
                     embed.setColor('#f1c40f');
 
-                    await i.update({ embeds: [embed], components: generateRows(revealedIndices, true) });
+                    await i.update({ embeds: [embed], components: generateComponents(revealedIndices, true) });
                     collector.stop();
                 } else {
-                    // Devam
-                    await i.update({ embeds: [embed], components: generateRows(revealedIndices, false) });
+                    await i.update({ embeds: [embed], components: generateComponents(revealedIndices, false) });
                 }
             }
         });
