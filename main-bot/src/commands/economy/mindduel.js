@@ -135,48 +135,57 @@ async function runGamePhase1_Input(message, p1, p2, amount, guildId, round) {
         const collector = message.createMessageComponentCollector({ filter, componentType: ComponentType.Button, time: 60000 });
 
         collector.on('collect', async btn => {
-            if (btn.user.id !== p1.id && btn.user.id !== p2.id) {
-                return btn.reply({ content: '❌ Bu oyun senin değil.', flags: MessageFlags.Ephemeral });
-            }
-
-            const player = btn.user.id === p1.id ? gameState.p1 : gameState.p2;
-
-            // KARTLARA BAKMA (GİZLİ BİLGİ)
-            if (btn.customId === 'view_ranges') {
-                return btn.reply({
-                    content: `🕵️ **Senin Gizli Seçeneklerin:**\n\n📉 **Düşük Yol:** ${player.ranges.low.min} - ${player.ranges.low.max}\n📈 **Yüksek Yol:** ${player.ranges.high.min} - ${player.ranges.high.max}\n\n*Rakibin bu aralıkları bilmiyor. Birini seç ve şaşırt!*`,
-                    flags: MessageFlags.Ephemeral
-                });
-            }
-
-            if (player.number !== null) {
-                return btn.reply({ content: '✅ Sen zaten seçimini yaptın ve sayını tuttun.', flags: MessageFlags.Ephemeral });
-            }
-
-            // Seçilen Yola göre Kişiye Özel Limitleri Belirle
-            const isHigh = btn.customId === 'path_high';
-            const rangeObj = isHigh ? player.ranges.high : player.ranges.low;
-            const min = rangeObj.min;
-            const max = rangeObj.max;
-
-            // MODAL AÇ
-            const modal = new ModalBuilder()
-                .setCustomId(`md_input_${btn.user.id}_r${round}`)
-                .setTitle(`${isHigh ? 'YÜKSEK' : 'DÜŞÜK'} ROTA (${min}-${max})`);
-
-            const input = new TextInputBuilder()
-                .setCustomId('secret_num')
-                .setLabel(`Sayı Gir (${min}-${max})`)
-                .setStyle(TextInputStyle.Short)
-                .setPlaceholder(`Bu aralıkta bir sayı tut...`)
-                .setRequired(true)
-                .setMaxLength(3);
-
-            modal.addComponents(new ActionRowBuilder().addComponents(input));
-
             try {
+                // Eğer buton zaten cevaplandıysa işlem yapma
+                if (btn.replied || btn.deferred) return;
+
+                if (btn.user.id !== p1.id && btn.user.id !== p2.id) {
+                    return btn.reply({ content: '❌ Bu oyun senin değil.', flags: MessageFlags.Ephemeral });
+                }
+
+                const player = btn.user.id === p1.id ? gameState.p1 : gameState.p2;
+
+                // KARTLARA BAKMA (GİZLİ BİLGİ)
+                if (btn.customId === 'view_ranges') {
+                    // Sadece ephemeral reply ile bitir
+                    await btn.reply({
+                        content: `🕵️ **Senin Gizli Seçeneklerin:**\n\n📉 **Düşük Yol:** ${player.ranges.low.min} - ${player.ranges.low.max}\n📈 **Yüksek Yol:** ${player.ranges.high.min} - ${player.ranges.high.max}\n\n*Rakibin bu aralıkları bilmiyor. Birini seç ve şaşırt!*`,
+                        flags: MessageFlags.Ephemeral
+                    });
+                    return;
+                }
+
+                if (player.number !== null) {
+                    return btn.reply({ content: '✅ Sen zaten seçimini yaptın ve sayını tuttun.', flags: MessageFlags.Ephemeral });
+                }
+
+                // Seçilen Yola göre Kişiye Özel Limitleri Belirle
+                const isHigh = btn.customId === 'path_high';
+                const rangeObj = isHigh ? player.ranges.high : player.ranges.low;
+                const min = rangeObj.min;
+                const max = rangeObj.max;
+
+                // MODAL AÇ
+                const modal = new ModalBuilder()
+                    .setCustomId(`md_input_${btn.user.id}_r${round}`)
+                    .setTitle(`${isHigh ? 'YÜKSEK' : 'DÜŞÜK'} ROTA (${min}-${max})`);
+
+                const input = new TextInputBuilder()
+                    .setCustomId('secret_num')
+                    .setLabel(`Sayı Gir (${min}-${max})`)
+                    .setStyle(TextInputStyle.Short)
+                    .setPlaceholder(`Bu aralıkta bir sayı tut...`)
+                    .setRequired(true)
+                    .setMaxLength(3);
+
+                modal.addComponents(new ActionRowBuilder().addComponents(input));
+
+                // Modal göster
                 await btn.showModal(modal);
+
+                // Modal Cevabını Bekle
                 const submit = await btn.awaitModalSubmit({ time: 30000, filter: m => m.customId === `md_input_${btn.user.id}_r${round}` });
+
                 const num = parseInt(submit.fields.getTextInputValue('secret_num'));
 
                 // VALIDATION
@@ -198,7 +207,12 @@ async function runGamePhase1_Input(message, p1, p2, amount, guildId, round) {
                     runGamePhase2_Guess(message, gameState, p1, p2, amount, guildId, round);
                 }
 
-            } catch (err) { }
+            } catch (err) {
+                // Modal timeout veya başka hatalar (Zaten cevaplandı hatası dahil)
+                if (err.code !== 'InteractionCollectorError') {
+                    // console.error('Collector error:', err); // Log kirliliği yapmasın
+                }
+            }
         });
 
     } catch (e) { console.error(e); }
