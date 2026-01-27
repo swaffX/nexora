@@ -39,7 +39,8 @@ Açılan pencereye bahis miktarını girmen yeterli.
                 new StringSelectMenuOptionBuilder().setLabel('Rulet').setValue('roulette').setEmoji('🎱').setDescription('Renk veya sayıya oyna.'),
                 new StringSelectMenuOptionBuilder().setLabel('Yazı Tura').setValue('coinflip').setEmoji('🪙').setDescription('Basit ve hızlı.'),
                 new StringSelectMenuOptionBuilder().setLabel('Western (PvP)').setValue('western').setEmoji('🤠').setDescription('Hızlı silah çeken kazanır.'),
-                new StringSelectMenuOptionBuilder().setLabel('Bomba (PvP)').setValue('bomb').setEmoji('💣').setDescription('Patlamadan pasla!')
+                new StringSelectMenuOptionBuilder().setLabel('Bomba (PvP)').setValue('bomb').setEmoji('💣').setDescription('Patlamadan pasla!'),
+                new StringSelectMenuOptionBuilder().setLabel('Kelime Savaşı (PvP)').setValue('typewar').setEmoji('⌨️').setDescription('En hızlı yazan kazanır.')
             );
 
         const row = new ActionRowBuilder().addComponents(select);
@@ -55,9 +56,9 @@ Açılan pencereye bahis miktarını girmen yeterli.
             const val = i.values[0];
 
             // PvP Oyunları için Özel Uyarı (Modal Yok)
-            if (['western', 'bomb'].includes(val)) {
+            if (['western', 'bomb', 'typewar'].includes(val)) {
                 return i.reply({
-                    content: `🤠 **PvP Oyunları Menüden Başlatılamaz!**\n\nBu oyunlar başka bir oyuncuya meydan okumanı gerektirir.\nLütfen komut kullan:\n\n- **Western:** \`/western <bahis> <rakip>\`\n- **Bomba:** \`/bomb <bahis> <rakip>\``,
+                    content: `🤠 **PvP Oyunları Menüden Başlatılamaz!**\n\nBu oyunlar başka bir oyuncuya meydan okumanı gerektirir.\nLütfen komut kullan:\n\n- **Western:** \`/western <bahis> <rakip>\`\n- **Bomba:** \`/bomb <bahis> <rakip>\`\n- **Kelime Savaşı:** \`/typewar <bahis> <rakip>\``,
                     flags: MessageFlags.Ephemeral
                 });
             }
