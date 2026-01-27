@@ -16,7 +16,8 @@ module.exports = {
     async execute(interaction) {
         // Bahis Miktarını Al (Modal veya Slash Command)
         let betInput;
-        if (interaction.isButton && interaction.customId.startsWith('plinko_replay_')) {
+        // Check if it's a button interaction (Replay)
+        if (interaction.isButton() && interaction.customId && interaction.customId.startsWith('plinko_replay_')) {
             betInput = interaction.customId.split('_')[2];
         } else {
             betInput = interaction.options.getString('bahis');
@@ -110,7 +111,7 @@ module.exports = {
 
         // Yanıt veya Update
         let msg;
-        if (interaction.isButton && interaction.isButton()) { // Replay button
+        if (interaction.isButton()) { // Replay button
             await interaction.update({ embeds: [initialEmbed], components: [] });
             msg = await interaction.fetchReply(); // fetch original message
         } else {
