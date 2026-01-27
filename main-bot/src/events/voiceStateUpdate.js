@@ -2,7 +2,7 @@ const path = require('path');
 const { User, Guild } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
 const voiceMasterHandler = require('../handlers/voiceMasterHandler'); // Yeni Handler
 const logger = require(path.join(__dirname, '..', '..', '..', 'shared', 'logger'));
-const { EmbedBuilder } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 const XP_PER_MINUTE = 5; // Dakika başına kazanılacak XP
 
@@ -158,6 +158,45 @@ async function processVoiceSession(user, guild, client) {
         .setTimestamp();
 
     const { sendLog } = require('../utils/logHelper');
+
+    // ==================== 📨 DM VOICE SESSION CARD ====================
+    try {
+        // Kartı Oluştur
+        const { createVoiceCard } = require('../utils/canvasHelper');
+        // Kanal adını güvenli al
+        const channelName = guild.channels.cache.get(user.currentVoiceChannel)?.name || 'Ses Kanalı';
+
+        const attachment = await createVoiceCard(
+            client.users.cache.get(user.odasi) || { displayAvatarURL: () => '', username: 'Unknown' },
+            durationMs,
+            channelName,
+            user.totalVoiceMinutes
+        );
+
+        const member = await guild.members.fetch(user.odasi).catch(() => null);
+        if (member) {
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setLabel('Bildirimleri Kapat')
+                    .setStyle(ButtonStyle.Secondary)
+                    .setCustomId('voice_notify_toggle')
+                    .setEmoji('🔕')
+            );
+
+            await member.send({
+                content: `👋 Ses oturumun sonlandı! İşte özetin:`,
+                files: [attachment],
+                components: [row]
+            }).catch(() => {
+                // DM Kapalıysa loga yazalım veya sessizce geçelim
+                // console.log(`DM could not be sent to ${user.username}`);
+            });
+        }
+    } catch (err) {
+        console.error('Voice Card Error:', err);
+    }
+    // ================================================================
+
     await sendLog(client, guild.id, 'voice', voiceLogEmbed);
 
     // Quest Update (Saniye olarak gönder)

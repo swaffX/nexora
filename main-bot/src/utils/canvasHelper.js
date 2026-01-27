@@ -126,4 +126,148 @@ async function createLevelCard(user, level, xpLeft) {
     return new AttachmentBuilder(await canvas.encode('png'), { name: `levelup-${user.id}.png` });
 }
 
-module.exports = { createWelcomeImage, createLevelCard };
+/**
+ * Detaylı Ses İstatistik Kartı Oluşturur
+ * @param {object} user Discord User Objesi
+ * @param {number} durationMs Milisaniye cinsinden süre
+ * @param {string} channelName Kanal adı
+ * @param {number} totalVoice Genel toplam süre (dakika) veya XP
+ */
+async function createVoiceCard(user, durationMs, channelName, totalVoiceMinutes) {
+    const canvas = createCanvas(800, 300);
+    const ctx = canvas.getContext('2d');
+
+    // --- RENK PALETİ ---
+    const colors = {
+        bg: '#0F172A',         // Çok koyu lacivert/siyah
+        card: '#1E293B',       // Kart rengi
+        accent: '#8B5CF6',     // Mor vurgu (Nexora teması)
+        accentGlow: '#A78BFA', // Glow
+        text: '#F8FAFC',       // Beyaz
+        subtext: '#94A3B8',    // Gri
+        green: '#10B981'       // Onay/Online rengi
+    };
+
+    // 1. Arkaplan
+    ctx.fillStyle = colors.bg;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Hafif Gradient Arka Plan Efeği
+    const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    grad.addColorStop(0, '#0F172A');
+    grad.addColorStop(1, '#1E1B4B'); // Hafif morumsu alt
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 2. Ana Kart Alanı (Yuvarlak Köşeli)
+    const cardX = 40, cardY = 40, cardW = 720, cardH = 220;
+    const radius = 24;
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    ctx.shadowBlur = 15;
+    ctx.shadowOffsetY = 8;
+
+    ctx.fillStyle = colors.card;
+    ctx.beginPath();
+    ctx.roundRect(cardX, cardY, cardW, cardH, radius);
+    ctx.fill();
+    ctx.restore();
+
+    // 3. Sol Taraf: Büyük Avatar ve Glow
+    const avatarSize = 120;
+    const avatarX = cardX + 40;
+    const avatarY = cardY + (cardH - avatarSize) / 2;
+
+    // Avatar Glow
+    ctx.save();
+    ctx.shadowColor = colors.accent;
+    ctx.shadowBlur = 25;
+    ctx.beginPath();
+    ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2 + 2, 0, Math.PI * 2);
+    ctx.strokeStyle = colors.accent;
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.restore();
+
+    // Avatar Resmi
+    try {
+        const avatarURL = user.displayAvatarURL({ extension: 'png', size: 256, forceStatic: true });
+        const avatar = await loadImage(avatarURL);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(avatar, avatarX, avatarY, avatarSize, avatarSize);
+        ctx.restore();
+    } catch (e) {
+        // Fallback daire
+        ctx.fillStyle = '#333';
+        ctx.beginPath();
+        ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // 4. Orta Kısım: İstatistikler
+    const contentX = avatarX + avatarSize + 50;
+    const contentY = cardY + 60;
+
+    // SÜRE HESAPLAMA
+    const hours = Math.floor(durationMs / 3600000);
+    const minutes = Math.floor((durationMs % 3600000) / 60000);
+    const seconds = Math.floor((durationMs % 60000) / 1000);
+
+    let timeString = "";
+    if (hours > 0) timeString += `${hours} Saat `;
+    if (minutes > 0) timeString += `${minutes} Dk `;
+    timeString += `${seconds} Sn`;
+
+    // Üst Başlık (Kanal)
+    ctx.font = 'bold 24px Arial'; // Roboto varsa daha iyi
+    ctx.fillStyle = colors.accentGlow;
+    ctx.fillText(`🔊 ${channelName.length > 20 ? channelName.substring(0, 18) + '...' : channelName}`, contentX, contentY);
+
+    // Ana Süre (Dev)
+    ctx.font = 'bold 48px Arial';
+    ctx.fillStyle = colors.text;
+    ctx.fillText(timeString, contentX, contentY + 55);
+
+    // Alt Bilgi (Toplam İstatistik)
+    const totalHours = Math.floor(totalVoiceMinutes / 60);
+    const totalMins = Math.floor(totalVoiceMinutes % 60);
+
+    ctx.font = '18px Arial';
+    ctx.fillStyle = colors.subtext;
+    ctx.fillText(`Toplam Süren: ${totalHours} saat ${totalMins} dakika`, contentX, contentY + 95);
+
+    // 5. Sağ Taraf: Dekoratif İkonlar / Coin
+    // Basit bir "XP Kazanıldı" badge'i
+
+    // Kazanılan XP (Tahmini: dakikada 5 XP)
+    const xpGained = Math.max(1, Math.floor((durationMs / 60000) * 5));
+
+    const badgeW = 140, badgeH = 50;
+    const badgeX = cardX + cardW - badgeW - 30;
+    const badgeY = cardY + 30;
+
+    // Badge Arkaplan
+    ctx.fillStyle = 'rgba(139, 92, 246, 0.2)'; // Mor transparan
+    ctx.beginPath();
+    ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 12);
+    ctx.fill();
+
+    ctx.strokeStyle = colors.accent;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Badge Yazı
+    ctx.font = 'bold 20px Arial';
+    ctx.fillStyle = colors.accentGlow;
+    ctx.textAlign = 'center';
+    ctx.fillText(`+${xpGained} XP`, badgeX + badgeW / 2, badgeY + 32);
+
+    return new AttachmentBuilder(await canvas.encode('png'), { name: `voice-session.png` });
+}
+
+module.exports = { createWelcomeImage, createLevelCard, createVoiceCard };
