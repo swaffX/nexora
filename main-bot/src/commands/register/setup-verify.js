@@ -16,15 +16,10 @@ module.exports = {
                     .setStyle(ButtonStyle.Success) // Yeşil renk kayıt için daha davetkar
                     .setEmoji('<a:welcome3:1246429706346303489>'),
                 new ButtonBuilder()
-                    .setLabel('Kurallar')
-                    .setStyle(ButtonStyle.Secondary)
-                    .setCustomId('rules_modal')
-                    .setEmoji('📜'),
-                new ButtonBuilder()
                     .setLabel('Destek')
-                    .setStyle(ButtonStyle.Danger)
-                    .setCustomId('create_ticket')
-                    .setEmoji('🎫') // 🆘 yerine daha uygun bir bilet emojisi
+                    .setStyle(ButtonStyle.Link)
+                    .setURL('https://discord.com/channels/1131178652398469170/1465728112825204880') // Direkt kanal linki
+                    .setEmoji('🎫')
             );
 
         await interaction.channel.send({ embeds: [embeds.verify()], components: [row] });
