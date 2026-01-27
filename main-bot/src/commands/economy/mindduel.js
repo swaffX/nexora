@@ -81,45 +81,44 @@ module.exports = {
     }
 };
 
-// 1. FAZ: SAYI TUTMA (Gelişmiş Aralık Sistemi)
+// 1. FAZ: SAYI TUTMA (Kişiye Özel Rastgele Aralıklar)
 async function runGamePhase1_Input(message, p1, p2, amount, guildId, round) {
     try {
-        // RASTGELE ARALIK BELİRLEME (Anti-Spam Logic)
-        // Oyunun heyecanlı olması için iki aralık birbirine yakın olmalı ("Savaş Alanı").
-        // Rastgele bir merkez (Center) seçiyoruz (20-80 arası)
-        const battleCenter = Math.floor(Math.random() * 60) + 20;
+        // Her oyuncu için FARKLI ve RASTGELE aralıklar oluşturuyoruz.
 
-        // P1 ve P2 için bu merkezin etrafında aralıklar oluşturuyoruz.
-        // Örn center 50 ise: P1 [35-65], P2 [40-60] gibi.
-        const p1_min = Math.max(1, battleCenter - Math.floor(Math.random() * 15) - 10);
-        const p1_max = Math.min(100, battleCenter + Math.floor(Math.random() * 15) + 10);
+        // Yardımcı Fonksiyon: Aralık Üret
+        const generateRanges = () => {
+            const low_min = Math.floor(Math.random() * 10) + 1;   // 1-10
+            const low_max = Math.floor(Math.random() * 10) + 40;  // 40-50
+            const high_min = Math.floor(Math.random() * 10) + 51; // 51-60
+            const high_max = Math.floor(Math.random() * 10) + 90; // 90-100
+            return {
+                low: { min: low_min, max: low_max },
+                high: { min: high_min, max: high_max }
+            };
+        };
 
-        const p2_min = Math.max(1, battleCenter - Math.floor(Math.random() * 15) - 10);
-        const p2_max = Math.min(100, battleCenter + Math.floor(Math.random() * 15) + 10);
+        const p1_ranges = generateRanges();
+        const p2_ranges = generateRanges();
 
         const gameState = {
-            p1: {
-                id: p1.id, name: p1.username, number: null,
-                range: { min: p1_min, max: p1_max }
-            },
-            p2: {
-                id: p2.id, name: p2.username, number: null,
-                range: { min: p2_min, max: p2_max }
-            }
+            p1: { id: p1.id, name: p1.username, number: null, ranges: p1_ranges },
+            p2: { id: p2.id, name: p2.username, number: null, ranges: p2_ranges }
         };
 
         const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('pick_num').setLabel('Sayı Tut (Sana Özel)').setStyle(ButtonStyle.Primary).setEmoji('🎯')
+            new ButtonBuilder().setCustomId('path_low').setLabel('📉 Düşük Bölge Seç').setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId('path_high').setLabel('📈 Yüksek Bölge Seç').setStyle(ButtonStyle.Secondary)
         );
 
         await message.edit({
-            content: `🏁 **TUR ${round} BAŞLIYOR!**\nSistem her iki oyuncuya da **özel bir sayı aralığı** atadı.\nButona tıklayarak sana verilen görev aralığını görebilirsin.`,
+            content: `🏁 **TUR ${round} BAŞLIYOR!**\n\nSistem her iki oyuncuya da **farklı ve rastgele** sayı aralıkları atadı.\nStratejini seç ve sana verilen gizli aralıkta sayını tut!\n\n*(Butona basınca sana özel aralığı göreceksin)*`,
             embeds: [],
             components: [row]
         });
 
-        // Sadece 'pick_num' butonunu dinle
-        const filter = i => i.customId === 'pick_num';
+        // Butonları dinle
+        const filter = i => ['path_low', 'path_high'].includes(i.customId);
         const collector = message.createMessageComponentCollector({ filter, componentType: ComponentType.Button, time: 60000 });
 
         collector.on('collect', async btn => {
@@ -129,21 +128,26 @@ async function runGamePhase1_Input(message, p1, p2, amount, guildId, round) {
 
             const player = btn.user.id === p1.id ? gameState.p1 : gameState.p2;
 
-            // Zaten tuttuysa
             if (player.number !== null) {
-                return btn.reply({ content: '✅ Sen zaten sayını tuttun, rakibi bekle.', flags: MessageFlags.Ephemeral });
+                return btn.reply({ content: '✅ Sen zaten seçimini yaptın ve sayını tuttun.', flags: MessageFlags.Ephemeral });
             }
+
+            // Seçilen Yola göre Kişiye Özel Limitleri Belirle
+            const isHigh = btn.customId === 'path_high';
+            const rangeObj = isHigh ? player.ranges.high : player.ranges.low;
+            const min = rangeObj.min;
+            const max = rangeObj.max;
 
             // MODAL AÇ
             const modal = new ModalBuilder()
                 .setCustomId(`md_input_${btn.user.id}_r${round}`)
-                .setTitle(`Görev: ${player.range.min} - ${player.range.max} Arası`);
+                .setTitle(`${isHigh ? 'YÜKSEK' : 'DÜŞÜK'} ROTA (${min}-${max})`);
 
             const input = new TextInputBuilder()
                 .setCustomId('secret_num')
-                .setLabel(`Sayı Gir (${player.range.min}-${player.range.max})`)
+                .setLabel(`Sayı Gir (${min}-${max})`)
                 .setStyle(TextInputStyle.Short)
-                .setPlaceholder(`${player.range.min} ile ${player.range.max} arasında bir sayı...`)
+                .setPlaceholder(`Bu aralıkta bir sayı tut...`)
                 .setRequired(true)
                 .setMaxLength(3);
 
@@ -151,36 +155,29 @@ async function runGamePhase1_Input(message, p1, p2, amount, guildId, round) {
 
             try {
                 await btn.showModal(modal);
-
-                // Modal Cevabını Bekle
                 const submit = await btn.awaitModalSubmit({ time: 30000, filter: m => m.customId === `md_input_${btn.user.id}_r${round}` });
-
                 const num = parseInt(submit.fields.getTextInputValue('secret_num'));
 
-                // DİNAMİK ARALIK KONTROLÜ
-                if (isNaN(num) || num < player.range.min || num > player.range.max) {
-                    await submit.reply({ content: `❌ **HATA!** Sadece **${player.range.min}** ile **${player.range.max}** arasında bir sayı tutabilirsin!`, flags: MessageFlags.Ephemeral });
+                // VALIDATION
+                if (isNaN(num) || num < min || num > max) {
+                    await submit.reply({ content: `❌ **HATA!** Sana verilen aralığa sadık kalmalısın: **${min} - ${max}** arası gir!`, flags: MessageFlags.Ephemeral });
                     return;
                 }
 
                 player.number = num;
-                await submit.reply({ content: `🔒 Sayı kilitlendi: **${num}** (Gizli)`, flags: MessageFlags.Ephemeral });
+                await submit.reply({ content: `🔒 Rota: **${isHigh ? 'YÜKSEK' : 'DÜŞÜK'}** | Sayı: **${num}** kilitlendi.`, flags: MessageFlags.Ephemeral });
 
                 // İkisi de Hazır mı?
                 if (gameState.p1.number !== null && gameState.p2.number !== null) {
-                    collector.stop(); // Bu fazı bitir
+                    collector.stop();
 
                     if (gameState.p1.number === gameState.p2.number) {
                         return finishGameDraw(message, gameState, p1, p2, amount, guildId);
                     }
-
-                    // 2. Faza Geç
                     runGamePhase2_Guess(message, gameState, p1, p2, amount, guildId, round);
                 }
 
-            } catch (err) {
-                // Modal timeout vs.
-            }
+            } catch (err) { }
         });
 
     } catch (e) { console.error(e); }
