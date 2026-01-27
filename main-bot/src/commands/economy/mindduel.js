@@ -107,18 +107,19 @@ async function runGamePhase1_Input(message, p1, p2, amount, guildId, round) {
         };
 
         const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('path_low').setLabel('📉 Düşük Bölge Seç').setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId('path_high').setLabel('📈 Yüksek Bölge Seç').setStyle(ButtonStyle.Secondary)
+            new ButtonBuilder().setCustomId('view_ranges').setLabel('Kartlarına Bak (Gizli)').setStyle(ButtonStyle.Secondary).setEmoji('👁️'),
+            new ButtonBuilder().setCustomId('path_low').setLabel('Düşük Seç').setStyle(ButtonStyle.Primary).setEmoji('📉'),
+            new ButtonBuilder().setCustomId('path_high').setLabel('Yüksek Seç').setStyle(ButtonStyle.Danger).setEmoji('📈')
         );
 
         await message.edit({
-            content: `🏁 **TUR ${round} BAŞLIYOR!**\n\nSistem her iki oyuncuya da **farklı ve rastgele** sayı aralıkları atadı.\nStratejini seç ve sana verilen gizli aralıkta sayını tut!\n\n*(Butona basınca sana özel aralığı göreceksin)*`,
+            content: `🏁 **TUR ${round} BAŞLIYOR!**\n\nSistem her iki oyuncuya da **farklı ve rastgele** sayı aralıkları atadı.\n\n👁️ **Önce:** "Kartlarına Bak" diyerek seçeneklerini gör.\n👉 **Sonra:** Stratejine uygun rotayı seç!`,
             embeds: [],
             components: [row]
         });
 
         // Butonları dinle
-        const filter = i => ['path_low', 'path_high'].includes(i.customId);
+        const filter = i => ['path_low', 'path_high', 'view_ranges'].includes(i.customId);
         const collector = message.createMessageComponentCollector({ filter, componentType: ComponentType.Button, time: 60000 });
 
         collector.on('collect', async btn => {
@@ -127,6 +128,14 @@ async function runGamePhase1_Input(message, p1, p2, amount, guildId, round) {
             }
 
             const player = btn.user.id === p1.id ? gameState.p1 : gameState.p2;
+
+            // KARTLARA BAKMA (GİZLİ BİLGİ)
+            if (btn.customId === 'view_ranges') {
+                return btn.reply({
+                    content: `🕵️ **Senin Gizli Seçeneklerin:**\n\n📉 **Düşük Yol:** ${player.ranges.low.min} - ${player.ranges.low.max}\n📈 **Yüksek Yol:** ${player.ranges.high.min} - ${player.ranges.high.max}\n\n*Rakibin bu aralıkları bilmiyor. Birini seç ve şaşırt!*`,
+                    flags: MessageFlags.Ephemeral
+                });
+            }
 
             if (player.number !== null) {
                 return btn.reply({ content: '✅ Sen zaten seçimini yaptın ve sayını tuttun.', flags: MessageFlags.Ephemeral });
@@ -190,28 +199,10 @@ async function runGamePhase2_Guess(message, gameState, p1, p2, amount, guildId, 
         gameState.p1.guess = null;
         gameState.p2.guess = null;
 
-        let description = `İki taraf da sayısını tuttu!\n\n**Soru:** Rakibinin sayısı, senin sayından **BÜYÜK (⬆️)** mü **KÜÇÜK (⬇️)** mü?`;
-
-        // 🕵️ İPUCU SİSTEMİ (Anti-Exploit)
-        // Eğer biri uçlarda (1-15 veya 86-100) sayı tuttuysa rakibe ipucu ver.
-        let hints = [];
-
-        // P1 Kontrol
-        if (gameState.p1.number <= 15) hints.push(`⚠️ **İPUCU:** ${gameState.p1.name} **ÇOK DÜŞÜK (1-15)** bir sayı tuttu!`);
-        else if (gameState.p1.number >= 86) hints.push(`⚠️ **İPUCU:** ${gameState.p1.name} **ÇOK YÜKSEK (86-100)** bir sayı tuttu!`);
-
-        // P2 Kontrol
-        if (gameState.p2.number <= 15) hints.push(`⚠️ **İPUCU:** ${gameState.p2.name} **ÇOK DÜŞÜK (1-15)** bir sayı tuttu!`);
-        else if (gameState.p2.number >= 86) hints.push(`⚠️ **İPUCU:** ${gameState.p2.name} **ÇOK YÜKSEK (86-100)** bir sayı tuttu!`);
-
-        if (hints.length > 0) {
-            description += `\n\n${hints.join('\n')}`;
-        }
-
         const embed = new EmbedBuilder()
             .setColor('#3498db')
             .setTitle(`🤔 TAHMİN ZAMANI (Tur ${round})`)
-            .setDescription(description)
+            .setDescription(`İki taraf da sayısını tuttu!\n\n**Soru:** Rakibinin sayısı, senin sayından **BÜYÜK (⬆️)** mü **KÜÇÜK (⬇️)** mü?`)
             .setFooter({ text: 'Doğru bilen kazanır, ikiniz de bilirseniz yeni tur!' });
 
         const row = new ActionRowBuilder().addComponents(
