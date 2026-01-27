@@ -86,27 +86,27 @@ async function runGamePhase1_Input(message, p1, p2, amount, guildId, round) {
     try {
         // Her oyuncu için FARKLI ve RASTGELE aralıklar oluşturuyoruz.
 
-        // Yardımcı Fonksiyon: Aralık Üret (Kaotik ve Kesişen)
+        // Yardımcı Fonksiyon: Aralık Üret (Net Sınırlar + Anti-Exploit)
         const generateRanges = () => {
-            // Anti-Exploit Logic:
-            // Aralıklar artık 0-50 gibi sabit değil.
-            // Birbirine geçen, riskli bölgeler.
+            // LOW PATH: 1-50 Dünyası
+            // Alt sınır 1-20 arasında rastgele başlar.
+            // Üst sınır 30-50 arasında rastgele biter.
+            const low_min = Math.floor(Math.random() * 20) + 1;  // 1-20
+            const low_max = Math.floor(Math.random() * 20) + 31; // 31-50
 
-            // Low: Genelde 1-45 arası ama bazen 15-55'e kayabilir.
-            const low_center = Math.floor(Math.random() * 30) + 15; // 15-45 arası merkez
-            const low_span = Math.floor(Math.random() * 10) + 10;   // +/- 10-20
-            const low_min = Math.max(1, low_center - low_span);
-            const low_max = Math.min(100, low_center + low_span);
+            // HIGH PATH: 51-100 Dünyası
+            // Alt sınır 51-70 arasında rastgele başlar.
+            // Üst sınır 80-100 arasında rastgele biter.
+            const high_min = Math.floor(Math.random() * 20) + 51; // 51-70
+            const high_max = Math.floor(Math.random() * 20) + 81; // 81-100
 
-            // High: Genelde 55-100 arası ama bazen 45-85'e inebilir.
-            const high_center = Math.floor(Math.random() * 30) + 55; // 55-85 arası merkez
-            const high_span = Math.floor(Math.random() * 10) + 10;
-            const high_min = Math.max(1, high_center - high_span);
-            const high_max = Math.min(100, high_center + high_span);
+            // Güvenlik kontrolü (min > max olmasın)
+            const safe_low_min = Math.min(low_min, low_max - 5);
+            const safe_high_min = Math.min(high_min, high_max - 5);
 
             return {
-                low: { min: low_min, max: low_max },
-                high: { min: high_min, max: high_max }
+                low: { min: safe_low_min, max: low_max },
+                high: { min: safe_high_min, max: Math.min(100, high_max) }
             };
         };
 
