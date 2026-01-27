@@ -20,14 +20,15 @@ module.exports = {
         const targetUser = interaction.options.getUser('user');
         const amount = interaction.options.getInteger('amount');
         const author = interaction.user;
+        const guildId = interaction.guild.id;
 
         // Validasyonlar
         if (targetUser.id === author.id) return interaction.reply({ content: '❌ Kendinle kapışamazsın şizofren dostum.', flags: MessageFlags.Ephemeral });
         if (targetUser.bot) return interaction.reply({ content: '❌ Botlarla düello atamazsın.', flags: MessageFlags.Ephemeral });
 
         // Database Kontrolleri (Her iki tarafın parası var mı?)
-        const p1 = await User.findOne({ odasi: author.id, odaId: interaction.guild.id });
-        const p2 = await User.findOne({ odasi: targetUser.id, odaId: interaction.guild.id });
+        const p1 = await User.findOne({ odasi: author.id, odaId: guildId });
+        const p2 = await User.findOne({ odasi: targetUser.id, odaId: guildId });
 
         if (!p1 || p1.balance < amount) return interaction.reply({ content: '❌ Senin yeterli paran yok.', flags: MessageFlags.Ephemeral });
         if (!p2 || p2.balance < amount) return interaction.reply({ content: `❌ **${targetUser.username}** kullanıcısının yeterli parası yok.`, flags: MessageFlags.Ephemeral });
@@ -44,7 +45,7 @@ module.exports = {
             new ButtonBuilder().setCustomId('decline_duel').setLabel('Reddet').setStyle(ButtonStyle.Danger).setEmoji('❌')
         );
 
-        const reply = await interaction.reply({ content: `<@${targetUser.id}>`, embeds: [inviteEmbed], components: [inviteRow] });
+        await interaction.reply({ content: `<@${targetUser.id}>`, embeds: [inviteEmbed], components: [inviteRow] });
         const msg = await interaction.fetchReply(); // Güvenli fetch
 
         // Davet Collector
@@ -71,10 +72,10 @@ module.exports = {
 
                 // --- OYUN BAŞLIYOR ---
                 // Paraları Çek (Tekrar kontrol et ve düş)
-                const doc1 = await User.findOne({ odasi: author.id, odaId: interaction.guild.id });
+                const doc1 = await User.findOne({ odasi: author.id, odaId: guildId });
                 if (doc1.balance < amount) return i.update({ content: '❌ Bakiye hatası oluştu (P1).', embeds: [], components: [] });
 
-                const doc2 = await User.findOne({ odasi: targetUser.id, odaId: interaction.guild.id });
+                const doc2 = await User.findOne({ odasi: targetUser.id, odaId: guildId });
                 if (doc2.balance < amount) return i.update({ content: '❌ Bakiye hatası oluştu (P2).', embeds: [], components: [] });
 
                 doc1.balance -= amount;
