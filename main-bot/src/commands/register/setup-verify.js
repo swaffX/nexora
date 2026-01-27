@@ -18,7 +18,7 @@ module.exports = {
                 new ButtonBuilder()
                     .setLabel('Destek')
                     .setStyle(ButtonStyle.Link)
-                    .setURL('https://discord.com/channels/1131178652398469170/1465728112825204880') // Direkt kanal linki
+                    .setURL(`https://discord.com/channels/${interaction.guild.id}/1465728112825204880`) // Dinamik Sunucu ID'si
                     .setEmoji('🎫')
             );
 
