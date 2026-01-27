@@ -51,7 +51,8 @@ module.exports = {
 
             if (userData.count >= limit) {
                 // Spam Tespit Edildi!
-                await message.channel.send(`⚠️ <@${message.author.id}>, lütfen spam yapmayı durdur! (Sohbet Koruması)`);
+                // Spam Tespit Edildi!
+                await message.channel.send(`🛑 **Sakin ol!** <@${message.author.id}>, çok hızlı mesaj atıyorsun. Spam engellendi.`);
 
                 // Ciddi işlem: Timeout (Mute)
                 try {
