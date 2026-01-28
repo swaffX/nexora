@@ -84,7 +84,14 @@ module.exports = {
 
     async selectCaptain(interaction, team) {
         const { MessageFlags } = require('discord.js');
-        const matchId = interaction.message.content.split('Match ID: ')[1];
+
+        // Match ID'yi güvenli şekilde çıkar (satır sonu veya boşluk varsa temizle)
+        const content = interaction.message.content || '';
+        const matchLine = content.split('\n')[0]; // İlk satırı al
+        const matchId = matchLine.replace('Match ID: ', '').trim();
+
+        if (!matchId) return interaction.reply({ content: 'Match ID bulunamadı.', flags: MessageFlags.Ephemeral });
+
         const match = await Match.findOne({ matchId });
         if (!match) return interaction.reply({ content: 'Maç bulunamadı.', flags: MessageFlags.Ephemeral });
 
@@ -118,6 +125,11 @@ module.exports = {
     },
 
     async updateCaptainUI(interaction, match) {
+        // Embed kontrolü
+        if (!interaction.message.embeds || interaction.message.embeds.length === 0) {
+            return interaction.reply({ content: '❌ Panel bulunamadı.', flags: require('discord.js').MessageFlags.Ephemeral });
+        }
+
         const embed = EmbedBuilder.from(interaction.message.embeds[0]);
         embed.spliceFields(0, 2,
             { name: '🔵 Team A Kaptanı', value: match.captainA ? `<@${match.captainA}>` : 'Seçilmedi', inline: true },

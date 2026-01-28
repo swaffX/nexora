@@ -138,40 +138,53 @@ module.exports = {
     },
 
     async handlePlayerPick(interaction) {
-        const matchId = interaction.customId.split('_')[2];
-        const match = await Match.findOne({ matchId });
-        if (!match) return;
+        try {
+            const matchId = interaction.customId.split('_')[2];
+            const match = await Match.findOne({ matchId });
+            if (!match) {
+                const { MessageFlags } = require('discord.js');
+                return interaction.reply({ content: 'Maç bulunamadı.', flags: MessageFlags.Ephemeral });
+            }
 
-        const currentCap = match.pickTurn === 'A' ? match.captainA : match.captainB;
-        if (interaction.user.id !== currentCap) {
-            const { MessageFlags } = require('discord.js');
-            return interaction.reply({ content: 'Sıra sende değil!', flags: MessageFlags.Ephemeral });
+            const currentCap = match.pickTurn === 'A' ? match.captainA : match.captainB;
+            if (interaction.user.id !== currentCap) {
+                const { MessageFlags } = require('discord.js');
+                return interaction.reply({ content: 'Sıra sende değil!', flags: MessageFlags.Ephemeral });
+            }
+
+            const pickedId = interaction.values[0];
+            if (match.pickTurn === 'A') { match.teamA.push(pickedId); match.pickTurn = 'B'; }
+            else { match.teamB.push(pickedId); match.pickTurn = 'A'; }
+
+            match.availablePlayerIds = match.availablePlayerIds.filter(id => id !== pickedId);
+            await match.save();
+            await this.updateDraftUI(interaction, match);
+        } catch (e) {
+            console.error('handlePlayerPick error:', e);
         }
-
-        const pickedId = interaction.values[0];
-        if (match.pickTurn === 'A') { match.teamA.push(pickedId); match.pickTurn = 'B'; }
-        else { match.teamB.push(pickedId); match.pickTurn = 'A'; }
-
-        match.availablePlayerIds = match.availablePlayerIds.filter(id => id !== pickedId);
-        await match.save();
-        await this.updateDraftUI(interaction, match);
     },
 
     async refreshDraftUI(interaction) {
         const matchId = interaction.customId.split('_')[2];
         const match = await Match.findOne({ matchId });
+        if (!match) return;
 
         // Timer'ı resetle (refresh basınca süre sıfırlanır mı? Hayır, kötüye kullanım olur. Timer devam etsin.)
         // Ama timer'ı yeniden başlatmak gerekmiyor.
 
-        const host = await interaction.guild.members.fetch(match.hostId);
-        const channel = host.voice.channel;
-        if (channel) {
-            const currentPlayers = [...match.teamA, ...match.teamB];
-            const newPool = channel.members.filter(m => !m.user.bot && !currentPlayers.includes(m.id)).map(m => m.id);
-            match.availablePlayerIds = newPool;
-            await match.save();
+        try {
+            const host = await interaction.guild.members.fetch(match.hostId);
+            const channel = host?.voice?.channel;
+            if (channel) {
+                const currentPlayers = [...match.teamA, ...match.teamB];
+                const newPool = channel.members.filter(m => !m.user.bot && !currentPlayers.includes(m.id)).map(m => m.id);
+                match.availablePlayerIds = newPool;
+                await match.save();
+            }
+        } catch (e) {
+            console.error('Refresh error:', e.message);
         }
+
         await this.updateDraftUI(interaction, match);
     }
 };
