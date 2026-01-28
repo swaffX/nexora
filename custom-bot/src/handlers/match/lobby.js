@@ -111,6 +111,9 @@ module.exports = {
         const { MessageFlags } = require('discord.js');
         const matchId = interaction.customId.split('_')[2];
         const match = await Match.findOne({ matchId });
+
+        if (!match) return interaction.reply({ content: 'Maç bulunamadı.', flags: MessageFlags.Ephemeral });
+
         const voiceChannel = interaction.member.voice.channel;
         if (!voiceChannel) return interaction.reply({ content: 'Ses kanalında değilsin!', flags: MessageFlags.Ephemeral });
 
