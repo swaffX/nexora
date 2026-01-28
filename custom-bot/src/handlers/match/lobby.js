@@ -72,7 +72,7 @@ module.exports = {
                 new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`match_randomcap_${interaction.id}`).setLabel('🎲 Rastgele').setStyle(ButtonStyle.Secondary))
             ];
 
-            await textChannel.send({ content: `<@${interaction.user.id}> maç oluşturuldu!`, embeds: [embed], components: rows });
+            await textChannel.send({ content: `Match ID: ${interaction.id}\n<@${interaction.user.id}> maç oluşturuldu!`, embeds: [embed], components: rows });
 
             await interaction.editReply({ content: `✅ Maç oluşturuldu! Lütfen panele gidin:\nKanal: <#${textChannel.id}>` });
 
