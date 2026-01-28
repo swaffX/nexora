@@ -65,12 +65,9 @@ module.exports = {
                     await game.handleMatchResult(interaction);
                     break;
 
-                // --- KDA ---
-                case 'kda':
-                    await game.showKDAModal(interaction);
-                    break;
-                case 'finishkda':
-                    await game.finishKDA(interaction);
+                // --- SCORE ---
+                case 'openscore':
+                    await game.openScoreModal(interaction);
                     break;
 
                 default:

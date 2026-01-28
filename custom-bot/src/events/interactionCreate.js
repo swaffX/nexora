@@ -35,10 +35,10 @@ module.exports = {
                 await matchHandler.handleInteraction(interaction, client);
             }
 
-            // KDA Modal Submit
-            if (customId.startsWith('modal_kda_')) {
+            // Score Modal Submit
+            if (customId.startsWith('modal_score_')) {
                 const game = require('../handlers/match/game');
-                await game.handleKDASubmit(interaction);
+                await game.handleScoreSubmit(interaction);
             }
 
             // Tournament System
