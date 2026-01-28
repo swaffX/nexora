@@ -20,12 +20,14 @@ const LIMITS = {
 // Bu listeyi config'den veya DB'den çekmek daha sağlıklı olur ama hardcode da bir korumadır.
 const WHITELIST = [
     '315875588906680330', // Bot Sahibi (Zeynep)
+    '1204894676025344051', // Custom Bot (Nexora Custom)
     // Diğer güvenilir ID'ler buraya
 ];
 
 // Cache Sistemleri (Ram'de tutulur)
 const spamMap = new Map(); // Map<UserId, { count, lastMsgTime, timer }>
 const actionMap = new Map(); // Map<UserId, { channel: [], role: [], ban: [], ... }>
+const joinMap = new Map(); // Map<GuildId, [timestamps]> - Join Raid Protection
 
 module.exports = {
     // 1. SPAM KORUMASI (Message Event'inden çağrılır)

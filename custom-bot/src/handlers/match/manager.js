@@ -46,7 +46,7 @@ module.exports = {
      * Maç bittikten sonra normal temizlik.
      */
     async cleanupMatchChannels(guild, match) {
-        // 10 saniye bekle ki kullanıcılar sonuç ekranını görsün
+        // 5 saniye bekle ki kullanıcılar sonuç ekranını görsün
         setTimeout(async () => {
             // Tekrar güncel halini çek (arada force end yemiş olabilir)
             const currentMatch = await Match.findOne({ matchId: match.matchId });
@@ -78,7 +78,7 @@ module.exports = {
             currentMatch.status = 'FINISHED';
             currentMatch.createdChannelIds = [];
             await currentMatch.save();
-        }, 15000);
+        }, 5000);
     },
 
     /**

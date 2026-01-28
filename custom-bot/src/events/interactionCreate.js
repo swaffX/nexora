@@ -13,10 +13,14 @@ module.exports = {
                 await command.execute(interaction, client);
             } catch (error) {
                 console.error(error);
-                if (!interaction.replied) {
+                try {
                     const { MessageFlags } = require('discord.js');
-                    await interaction.reply({ content: 'Hata!', flags: MessageFlags.Ephemeral });
-                }
+                    if (!interaction.replied && !interaction.deferred) {
+                        await interaction.reply({ content: 'Hata!', flags: MessageFlags.Ephemeral });
+                    } else if (interaction.deferred) {
+                        await interaction.editReply({ content: 'Hata!' });
+                    }
+                } catch (e) { /* Sessizce geç */ }
             }
         }
 

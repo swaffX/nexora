@@ -27,6 +27,7 @@ const matchSchema = new mongoose.Schema({
     }],
     voteStatus: { type: String, enum: ['NONE', 'VOTING', 'TIE_BREAKER', 'FINISHED'], default: 'NONE' },
     voteEndTime: { type: Date },
+    votingMessageId: { type: String }, // Oy sayısını güncellemek için mesaj ID
 
     // Eski Veto Alanları (Geriye dönük uyumluluk veya yedek için)
     vetoTurn: { type: String, enum: ['A', 'B'], default: 'A' },
