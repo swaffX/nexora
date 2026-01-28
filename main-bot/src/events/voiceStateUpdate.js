@@ -160,64 +160,8 @@ async function processVoiceSession(user, guild, client) {
     const { sendLog } = require('../utils/logHelper');
 
     // ==================== 📨 DM VOICE SESSION CARD ====================
-    try {
-        // Kartı Oluştur (Stats ve Rank ile)
-        const { createVoiceCard } = require('../utils/canvasHelper');
-
-        // Kanal adını güvenli al (Ses ikonunu manuel ekle)
-        const channelObj = guild.channels.cache.get(user.currentVoiceChannel);
-        const channelName = channelObj ? channelObj.name : 'Ses Kanalı';
-
-        // Rank Hesapla (Basitçe kaçıncı sırada olduğunu bul)
-        const allUsers = await User.find({ odaId: guild.id }).sort({ totalVoiceMinutes: -1 }).select('odasi');
-        const rank = allUsers.findIndex(u => u.odasi === user.odasi) + 1;
-
-        const attachment = await createVoiceCard(
-            client.users.cache.get(user.odasi) || { displayAvatarURL: () => '', username: 'Unknown' },
-            durationMs,
-            channelName,
-            user, // Tüm user objesini geçiyoruz ki daily/weekly alabilsin
-            rank || 999
-        );
-
-        // Süre metni (Mesaj içeriği için)
-        const hours = Math.floor(durationMs / 3600000);
-        const minutes = Math.floor((durationMs % 3600000) / 60000);
-        const seconds = Math.floor((durationMs % 60000) / 1000);
-        let timeText = "";
-        if (hours > 0) timeText += `${hours} Saat `;
-        if (minutes > 0) timeText += `${minutes} Dakika `;
-        timeText += `${seconds} Saniye`;
-
-        // Giriş tarihi
-        const dateStr = joinedAt.toLocaleString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-
-        const member = await guild.members.fetch(user.odasi).catch(() => null);
-        if (member) {
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                    .setLabel('Ses bilgi sistemini kapatmak için tıkla')
-                    .setStyle(ButtonStyle.Success) // Yeşil
-                    .setCustomId('voice_notify_toggle')
-                    .setEmoji('🟢'), // Toggle efekti için yeşil nokta
-                new ButtonBuilder()
-                    .setLabel('Sunucuya Git')
-                    .setStyle(ButtonStyle.Link)
-                    .setURL(`https://discord.com/channels/${guild.id}/${user.currentVoiceChannel}`)
-                    .setEmoji('🔗')
-            );
-
-            await member.send({
-                content: `🏠 **${guild.name}** Sunucusunda 🔊 **${channelName}** kanalında **${timeText}** kaldın.\nBu kanala **${dateStr}** tarihinde giriş yapmıştın.`,
-                files: [attachment],
-                components: [row]
-            }).catch(() => {
-                // DM Kapalıysa loga yazalım veya sessizce geçelim
-            });
-        }
-    } catch (err) {
-        console.error('Voice Card Error:', err);
-    }
+    // DM bildirimi kapatıldı - kullanıcıları rahatsız etmemek için
+    // Bu özellik devre dışı bırakıldı
     // ================================================================
 
     await sendLog(client, guild.id, 'voice', voiceLogEmbed);
