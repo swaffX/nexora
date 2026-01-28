@@ -159,18 +159,205 @@ module.exports = {
         const [_, __, matchId, winner] = interaction.customId.split('_');
         const match = await Match.findOne({ matchId });
         if (!match) return;
-        await interaction.update({ content: '⏳ İşleniyor...', components: [] });
 
-        if (winner !== 'CANCEL') {
-            const betReport = await this.processBets(interaction.guild, match, winner);
-            await this.generateResultCard(interaction.guild, match, winner, betReport);
-            await manager.cleanupMatchChannels(interaction.guild, match);
-        } else {
-            // İptal (Force End gibi)
+        if (winner === 'CANCEL') {
+            await interaction.update({ content: '⏳ İptal ediliyor...', components: [] });
             await manager.forceEndMatch(interaction.guild, match.matchId, 'Maç sonucu girilirken iptal edildi.');
             const { MessageFlags } = require('discord.js');
             await interaction.followUp({ content: '✅ Maç iptal edildi ve kanallar silindi.', flags: MessageFlags.Ephemeral });
+            return;
         }
+
+        // Kazananı kaydet
+        match.winnerTeam = winner;
+        match.status = 'FINISHED';
+        await match.save();
+
+        await interaction.update({ content: '⏳ İşleniyor...', components: [] });
+
+        // Bahisleri işle
+        const betReport = await this.processBets(interaction.guild, match, winner);
+
+        // KDA Giriş Paneli Göster
+        await this.showKDAPanel(interaction.channel, match, betReport);
+    },
+
+    // KDA Giriş Paneli
+    async showKDAPanel(channel, match, betReport) {
+        const guild = channel.guild;
+        const allPlayers = [...match.teamA, ...match.teamB];
+
+        // Oyuncuları başlangıç değerleriyle initialize et
+        match.playerStats = allPlayers.map(pid => ({
+            odasi: pid,
+            kills: 0,
+            deaths: 0,
+            assists: 0
+        }));
+        await match.save();
+
+        const embed = new EmbedBuilder()
+            .setColor(0xFFD700)
+            .setTitle('📊 Skor Tablosu Girişi')
+            .setDescription('Her oyuncunun KDA skorlarını girmek için aşağıdaki butonları kullanın.\n\n**Format:** Kills / Deaths / Assists')
+            .addFields(
+                { name: '🔵 Team A', value: match.teamA.map(id => `<@${id}>: -/-/-`).join('\n'), inline: true },
+                { name: '🔴 Team B', value: match.teamB.map(id => `<@${id}>: -/-/-`).join('\n'), inline: true }
+            );
+
+        // Oyuncu isimlerini al
+        const playerNames = {};
+        for (const pid of allPlayers) {
+            try {
+                const member = await guild.members.fetch(pid).catch(() => null);
+                playerNames[pid] = member?.displayName?.substring(0, 20) || `Oyuncu`;
+            } catch (e) {
+                playerNames[pid] = 'Oyuncu';
+            }
+        }
+
+        // Team A butonları
+        const teamARows = [];
+        for (let i = 0; i < match.teamA.length; i += 5) {
+            const chunk = match.teamA.slice(i, i + 5);
+            const row = new ActionRowBuilder();
+            for (const pid of chunk) {
+                row.addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`match_kda_${match.matchId}_${pid}`)
+                        .setLabel(`🔵 ${playerNames[pid]}`)
+                        .setStyle(ButtonStyle.Primary)
+                );
+            }
+            teamARows.push(row);
+        }
+
+        // Team B butonları
+        const teamBRows = [];
+        for (let i = 0; i < match.teamB.length; i += 5) {
+            const chunk = match.teamB.slice(i, i + 5);
+            const row = new ActionRowBuilder();
+            for (const pid of chunk) {
+                row.addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`match_kda_${match.matchId}_${pid}`)
+                        .setLabel(`🔴 ${playerNames[pid]}`)
+                        .setStyle(ButtonStyle.Danger)
+                );
+            }
+            teamBRows.push(row);
+        }
+
+        // Tüm satırları birleştir
+        const rows = [...teamARows, ...teamBRows];
+
+        // Bitir butonu
+        const finishRow = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId(`match_finishkda_${match.matchId}`)
+                .setLabel('✅ Skorları Kaydet ve Bitir')
+                .setStyle(ButtonStyle.Success)
+        );
+        rows.push(finishRow);
+
+        // betReport'u kaydet
+        match.betReport = betReport;
+        await match.save();
+
+        await channel.send({ embeds: [embed], components: rows });
+    },
+
+    // KDA Modal Göster
+    async showKDAModal(interaction) {
+        const parts = interaction.customId.split('_');
+        const matchId = parts[2];
+        const odasi = parts[3];
+
+        // Oyuncu ismini al
+        let playerName = 'Oyuncu';
+        try {
+            const member = await interaction.guild.members.fetch(odasi).catch(() => null);
+            playerName = member?.displayName?.substring(0, 20) || 'Oyuncu';
+        } catch (e) { }
+
+        const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
+
+        const modal = new ModalBuilder()
+            .setCustomId(`modal_kda_${matchId}_${odasi}`)
+            .setTitle(`📊 ${playerName} - KDA`);
+
+        const killsInput = new TextInputBuilder()
+            .setCustomId('kills')
+            .setLabel('Kills (Öldürme)')
+            .setStyle(TextInputStyle.Short)
+            .setPlaceholder('Örn: 15')
+            .setRequired(true);
+
+        const deathsInput = new TextInputBuilder()
+            .setCustomId('deaths')
+            .setLabel('Deaths (Ölme)')
+            .setStyle(TextInputStyle.Short)
+            .setPlaceholder('Örn: 8')
+            .setRequired(true);
+
+        const assistsInput = new TextInputBuilder()
+            .setCustomId('assists')
+            .setLabel('Assists (Asist)')
+            .setStyle(TextInputStyle.Short)
+            .setPlaceholder('Örn: 5')
+            .setRequired(true);
+
+        modal.addComponents(
+            new ActionRowBuilder().addComponents(killsInput),
+            new ActionRowBuilder().addComponents(deathsInput),
+            new ActionRowBuilder().addComponents(assistsInput)
+        );
+
+        await interaction.showModal(modal);
+    },
+
+    // KDA Modal Submit
+    async handleKDASubmit(interaction) {
+        const parts = interaction.customId.split('_');
+        const matchId = parts[2];
+        const odasi = parts[3];
+
+        const kills = parseInt(interaction.fields.getTextInputValue('kills')) || 0;
+        const deaths = parseInt(interaction.fields.getTextInputValue('deaths')) || 0;
+        const assists = parseInt(interaction.fields.getTextInputValue('assists')) || 0;
+
+        const match = await Match.findOne({ matchId });
+        if (!match) return;
+
+        // Güncelle
+        const statIndex = match.playerStats.findIndex(s => s.odasi === odasi);
+        if (statIndex !== -1) {
+            match.playerStats[statIndex].kills = kills;
+            match.playerStats[statIndex].deaths = deaths;
+            match.playerStats[statIndex].assists = assists;
+        }
+        await match.save();
+
+        const { MessageFlags } = require('discord.js');
+        await interaction.reply({
+            content: `✅ <@${odasi}> için skor kaydedildi: **${kills}/${deaths}/${assists}**`,
+            flags: MessageFlags.Ephemeral
+        });
+    },
+
+    // KDA Bitir ve Sonuç Göster
+    async finishKDA(interaction) {
+        const matchId = interaction.customId.split('_')[2];
+        const match = await Match.findOne({ matchId });
+        if (!match) return;
+
+        await interaction.update({ content: '⏳ Skor tablosu oluşturuluyor...', components: [] });
+
+        // Sonuç kartını oluştur
+        await this.generateResultCard(interaction.guild, match, match.winnerTeam, match.betReport);
+
+        // Cleanup
+        await manager.cleanupMatchChannels(interaction.guild, match);
     },
 
     async generateResultCard(guild, match, winnerTeam, betReport = null) {
@@ -178,23 +365,79 @@ module.exports = {
             let resultChannel = guild.channels.cache.find(c => c.name === 'maç-sonuçları');
             if (!resultChannel) resultChannel = await guild.channels.create({ name: 'maç-sonuçları', type: ChannelType.GuildText });
 
-            const teamName = winnerTeam === 'A' ? 'TEAM A' : 'TEAM B';
-            const color = winnerTeam === 'A' ? '#5865F2' : '#ED4245';
+            const teamName = winnerTeam === 'A' ? 'TEAM A 🔵' : 'TEAM B 🔴';
+            const color = winnerTeam === 'A' ? 0x5865F2 : 0xED4245;
+
+            // KDA skorlarını formatla (Valorant tarzı tablo)
+            const formatStats = (playerId) => {
+                const stat = match.playerStats?.find(s => s.odasi === playerId);
+                if (!stat) return '0/0/0';
+                return `${stat.kills}/${stat.deaths}/${stat.assists}`;
+            };
+
+            // Her takım için oyuncuları kills'e göre sırala
+            const sortByKills = (playerIds) => {
+                return playerIds.sort((a, b) => {
+                    const statA = match.playerStats?.find(s => s.odasi === a);
+                    const statB = match.playerStats?.find(s => s.odasi === b);
+                    return (statB?.kills || 0) - (statA?.kills || 0);
+                });
+            };
+
+            const teamASorted = sortByKills([...match.teamA]);
+            const teamBSorted = sortByKills([...match.teamB]);
+
+            // Skor tablosu stringi oluştur
+            const buildScoreboard = (players, teamEmoji) => {
+                if (!players.length) return 'Oyuncu yok';
+                return players.map((id, idx) => {
+                    const kda = formatStats(id);
+                    const mvpBadge = idx === 0 ? '⭐' : '';
+                    return `${mvpBadge}<@${id}> — **${kda}**`;
+                }).join('\n');
+            };
+
+            // Toplam takım istatistikleri
+            const calcTeamTotals = (players) => {
+                let kills = 0, deaths = 0, assists = 0;
+                players.forEach(id => {
+                    const stat = match.playerStats?.find(s => s.odasi === id);
+                    if (stat) {
+                        kills += stat.kills || 0;
+                        deaths += stat.deaths || 0;
+                        assists += stat.assists || 0;
+                    }
+                });
+                return { kills, deaths, assists };
+            };
+
+            const teamATotals = calcTeamTotals(match.teamA);
+            const teamBTotals = calcTeamTotals(match.teamB);
 
             const embed = new EmbedBuilder()
                 .setColor(color)
+                .setAuthor({ name: '🎮 MAÇ SONUCU' })
                 .setTitle(`🏆 KAZANAN: ${teamName}`)
-                .setDescription(`**Harita:** ${match.selectedMap}`)
+                .setDescription(`**🗺️ Harita:** ${match.selectedMap}\n**📅 Tarih:** <t:${Math.floor(Date.now() / 1000)}:f>`)
                 .addFields(
-                    { name: 'Kadro A', value: match.teamA.map(id => `<@${id}>`).join(', ') || '-', inline: true },
-                    { name: 'Kadro B', value: match.teamB.map(id => `<@${id}>`).join(', ') || '-', inline: true }
+                    {
+                        name: `🔵 TEAM A (${teamATotals.kills}/${teamATotals.deaths}/${teamATotals.assists})`,
+                        value: buildScoreboard(teamASorted, '🔵'),
+                        inline: true
+                    },
+                    {
+                        name: `🔴 TEAM B (${teamBTotals.kills}/${teamBTotals.deaths}/${teamBTotals.assists})`,
+                        value: buildScoreboard(teamBSorted, '🔴'),
+                        inline: true
+                    }
                 )
+                .setFooter({ text: '⭐ = MVP (En Çok Kill)' })
                 .setTimestamp();
 
-            if (betReport) embed.addFields({ name: 'Bahis', value: betReport });
+            if (betReport) embed.addFields({ name: '💰 Bahis Sonuçları', value: betReport, inline: false });
 
             await resultChannel.send({ embeds: [embed] });
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error('Result Card Error:', e); }
     },
 
     async processBets(guild, match, winnerTeam) {

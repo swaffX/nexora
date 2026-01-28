@@ -86,7 +86,12 @@ module.exports = {
             if (!log) return;
 
             const executor = log.executor;
-            if (executor.bot) return;
+
+            // --- WHITELIST CHECK ---
+            const SAFE_BOT_IDS = require(path.join(__dirname, '..', '..', '..', 'shared', 'safeBots'));
+            if (executor.bot || SAFE_BOT_IDS.includes(executor.id)) return;
+            // --- END WHITELIST CHECK ---
+
             if (antiNuke.whitelistedUsers.includes(executor.id)) return;
             if (executor.id === ban.guild.ownerId) return;
 

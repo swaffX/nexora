@@ -65,6 +65,14 @@ module.exports = {
                     await game.handleMatchResult(interaction);
                     break;
 
+                // --- KDA ---
+                case 'kda':
+                    await game.showKDAModal(interaction);
+                    break;
+                case 'finishkda':
+                    await game.finishKDA(interaction);
+                    break;
+
                 default:
                     // Bilinmeyen buton
                     // console.warn(`Unknown match action: ${action}`);

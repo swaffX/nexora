@@ -48,7 +48,19 @@ const matchSchema = new mongoose.Schema({
         team: { type: String, enum: ['A', 'B'] },
         amount: { type: Number },
         claimed: { type: Boolean, default: false } // Kazananlar ödülünü aldı mı?
-    }]
+    }],
+
+    // Oyuncu Skorları (KDA)
+    playerStats: [{
+        odasi: { type: String },
+        kills: { type: Number, default: 0 },
+        deaths: { type: Number, default: 0 },
+        assists: { type: Number, default: 0 }
+    }],
+
+    // Maç Sonucu
+    winnerTeam: { type: String, enum: ['A', 'B'] },
+    betReport: { type: String } // KDA girişi sırasında bahis sonucunu saklar
 }, { timestamps: true });
 
 module.exports = mongoose.model('Match', matchSchema);
