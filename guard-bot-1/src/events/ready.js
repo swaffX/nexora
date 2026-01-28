@@ -29,10 +29,10 @@ module.exports = {
                     adapterCreator: channel.guild.voiceAdapterCreator,
                     selfDeaf: true
                 });
-                console.log('🔊 Bot ses kanalına giriş yaptı.');
+                logger.info('🔊 Bot ses kanalına giriş yaptı.');
             }
         } catch (e) {
-            console.log('Ses bağlantı hatası (Modül eksik olabilir):', e.message);
+            logger.error('Ses bağlantı hatası (Modül eksik olabilir):', e.message);
         }
 
     }

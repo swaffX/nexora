@@ -1,5 +1,6 @@
 const path = require('path');
 const { ITEMS } = require(path.join(__dirname, '..', '..', '..', 'shared', 'gameData'));
+const logger = require(path.join(__dirname, '..', '..', '..', 'shared', 'logger'));
 
 let currentDeal = null;
 
@@ -26,7 +27,7 @@ function generateDailyDeal() {
         expiresAt: new Date(Date.now() + 86400000) // 24 Saat geçerli
     };
 
-    console.log(`[DailyDeal] Yeni Fırsat: ${currentDeal.name} - ${currentDeal.salePrice} (Eskisi: ${currentDeal.originalPrice})`);
+    logger.info(`[DailyDeal] Yeni Fırsat: ${currentDeal.name} - ${currentDeal.salePrice} (Eskisi: ${currentDeal.originalPrice})`);
     return currentDeal;
 }
 

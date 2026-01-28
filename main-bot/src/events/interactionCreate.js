@@ -32,7 +32,7 @@ module.exports = {
             try {
                 await command.autocomplete(interaction, client);
             } catch (error) {
-                console.error('Autocomplete Error:', error);
+                logger.error('Autocomplete Error:', error);
             }
         }
 
@@ -195,7 +195,7 @@ module.exports = {
                             await command.execute(interaction, client);
                             logger.command(interaction.user.tag, `MODAL:${commandName}`, interaction.guild?.name);
                         } catch (err) {
-                            console.error(err);
+                            logger.error('Casino Modal Error:', err);
                             await interaction.reply({ content: '❌ Oyun başlatılamadı: ' + err.message, flags: MessageFlags.Ephemeral });
                         }
                     } else {

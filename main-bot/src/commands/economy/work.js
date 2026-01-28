@@ -40,10 +40,14 @@ module.exports = {
         }
 
         // Job Logic
-        let job = JOBS[Math.floor(Math.random() * JOBS.length)];
-        if (job.name === 'Hacker' && Math.random() > job.chance) {
-            job = JOBS[Math.floor(Math.random() * (JOBS.length - 1))]; // Retry without hacker
+        let availableJobs = [...JOBS];
+
+        // Hacker işi sadece %5 şansla havuzda kalsın, aksi takdirde çıkar
+        if (Math.random() > 0.05) {
+            availableJobs = JOBS.filter(j => j.name !== 'Hacker');
         }
+
+        const job = availableJobs[Math.floor(Math.random() * availableJobs.length)];
 
         const earnings = Math.floor(Math.random() * (job.max - job.min + 1)) + job.min;
         user.balance += earnings;

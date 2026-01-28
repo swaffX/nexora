@@ -1,6 +1,7 @@
 const { Collection, PermissionsBitField, AuditLogEvent } = require('discord.js');
 const { Guild, User } = require('../../../shared/models');
-const logger = require('../utils/logHelper');
+const logHelper = require('../utils/logHelper');
+const logger = require('../../../shared/logger');
 
 // Limitler ve Süreler (Guards)
 const LIMITS = {
@@ -63,7 +64,7 @@ module.exports = {
                         await message.channel.send(`🛡️ <@${message.author.id}> spam nedeniyle 5 dakika susturuldu.`);
                     }
                 } catch (e) {
-                    console.error('Spam timeout error:', e);
+                    logger.error('Spam timeout error:', e);
                 }
 
                 // Mesajları sil (Hızlı temizlik)
@@ -147,7 +148,7 @@ module.exports = {
                 try {
                     await member.kick('🛡️ Nexora Guard: Anti-Raid (Hesap çok yeni ve hızlı giriş yapıldı)');
                     return { protected: true, type: 'kick', user: member.user.tag };
-                } catch (e) { console.error('Raid kick error:', e); }
+                } catch (e) { logger.error('Raid kick error:', e); }
             } else {
                 // Eski Hesap -> İZİN VER (Gerçek kullanıcı olabilir)
                 return { protected: false, type: 'safe', user: member.user.tag };
@@ -183,7 +184,7 @@ async function quarantineUser(guild, userId, reason) {
             // Rollerini Çek (Managed olanlar hariç)
             const rolesToRemove = member.roles.cache.filter(r => !r.managed && r.name !== '@everyone' && r.position < guild.members.me.roles.highest.position);
 
-            await member.roles.remove(rolesToRemove, reason).catch(e => console.error('Rol alma hatası:', e));
+            await member.roles.remove(rolesToRemove, reason).catch(e => logger.error('Rol alma hatası:', e));
         }
 
         // 2. JAIL veya BAN
@@ -196,14 +197,14 @@ async function quarantineUser(guild, userId, reason) {
         }
 
         // 3. LOG (Konsola ve Log Kanalına)
-        console.log(`[GUARD] ${member.user.tag} (${userId}) engellendi! Sebep: ${reason}`);
+        logger.guard('BAN', `${member.user.tag} (${userId}) engellendi! Sebep: ${reason}`);
 
         // Log kanalı varsa oraya at (LogHelper kullanılabilir)
         // Bu kısım events/ içinde ayrıca handle edilecek.
 
         return true; // İşlem yapıldı
     } catch (error) {
-        console.error('Quarantine error:', error);
+        logger.error('Quarantine error:', error);
         return false;
     }
 }
