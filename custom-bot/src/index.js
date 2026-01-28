@@ -23,17 +23,32 @@ const handlersPath = path.join(__dirname, 'handlers');
 const commandsPath = path.join(__dirname, 'commands');
 const { REST, Routes } = require('discord.js');
 
-async function loadCommands() {
-    const commands = [];
-    if (fs.existsSync(commandsPath)) {
-        const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-        for (const file of commandFiles) {
-            const command = require(`./commands/${file}`);
+// Recursive fonksiyon: alt klasörlerdeki komutları da yükler
+function loadCommandsRecursive(dir, commands = []) {
+    const files = fs.readdirSync(dir);
+    for (const file of files) {
+        const filePath = path.join(dir, file);
+        const stat = fs.statSync(filePath);
+
+        if (stat.isDirectory()) {
+            // Alt klasör ise recursive çağır
+            loadCommandsRecursive(filePath, commands);
+        } else if (file.endsWith('.js')) {
+            // JS dosyası ise komutu yükle
+            const command = require(filePath);
             if ('data' in command && 'execute' in command) {
                 client.commands.set(command.data.name, command);
                 commands.push(command.data.toJSON());
             }
         }
+    }
+    return commands;
+}
+
+async function loadCommands() {
+    let commands = [];
+    if (fs.existsSync(commandsPath)) {
+        commands = loadCommandsRecursive(commandsPath);
     }
 
     if (process.env.CUSTOM_BOT_TOKEN && process.env.CUSTOM_CLIENT_ID) {
