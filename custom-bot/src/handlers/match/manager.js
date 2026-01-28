@@ -10,19 +10,7 @@ module.exports = {
         const match = await Match.findOne({ matchId });
         if (!match) return false;
 
-        // Kanalları sil
-        if (match.createdChannelIds && match.createdChannelIds.length > 0) {
-            for (const cid of match.createdChannelIds) {
-                try {
-                    const channel = guild.channels.cache.get(cid);
-                    if (channel) await channel.delete().catch(() => { });
-                } catch (e) {
-                    console.error(`Kanal silinemedi (${cid}):`, e.message);
-                }
-            }
-        }
-
-        // Oyuncuları lobiye taşı
+        // 1. ÖNCE: Oyuncuları lobiye taşı
         if (match.lobbyVoiceId) {
             const allPlayers = [...(match.teamA || []), ...(match.teamB || [])];
             for (const pid of allPlayers) {
@@ -32,6 +20,18 @@ module.exports = {
                         await member.voice.setChannel(match.lobbyVoiceId).catch(() => { });
                     }
                 } catch (e) { }
+            }
+        }
+
+        // 2. SONRA: Kanalları sil
+        if (match.createdChannelIds && match.createdChannelIds.length > 0) {
+            for (const cid of match.createdChannelIds) {
+                try {
+                    const channel = guild.channels.cache.get(cid);
+                    if (channel) await channel.delete().catch(() => { });
+                } catch (e) {
+                    console.error(`Kanal silinemedi (${cid}):`, e.message);
+                }
             }
         }
 
@@ -52,17 +52,7 @@ module.exports = {
             const currentMatch = await Match.findOne({ matchId: match.matchId });
             if (!currentMatch || currentMatch.status === 'CANCELLED') return;
 
-            // Kanalları Sil
-            if (currentMatch.createdChannelIds) {
-                for (const cid of currentMatch.createdChannelIds) {
-                    try {
-                        const channel = guild.channels.cache.get(cid);
-                        if (channel) await channel.delete().catch(() => { });
-                    } catch (e) { }
-                }
-            }
-
-            // Oyuncuları Taşı
+            // 1. ÖNCE: Oyuncuları Taşı
             if (currentMatch.lobbyVoiceId) {
                 const allPlayers = [...(currentMatch.teamA || []), ...(currentMatch.teamB || [])];
                 for (const pid of allPlayers) {
@@ -71,6 +61,16 @@ module.exports = {
                         if (member && member.voice.channel) {
                             await member.voice.setChannel(currentMatch.lobbyVoiceId).catch(() => { });
                         }
+                    } catch (e) { }
+                }
+            }
+
+            // 2. SONRA: Kanalları Sil
+            if (currentMatch.createdChannelIds) {
+                for (const cid of currentMatch.createdChannelIds) {
+                    try {
+                        const channel = guild.channels.cache.get(cid);
+                        if (channel) await channel.delete().catch(() => { });
                     } catch (e) { }
                 }
             }
