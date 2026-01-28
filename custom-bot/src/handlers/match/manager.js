@@ -83,30 +83,11 @@ module.exports = {
 
     /**
      * Zaman aşımı kontrolü (Cron job gibi çalışır)
+     * KULLANNICI İSTEĞİ ÜZERİNE DEVRE DIŞI BIRAKILDI.
+     * Artık maçlar otomatik silinmez, manuel bitirilmesi gerekir.
      */
     async checkTimeouts(client) {
-        // 15 dakika boyunca güncelleme almayan maçı iptal et (Setup/Draft/Voting)
-        const TIMEOUT_MS = 15 * 60 * 1000;
-        const cutoff = new Date(Date.now() - TIMEOUT_MS);
-        try {
-            const matches = await Match.find({
-                status: { $in: ['SETUP', 'DRAFT', 'VOTING', 'SIDE_SELECTION'] },
-                updatedAt: { $lt: cutoff }
-            });
-
-            for (const match of matches) {
-                const guild = client.guilds.cache.get(match.guildId);
-                if (guild) {
-                    console.log(`[TIMEOUT] Maç zaman aşımına uğradı: ${match.matchId}`);
-                    await this.forceEndMatch(guild, match.matchId, 'Zaman aşımı (15dk işlem yok).');
-                } else {
-                    // Guild yoksa direkt iptal et
-                    match.status = 'CANCELLED';
-                    await match.save();
-                }
-            }
-        } catch (error) {
-            console.error('Timeout check error:', error);
-        }
+        // Otomatik silme iptal edildi.
+        return;
     }
 };

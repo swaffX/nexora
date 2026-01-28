@@ -61,7 +61,7 @@ module.exports = {
 
         try {
             const votingMsg = await interaction.channel.messages.fetch(match.votingMessageId);
-            if (votingMsg) {
+            if (votingMsg && votingMsg.embeds && votingMsg.embeds.length > 0) {
                 const embed = EmbedBuilder.from(votingMsg.embeds[0]);
                 embed.setFooter({ text: `🗳️ Oy Durumu: ${match.votes.length}/${totalPlayers}` });
                 await votingMsg.edit({ embeds: [embed] });

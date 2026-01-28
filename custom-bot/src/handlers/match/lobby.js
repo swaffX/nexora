@@ -8,41 +8,78 @@ module.exports = {
     async createLobby(interaction) {
         const REQUIRED_ROLE_ID = '1463875325019557920';
         const REQUIRED_VOICE_ID = '1463922466467483801';
+        const { MessageFlags, PermissionsBitField } = require('discord.js');
 
+        // Yetki ve Kanal Kontrolü
         if (!interaction.member.roles.cache.has(REQUIRED_ROLE_ID)) {
-            const { MessageFlags } = require('discord.js');
             return interaction.reply({ content: '❌ Yetkiniz yok.', flags: MessageFlags.Ephemeral });
         }
         if (interaction.member.voice.channelId !== REQUIRED_VOICE_ID) {
-            const { MessageFlags } = require('discord.js');
-            return interaction.reply({ content: `❌ <#${REQUIRED_VOICE_ID}> kanalında olmalısınız!`, flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: `❌ Maç oluşturmak için <#${REQUIRED_VOICE_ID}> kanalında olmalısınız!`, flags: MessageFlags.Ephemeral });
         }
 
-        let MATCH_CATEGORY_ID = getCategoryId();
-        let category = interaction.guild.channels.cache.get(MATCH_CATEGORY_ID);
-        if (!category) {
-            category = await interaction.guild.channels.create({ name: '🏆 | ACTIVE MATCHES', type: ChannelType.GuildCategory });
-            MATCH_CATEGORY_ID = category.id;
-            setCategoryId(MATCH_CATEGORY_ID);
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+        try {
+            const guild = interaction.guild;
+            const matchShortId = interaction.id.slice(-4);
+
+            // 1. Kategori Kontrol (veya oluştur)
+            let MATCH_CATEGORY_ID = getCategoryId();
+            let category = guild.channels.cache.get(MATCH_CATEGORY_ID);
+            if (!category) {
+                category = await guild.channels.create({ name: '🏆 | ACTIVE MATCHES', type: ChannelType.GuildCategory });
+                MATCH_CATEGORY_ID = category.id;
+                setCategoryId(MATCH_CATEGORY_ID);
+            }
+
+            // 2. Özel Kanalları Oluştur (Dinamik Lobi - Sadece Yazı)
+            // Herkesin görebileceği ama sadece yetkililerin yönetebileceği izinler
+            const everyone = guild.roles.everyone;
+
+            const textChannel = await guild.channels.create({
+                name: `match-${matchShortId}`,
+                type: ChannelType.GuildText,
+                parent: category.id,
+                permissionOverwrites: [
+                    { id: everyone.id, allow: [PermissionsBitField.Flags.ViewChannel], deny: [PermissionsBitField.Flags.SendMessages] }, // Herkes görebilir
+                    { id: interaction.user.id, allow: [PermissionsBitField.Flags.SendMessages] } // Host yazabilir
+                ]
+            });
+
+            // 3. Veritabanı Kayıt
+            // lobbyVoiceId: Kullanıcıların maç bitince döneceği yer (şu an bulundukları Main Lobby)
+            const newMatch = new Match({
+                matchId: interaction.id,
+                guildId: guild.id,
+                hostId: interaction.user.id,
+                channelId: textChannel.id, // İşlemler yeni kanalda dönecek
+                lobbyVoiceId: REQUIRED_VOICE_ID, // Maç bitince buraya (Main Lobiye) postala
+                createdChannelIds: [textChannel.id], // Silinecekler listesi (Sadece Yazı)
+                status: 'SETUP'
+            });
+            await newMatch.save();
+
+            // 5. Paneli Yeni Kanala Gönder
+            const embed = new EmbedBuilder().setColor(0x5865F2)
+                .setTitle(`👑 Match #${matchShortId} | Kaptan Seçimi`)
+                .setDescription(`**Lobi Hazır!**\nKaptanları belirleyin ve takımları kurmaya başlayın.\n\nEv Sahibi: <@${interaction.user.id}>`)
+                .addFields({ name: '🔵 Team A', value: 'Seçilmedi', inline: true }, { name: '🔴 Team B', value: 'Seçilmedi', inline: true });
+
+            const rows = [
+                new ActionRowBuilder().addComponents(new UserSelectMenuBuilder().setCustomId('match_captainA').setPlaceholder('Team A Kaptanı').setMaxValues(1)),
+                new ActionRowBuilder().addComponents(new UserSelectMenuBuilder().setCustomId('match_captainB').setPlaceholder('Team B Kaptanı').setMaxValues(1)),
+                new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`match_randomcap_${interaction.id}`).setLabel('🎲 Rastgele').setStyle(ButtonStyle.Secondary))
+            ];
+
+            await textChannel.send({ content: `<@${interaction.user.id}> maç oluşturuldu!`, embeds: [embed], components: rows });
+
+            await interaction.editReply({ content: `✅ Maç oluşturuldu! Lütfen panele gidin:\nKanal: <#${textChannel.id}>` });
+
+        } catch (error) {
+            console.error(error);
+            await interaction.editReply({ content: '❌ Maç oluşturulurken hata çıktı.' });
         }
-
-        const matchId = interaction.id;
-        const newMatch = new Match({
-            matchId: matchId, guildId: interaction.guild.id, hostId: interaction.user.id,
-            channelId: interaction.channel.id, lobbyVoiceId: interaction.member.voice.channelId, status: 'SETUP'
-        });
-        await newMatch.save();
-
-        const embed = new EmbedBuilder().setColor(0x5865F2).setTitle('👑 Kaptan Seçimi').setDescription('Kaptanları belirleyin.')
-            .addFields({ name: '🔵 Team A', value: 'Seçilmedi', inline: true }, { name: '🔴 Team B', value: 'Seçilmedi', inline: true });
-
-        const rows = [
-            new ActionRowBuilder().addComponents(new UserSelectMenuBuilder().setCustomId('match_captainA').setPlaceholder('Team A Kaptanı').setMaxValues(1)),
-            new ActionRowBuilder().addComponents(new UserSelectMenuBuilder().setCustomId('match_captainB').setPlaceholder('Team B Kaptanı').setMaxValues(1)),
-            new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`match_randomcap_${matchId}`).setLabel('🎲 Rastgele').setStyle(ButtonStyle.Secondary))
-        ];
-
-        await interaction.reply({ content: `Match ID: ${matchId}`, embeds: [embed], components: rows, ephemeral: false });
     },
 
     async selectCaptain(interaction, team) {
