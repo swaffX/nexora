@@ -1,4 +1,4 @@
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, UserSelectMenuBuilder, ChannelType } = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder, ChannelType } = require('discord.js');
 const path = require('path');
 const { Match } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const draftHandler = require('./draft');
@@ -66,9 +66,39 @@ module.exports = {
                 .setDescription(`**Lobi Hazır!**\nKaptanları belirleyin ve takımları kurmaya başlayın.\n\nEv Sahibi: <@${interaction.user.id}>`)
                 .addFields({ name: '🔵 Team A', value: 'Seçilmedi', inline: true }, { name: '🔴 Team B', value: 'Seçilmedi', inline: true });
 
+            // 4. Ses Kanalındaki Üyeleri Getir (Filtreleme için)
+            // UserSelectMenu tüm sunucuyu gösterir, o yüzden StringSelectMenu kullanacağız.
+            const voiceChannel = guild.channels.cache.get(REQUIRED_VOICE_ID);
+            const voiceMembers = voiceChannel ? voiceChannel.members.filter(m => !m.user.bot) : new Map();
+
+            // Eğer kanalda kimse yoksa (ki komutu kullanan orada olmalı ama)
+            if (voiceMembers.size === 0) {
+                return interaction.editReply({ content: '❌ Lobi kanalında kimse bulunamadı!' });
+            }
+
+            // Seçenekleri Hazırla (Max 25 kişi - Discord Sınırı)
+            const memberOptions = voiceMembers.map(m => ({
+                label: m.displayName,
+                description: m.user.tag,
+                value: m.id,
+                emoji: '👤'
+            })).slice(0, 25);
+
+            if (memberOptions.length === 0) memberOptions.push({ label: 'Kimse Yok', value: 'null', description: '???' });
+
             const rows = [
-                new ActionRowBuilder().addComponents(new UserSelectMenuBuilder().setCustomId('match_captainA').setPlaceholder('Team A Kaptanı').setMaxValues(1)),
-                new ActionRowBuilder().addComponents(new UserSelectMenuBuilder().setCustomId('match_captainB').setPlaceholder('Team B Kaptanı').setMaxValues(1)),
+                new ActionRowBuilder().addComponents(
+                    new StringSelectMenuBuilder()
+                        .setCustomId('match_captainA')
+                        .setPlaceholder('Team A Kaptanı Seç')
+                        .addOptions(memberOptions)
+                ),
+                new ActionRowBuilder().addComponents(
+                    new StringSelectMenuBuilder()
+                        .setCustomId('match_captainB')
+                        .setPlaceholder('Team B Kaptanı Seç')
+                        .addOptions(memberOptions)
+                ),
                 new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`match_randomcap_${interaction.id}`).setLabel('🎲 Rastgele').setStyle(ButtonStyle.Secondary))
             ];
 
