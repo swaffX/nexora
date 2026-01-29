@@ -214,7 +214,47 @@ module.exports = {
             // Draft Modülüne Geç
             await draftHandler.startDraftMode(interaction, match);
         } else {
-            await interaction.update({ embeds: [embed] });
+            // MENÜLERİ GÜNCELLE (Seçilenleri çıkar)
+            const REQUIRED_VOICE_ID = '1463922466467483801';
+            const voiceChannel = interaction.guild.channels.cache.get(REQUIRED_VOICE_ID);
+            const voiceMembers = voiceChannel ? voiceChannel.members.filter(m => !m.user.bot) : new Map();
+
+            // Tüm uygun adaylar
+            let candidates = voiceMembers.map(m => ({
+                label: m.displayName,
+                description: m.user.tag,
+                value: m.id,
+                emoji: '👤'
+            }));
+
+            if (candidates.length === 0) candidates.push({ label: 'Hata', value: 'null', description: 'Kimse bulunamadı' });
+
+            // Team A için Menü: (Eğer Team A zaten seçildiyse disabled yap, değilse Team B kaptanını listeden çıkar)
+            const optionsA = candidates.filter(c => c.value !== match.captainB);
+            const selectA = new StringSelectMenuBuilder()
+                .setCustomId('match_cap_select_A')
+                .setPlaceholder(match.captainA ? '✅ Seçildi' : 'Team A Kaptanı Seç')
+                .setDisabled(!!match.captainA) // Varsa disable et
+                .addOptions(optionsA.length > 0 ? optionsA.slice(0, 25) : [{ label: 'Uygun Aday Yok', value: 'null' }]);
+
+            // Team B için Menü: (Eğer Team B zaten seçildiyse disabled yap, değilse Team A kaptanını listeden çıkar)
+            const optionsB = candidates.filter(c => c.value !== match.captainA);
+            const selectB = new StringSelectMenuBuilder()
+                .setCustomId('match_cap_select_B')
+                .setPlaceholder(match.captainB ? '✅ Seçildi' : 'Team B Kaptanı Seç')
+                .setDisabled(!!match.captainB) // Varsa disable et
+                .addOptions(optionsB.length > 0 ? optionsB.slice(0, 25) : [{ label: 'Uygun Aday Yok', value: 'null' }]);
+
+            const rows = [
+                new ActionRowBuilder().addComponents(selectA),
+                new ActionRowBuilder().addComponents(selectB),
+                new ActionRowBuilder().addComponents(
+                    new ButtonBuilder().setCustomId(`match_randomcap_${interaction.message.id.replace(/\D/g, '')}`).setLabel('🎲 Rastgele').setStyle(ButtonStyle.Secondary),
+                    new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('Maçı İptal Et').setEmoji('🛑').setStyle(ButtonStyle.Danger)
+                )
+            ];
+
+            await interaction.update({ embeds: [embed], components: rows });
         }
     }
 };
