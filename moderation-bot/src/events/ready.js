@@ -38,6 +38,10 @@ module.exports = {
 
         setInterval(async () => {
             try {
+                // DB Bağlantısı yoksa işlemi atla
+                const mongoose = require('mongoose');
+                if (mongoose.connection.readyState !== 1) return;
+
                 const now = new Date();
                 const expiredPenals = await Penal.find({ active: true, endTime: { $lte: now } });
 

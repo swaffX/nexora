@@ -152,3 +152,14 @@ process.on('SIGINT', async () => {
     client.destroy();
     process.exit(0);
 });
+
+// Hata Yakalama (Crash Önleyici)
+process.on('unhandledRejection', (reason, p) => {
+    logger.error('Unhandled Rejection at:', p, 'reason:', reason);
+    // process.exit(1); // Kritikse kapatılabilir, ama botun kapanmaması için açık tutuyoruz.
+});
+
+process.on('uncaughtException', (err) => {
+    logger.error('Uncaught Exception:', err);
+    // process.exit(1);
+});

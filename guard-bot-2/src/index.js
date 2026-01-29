@@ -101,3 +101,11 @@ process.on('SIGINT', async () => {
     client.destroy();
     process.exit(0);
 });
+
+process.on('unhandledRejection', (reason, p) => {
+    logger.error('Unhandled Rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+    logger.error('Uncaught Exception:', err);
+});

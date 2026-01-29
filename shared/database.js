@@ -9,8 +9,8 @@ class Database {
     async connect(uri) {
         try {
             this.connection = await mongoose.connect(uri, {
-                // Mongoose 6+: deprecated options (useNewUrlParser, useUnifiedTopology) are default.
-                // Do not add them back to avoid warnings.
+                serverSelectionTimeoutMS: 5000, // 5 saniye içinde bağlanamazsa hata ver
+                socketTimeoutMS: 45000, // 45 saniye işlem süresi
             });
             logger.success('MongoDB bağlantısı başarılı!');
             return this.connection;

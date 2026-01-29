@@ -159,10 +159,7 @@ async function processVoiceSession(user, guild, client) {
 
     const { sendLog } = require('../utils/logHelper');
 
-    // ==================== 📨 DM VOICE SESSION CARD ====================
-    // DM bildirimi kapatıldı - kullanıcıları rahatsız etmemek için
-    // Bu özellik devre dışı bırakıldı
-    // ================================================================
+    // DM Bildirimi devre dışı bırakıldı.
 
     await sendLog(client, guild.id, 'voice', voiceLogEmbed);
 

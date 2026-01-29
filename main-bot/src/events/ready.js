@@ -70,6 +70,10 @@ module.exports = {
 
         // Jail Timer Kontrolü (Dakikada bir)
         setInterval(async () => {
+            // DB Bağlantı Kontrolü
+            const mongoose = require('mongoose');
+            if (mongoose.connection.readyState !== 1) return;
+
             const now = new Date();
             const expiredJails = await User.find({
                 'jail.isJailed': true,

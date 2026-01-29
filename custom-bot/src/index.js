@@ -99,4 +99,13 @@ if (fs.existsSync(eventsPath)) {
     }
 })();
 
+// Hata Yakalama
+process.on('unhandledRejection', (reason, p) => {
+    logger.error('[Custom] Unhandled Rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+    logger.error('[Custom] Uncaught Exception:', err);
+});
+
 module.exports = client;
