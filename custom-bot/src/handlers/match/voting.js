@@ -31,8 +31,9 @@ module.exports = {
 
         const options = mapsToVote.map(m => ({ label: m.name, value: m.name, emoji: '🗺️' }));
         const row = new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId(`match_vote_${match.matchId}`).setPlaceholder('Haritanı Seç!').addOptions(options));
+        const row2 = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('Maçı İptal Et').setEmoji('🛑').setStyle(ButtonStyle.Danger));
 
-        const msg = await channel.send({ embeds: [embed], components: [row] });
+        const msg = await channel.send({ embeds: [embed], components: [row, row2] });
 
         // Mesaj ID sakla ki edit yapabilelim
         match.votingMessageId = msg.id;
