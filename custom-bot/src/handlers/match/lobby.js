@@ -102,7 +102,10 @@ module.exports = {
                         .setPlaceholder('Team B Kaptanı Seç (Ses Kanalından)')
                         .addOptions(memberOptions)
                 ),
-                new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`match_randomcap_${interaction.id}`).setLabel('🎲 Rastgele').setStyle(ButtonStyle.Secondary))
+                new ActionRowBuilder().addComponents(
+                    new ButtonBuilder().setCustomId(`match_randomcap_${interaction.id}`).setLabel('🎲 Rastgele').setStyle(ButtonStyle.Secondary),
+                    new ButtonBuilder().setCustomId(`match_cancel_${interaction.id}`).setLabel('Maçı İptal Et').setEmoji('🛑').setStyle(ButtonStyle.Danger)
+                )
             ];
 
             await textChannel.send({ content: `Match ID: ${interaction.id}\n<@${interaction.user.id}> maç oluşturuldu!`, embeds: [embed], components: rows });
@@ -112,6 +115,37 @@ module.exports = {
         } catch (error) {
             console.error(error);
             await interaction.editReply({ content: '❌ Maç oluşturulurken hata çıktı.' });
+        }
+    },
+
+    async cancelMatch(interaction) {
+        const REQUIRED_ROLE_ID = '1463875325019557920';
+        // Admin yetkisi veya özel rol kontrolü
+        if (!interaction.member.permissions.has('Administrator') && !interaction.member.roles.cache.has(REQUIRED_ROLE_ID)) {
+            return interaction.reply({ content: '❌ Bu işlemi sadece yetkililer yapabilir.', flags: require('discord.js').MessageFlags.Ephemeral });
+        }
+
+        const matchId = interaction.customId.split('_')[2];
+        const match = await Match.findOne({ matchId });
+
+        // Onay mesajı gönderip silebiliriz veya direkt silebiliriz. Hızlı olması için direkt siliyoruz.
+        try {
+            if (match) {
+                // Kanalları sil
+                if (match.createdChannelIds && match.createdChannelIds.length > 0) {
+                    for (const cId of match.createdChannelIds) {
+                        await interaction.guild.channels.delete(cId).catch(() => console.log('Kanal zaten silinmiş'));
+                    }
+                }
+                // DB'den sil
+                await Match.deleteOne({ matchId });
+            } else {
+                // Match yoksa bile kanalı sil (Artık kanalın içinden basıldıysa)
+                await interaction.channel.delete().catch(() => { });
+            }
+        } catch (error) {
+            console.error('Cancel Match Error:', error);
+            await interaction.reply({ content: '❌ Silme işlemi sırasında hata.', flags: require('discord.js').MessageFlags.Ephemeral });
         }
     },
 

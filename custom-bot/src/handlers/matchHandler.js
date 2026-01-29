@@ -11,9 +11,11 @@ const manager = require('./match/manager');
 module.exports = {
     async handleInteraction(interaction, client) {
         let action;
-        let parts = []; // parts değişkenini dışarıda tanımla
-        if (interaction.commandName === 'setup-match' || interaction.customId === 'match_create') action = 'create';
-        else if (interaction.customId) {
+        let parts = []; // parts dizisini tanımladık
+
+        if (interaction.commandName === 'setup-match' || interaction.customId === 'match_create') {
+            action = 'create';
+        } else if (interaction.customId) {
             parts = interaction.customId.split('_');
             action = parts[1];
         } else return;
@@ -24,13 +26,16 @@ module.exports = {
                 case 'create':
                     await lobby.createLobby(interaction);
                     break;
-                case 'captainA': // (Eski - Yedek)
+                case 'cancel':
+                    await lobby.cancelMatch(interaction);
+                    break;
+                case 'captainA': // (Yedek)
                 case 'cap': // match_cap_select_A
-                    if (parts[2] === 'select') {
+                    if (parts && parts[2] === 'select') {
                         await lobby.selectCaptain(interaction, parts[3]);
                     }
                     break;
-                case 'captainB': // (Eski - Yedek)
+                case 'captainB': // (Yedek)
                     await lobby.selectCaptain(interaction, 'B');
                     break;
                 case 'randomcap':
