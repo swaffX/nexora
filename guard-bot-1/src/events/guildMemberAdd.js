@@ -20,22 +20,64 @@ module.exports = {
         // Whitelist kontrolü
         if (antiRaid.whitelistedUsers.includes(member.id)) return;
 
-        // Hesap yaşı kontrolü
+        // ==================== 🕵️‍♂️ FAKE HESAP TESPİTİ V2 ====================
+        let isRisky = false;
+        let riskReason = '';
+
+        // 1. Hesap Yaşı Kontrolü
         const accountAge = utils.getAccountAge(member.user);
         if (accountAge < antiRaid.minAccountAge) {
-            logger.guard('RAID', `Yeni hesap tespit edildi: ${member.user.tag} (${accountAge} gün)`);
+            isRisky = true;
+            riskReason = `Hesap çok yeni (${accountAge} gün)`;
+        }
+
+        // 2. Avatar Kontrolü (Default Avatar mı?)
+        // Eğer hesap 7 günden yeniyse VE avatarı yoksa risklidir.
+        if (!isRisky && accountAge < 7 && !member.user.avatar) {
+            isRisky = true;
+            riskReason = 'Yeni ve avatarsız hesap';
+        }
+
+        // 3. Şüpheli İsim Kontrolü (Örn: "Free Nitro", "Steam Gift", karışık sayılar)
+        if (!isRisky) {
+            const suspiciousPatterns = [/free.*nitro/i, /discord.*gift/i, /steam.*community/i, /boring_.*regex/i, /sell.*boost/i];
+            if (suspiciousPatterns.some(regex => regex.test(member.user.username))) {
+                isRisky = true;
+                riskReason = 'Şüpheli kullanıcı adı';
+            }
+        }
+
+        if (isRisky) {
+            logger.guard('RAID', `Riskli hesap tespit edildi: ${member.user.tag} - Sebep: ${riskReason}`);
+
+            // İşlem: Jail mi Kick mi?
+            const jailRoleId = guildSettings.jailSystem?.roleId;
 
             try {
-                await member.send({
-                    embeds: [embeds.warning(
-                        'Erişim Engellendi',
-                        `Hesabınız çok yeni olduğu için sunucuya katılamazsınız.\nMinimum hesap yaşı: **${antiRaid.minAccountAge} gün**\nHesap yaşınız: **${accountAge} gün**`
-                    )]
-                }).catch(() => { });
+                // Kullanıcıya DM at
+                try {
+                    await member.send({
+                        embeds: [embeds.warning(
+                            'Erişim Kısıtlandı',
+                            `Hesabınız güvenlik filtrelerine takıldı.\nSebep: **${riskReason}**\n\nMin. Hesap Yaşı: **${antiRaid.minAccountAge} Gün**`
+                        )]
+                    });
+                } catch (e) { }
 
-                await member.kick('Anti-Raid: Hesap çok yeni');
+                // Jail varsa Jail, yoksa Kick/Ban
+                if (jailRoleId && member.guild.roles.cache.has(jailRoleId)) {
+                    await member.roles.add(jailRoleId, 'Anti-Raid: Riskli Hesap');
+                    logger.guard('RAID', `${member.user.tag} karantinaya alındı (Jail).`);
+                } else {
+                    // Jail yoksa eski usul Kick
+                    // Sadece hesap yaşı çok küçükse atalım, diğerlerinde loglayalım (Yanlış pozitif olmasın)
+                    if (accountAge < antiRaid.minAccountAge) {
+                        await member.kick(`Anti-Raid: ${riskReason}`);
+                    }
+                }
+
             } catch (error) {
-                logger.error('Üye atılamadı:', error.message);
+                logger.error('Riskli üyeye işlem yapılamadı:', error.message);
             }
 
             // Log kanalına bildir
@@ -44,21 +86,25 @@ module.exports = {
                 if (logChannel) {
                     logChannel.send({
                         embeds: [embeds.guard(
-                            'Yeni Hesap Engellendi',
-                            `${member.user.tag} sunucuya katılmaya çalıştı ama engellendi.`,
+                            'Riskli Hesap İşlemi',
+                            `${member.user.tag} filtreye takıldı.`,
                             [
                                 { name: 'Kullanıcı', value: `<@${member.id}>`, inline: true },
                                 { name: 'Hesap Yaşı', value: `${accountAge} gün`, inline: true },
-                                { name: 'Sebep', value: `Minimum ${antiRaid.minAccountAge} gün gerekli`, inline: true }
+                                { name: 'Sebep', value: riskReason, inline: true },
+                                { name: 'İşlem', value: jailRoleId ? 'Karantina (Jail)' : (accountAge < antiRaid.minAccountAge ? 'Atıldı' : 'İzleniyor'), inline: true }
                             ]
                         )]
                     });
                 }
             }
-            return;
+
+            // Eğer Jail'e aldıysak veya attıysak buradak çıkabiliriz
+            // Ama mass join kontrolü için saymaya devam etmeliyiz? Hayır, riskli ise zaten işlem yapıldı.
+            if (jailRoleId || accountAge < antiRaid.minAccountAge) return;
         }
 
-        // Mass join kontrolü
+        // ==================== 🚀 MASS JOIN (RAID) KONTROLÜ ====================
         const now = Date.now();
         let recentJoins = client.joinCache.get(guildId) || [];
 
@@ -103,7 +149,7 @@ module.exports = {
                             }).catch(() => { });
                         }
 
-                        logger.guard('RAID', 'Sunucu kilitlendi!');
+                        logger.guard('RAID', 'Sunucu kilitlendi (Otomatik)!');
                     } catch (error) {
                         logger.error('Lockdown uygulanamadı:', error.message);
                     }
