@@ -118,7 +118,7 @@ module.exports = {
             // Dost Botları Koru (Whitelist)
             const SAFE_BOT_IDS = require(path.join(__dirname, '..', '..', '..', 'shared', 'safeBots'));
 
-            if (executor.bot || SAFE_BOT_IDS.includes(executor.id)) {
+            if (SAFE_BOT_IDS.includes(executor.id)) {
                 // Dost bot veya herhangi bir bot ise işlem yapma
                 return;
             }

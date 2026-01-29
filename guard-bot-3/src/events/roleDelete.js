@@ -93,7 +93,7 @@ module.exports = {
 
             // --- WHITELIST CHECK START ---
             const SAFE_BOT_IDS = require(path.join(__dirname, '..', '..', '..', 'shared', 'safeBots'));
-            if (executor.bot || SAFE_BOT_IDS.includes(executor.id)) return;
+            if (SAFE_BOT_IDS.includes(executor.id)) return;
             // --- WHITELIST CHECK END ---
 
             if (antiNuke.whitelistedUsers.includes(executor.id)) return;
