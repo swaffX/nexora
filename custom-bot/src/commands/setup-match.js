@@ -14,30 +14,37 @@ module.exports = {
 
         const embed = new EmbedBuilder()
             .setColor(0xFF4655) // Valorant Red
-            .setTitle('⚔️ VALORANT 5v5 SCRIM')
+            .setTitle('⚔️ NEXORA 5v5 SCRIM ARENA')
             .setDescription(`
-**Hoşgeldiniz Ajanlar!** 
-Aşağıdaki butonu kullanarak lobideki oyuncularla hızlıca **Takım A** ve **Takım B** oluşturup maça başlayabilirsiniz.
+**Hey Ajan!** 🌪️
+Rekabet dolu bir maça hazır mısın? Aşağıdaki butonu kullanarak lobini kur ve savaş meydanına in!
 
-**📍 Nasıl Çalışır?**
-Sistem ses kanalındaki oyuncuları otomatik algılar ve seçim yapmanızı sağlar.
+**🚀 Maç Akışı Nasıl İşler?**
 
-> **1️⃣ Maçı Başlat**
-> "Maç Oluştur" butonuna tıklayarak draft ekranını açın.
+> **1️⃣ Lobi Kurulumu**
+> **"🎮 Maç Oluştur"** butonuna tıkla ve özel maç odanı aç.
+> *(Not: <#1463922466467483801> kanalında olman şart!)*
+> 
+> **2️⃣ Takım Kaptanları**
+> **Team A** ve **Team B** kaptanlarını ses kanalındaki oyunculardan seç veya **🎲 Rastgele** dağıt.
+> 
+> **3️⃣ Oyuncu Seçimi (Draft)**
+> Kaptanlar sırasıyla lobideki oyuncuları takımlarına seçer.
+> 
+> **4️⃣ Harita & Taraf**
+> Takımlar oylama ile haritayı seçer, yazı tura galibi ise tarafını (Attack/Defend) belirler.
+> 
+> **5️⃣ Maç Sonu**
+> Maç bittiğinde kazananı belirle ve skoru gir. İstatistikler anında işlenir!
 
-> **2️⃣ Kaptanları Belirle**
-> İki takım kaptanını seçin veya **Rastgele** atayın.
+**🛑 Kontrol Sende:** Kurulumun herhangi bir aşamasında maçı iptal edebilirsin.
 
-> **3️⃣ Takımını Kur**
-> Kaptanlar sırayla ses kanalındaki oyuncuları seçer (Draft).
-
-> **4️⃣ Harita Yasakla & Başla**
-> Haritaları eleyin, tarafınızı seçin ve savaş başlasın!
-
-⚠️ *Maç oluşturmak için <#1463922466467483801> kanalında olmalısınız.*\n⚠️ *Maç başlatmak için <@&1463875325019557920> rolüne sahip olmalısınız.*
+🔒 **Gereksinimler:**
+• Ses Kanalı: <#1463922466467483801>
+• Yetkili Rolü: <@&1463875325019557920>
             `)
             .setImage('https://cdn.discordapp.com/attachments/531892263652032522/1464235225818075147/standard_2.gif?ex=6974bad2&is=69736952&hm=16b14c0c7fa6d91ad8528683d2876891b5833d4d516ef5891cd91bc4b8c9804d&')
-            .setFooter({ text: 'Nexora 5v5 System • Powered by Swaff' })
+            .setFooter({ text: 'Nexora Competitive System • v2.0' })
             .setTimestamp();
 
         const row = new ActionRowBuilder().addComponents(
