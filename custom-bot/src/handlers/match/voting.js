@@ -79,6 +79,14 @@ module.exports = {
         const match = await Match.findOne({ matchId });
         if (!match || match.voteStatus !== 'VOTING') return;
 
+        // TEMİZLİK: Oylama mesajını sil
+        try {
+            if (match.votingMessageId) {
+                const msg = await channel.messages.fetch(match.votingMessageId).catch(() => null);
+                if (msg) await msg.delete();
+            }
+        } catch (e) { console.error('Delete Vote Msg Error:', e); }
+
         const counts = {};
         match.votes.forEach(v => { counts[v.mapName] = (counts[v.mapName] || 0) + 1; });
         const sortedMaps = Object.entries(counts).sort((a, b) => b[1] - a[1]);

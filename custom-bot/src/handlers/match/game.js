@@ -175,12 +175,14 @@ module.exports = {
         match.status = 'FINISHED';
         await match.save();
 
-        await interaction.update({ content: '⏳ İşleniyor...', components: [] });
+        // Mesajı güncelleme, yeni mesaj atacağız
+        // await interaction.update({ content: '⏳ İşleniyor...', components: [] });
+        await interaction.deferUpdate();
 
         // Bahisleri işle
         const betReport = await this.processBets(interaction.guild, match, winner);
 
-        // Skor Giriş Modal'ını Göster
+        // Skor Giriş Modal'ını Göster (Yeni mesaj olarak)
         await this.showScoreModal(interaction, match, betReport);
     },
 
