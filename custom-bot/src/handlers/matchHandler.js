@@ -23,10 +23,17 @@ module.exports = {
                 case 'create':
                     await lobby.createLobby(interaction);
                     break;
-                case 'captainA':
-                    await lobby.selectCaptain(interaction, 'A');
+                case 'captainA': // (Eski - Yedek)
+                case 'cap': // Yeni Format: match_cap_select_A -> parts[1] = 'cap', parts[2] = 'select', parts[3] = 'A'
+                    // Eğer format 'match_cap_select_A' ise:
+                    if (parts[2] === 'select') {
+                        await lobby.selectCaptain(interaction, parts[3]);
+                    } else {
+                        // Eski usul
+                        await lobby.selectCaptain(interaction, 'A');
+                    }
                     break;
-                case 'captainB':
+                case 'captainB': // (Eski - Yedek)
                     await lobby.selectCaptain(interaction, 'B');
                     break;
                 case 'randomcap':

@@ -67,16 +67,18 @@ module.exports = {
                 .addFields({ name: '🔵 Team A', value: 'Seçilmedi', inline: true }, { name: '🔴 Team B', value: 'Seçilmedi', inline: true });
 
             // 4. Ses Kanalındaki Üyeleri Getir (Filtreleme için)
-            // UserSelectMenu tüm sunucuyu gösterir, o yüzden StringSelectMenu kullanacağız.
             const voiceChannel = guild.channels.cache.get(REQUIRED_VOICE_ID);
             const voiceMembers = voiceChannel ? voiceChannel.members.filter(m => !m.user.bot) : new Map();
 
-            // Eğer kanalda kimse yoksa (ki komutu kullanan orada olmalı ama)
+            console.log(`[Lobby Debug] Kanal ID: ${REQUIRED_VOICE_ID}`);
+            console.log(`[Lobby Debug] Kanalda Bulunanlar: ${voiceMembers.map(m => m.user.username).join(', ')}`);
+
+            // Eğer kanalda kimse yoksa
             if (voiceMembers.size === 0) {
-                return interaction.editReply({ content: '❌ Lobi kanalında kimse bulunamadı!' });
+                return interaction.editReply({ content: '❌ Lobi kanalında kimse bulunamadı! Lütfen ses kanalına girin.' });
             }
 
-            // Seçenekleri Hazırla (Max 25 kişi - Discord Sınırı)
+            // Seçenekleri Hazırla (Max 25 kişi)
             const memberOptions = voiceMembers.map(m => ({
                 label: m.displayName,
                 description: m.user.tag,
@@ -84,19 +86,20 @@ module.exports = {
                 emoji: '👤'
             })).slice(0, 25);
 
-            if (memberOptions.length === 0) memberOptions.push({ label: 'Kimse Yok', value: 'null', description: '???' });
+            if (memberOptions.length === 0) memberOptions.push({ label: 'Hata', value: 'null', description: 'Kimse bulunamadı' });
 
+            // ID'leri değiştirdim ki cache sorunu varsa çözülsün: match_captainA -> match_cap_select_A
             const rows = [
                 new ActionRowBuilder().addComponents(
                     new StringSelectMenuBuilder()
-                        .setCustomId('match_captainA')
-                        .setPlaceholder('Team A Kaptanı Seç')
+                        .setCustomId('match_cap_select_A')
+                        .setPlaceholder('Team A Kaptanı Seç (Ses Kanalından)')
                         .addOptions(memberOptions)
                 ),
                 new ActionRowBuilder().addComponents(
                     new StringSelectMenuBuilder()
-                        .setCustomId('match_captainB')
-                        .setPlaceholder('Team B Kaptanı Seç')
+                        .setCustomId('match_cap_select_B')
+                        .setPlaceholder('Team B Kaptanı Seç (Ses Kanalından)')
                         .addOptions(memberOptions)
                 ),
                 new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`match_randomcap_${interaction.id}`).setLabel('🎲 Rastgele').setStyle(ButtonStyle.Secondary))
