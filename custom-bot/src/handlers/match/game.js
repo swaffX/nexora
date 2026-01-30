@@ -123,18 +123,52 @@ module.exports = {
 
         const nameA = `TEAM ${captainA.displayName.toUpperCase()}`;
         const nameB = `TEAM ${captainB.displayName.toUpperCase()}`;
+        const channelNameA = `🔵 ${nameA} (${match.sideA})`;
+        const channelNameB = `🔴 ${nameB} (${match.sideB})`;
 
-        const voiceA = await guild.channels.create({ name: `🔵 ${nameA} (${match.sideA})`, type: ChannelType.GuildVoice, parent: category.id, permissionOverwrites: createPerms(match.teamA) });
-        const voiceB = await guild.channels.create({ name: `🔴 ${nameB} (${match.sideB})`, type: ChannelType.GuildVoice, parent: category.id, permissionOverwrites: createPerms(match.teamB) });
+        let voiceA, voiceB;
+        let createdNew = false;
 
-        match.createdChannelIds.push(voiceA.id);
-        match.createdChannelIds.push(voiceB.id);
-        await match.save();
+        // Var olan kanalları kontrol et (createdChannelIds içinde voice kanalı var mı?)
+        // createdChannelIds[0] genelde text kanalıdır, diğerleri voice olabilir.
+        // Ancak biz sadece ID listesine bakıp type kontrolü yapacağız.
+        const existingVoiceIds = match.createdChannelIds.filter(id => {
+            const c = guild.channels.cache.get(id);
+            return c && c.type === ChannelType.GuildVoice;
+        });
 
-        const move = async (id, cid) => { try { const m = await guild.members.fetch(id); if (m.voice.channel) await m.voice.setChannel(cid); } catch (e) { } };
+        if (existingVoiceIds.length >= 2) {
+            // VAR OLAN KANALLARI GÜNCELLE
+            voiceA = guild.channels.cache.get(existingVoiceIds[0]);
+            voiceB = guild.channels.cache.get(existingVoiceIds[1]);
+
+            if (voiceA) {
+                await voiceA.setName(channelNameA).catch(() => { });
+                await voiceA.permissionOverwrites.set(createPerms(match.teamA)).catch(() => { });
+            }
+            if (voiceB) {
+                await voiceB.setName(channelNameB).catch(() => { });
+                await voiceB.permissionOverwrites.set(createPerms(match.teamB)).catch(() => { });
+            }
+        } else {
+            // YENİ KANAL OLUŞTUR
+            createdNew = true;
+            voiceA = await guild.channels.create({ name: channelNameA, type: ChannelType.GuildVoice, parent: category.id, permissionOverwrites: createPerms(match.teamA) });
+            voiceB = await guild.channels.create({ name: channelNameB, type: ChannelType.GuildVoice, parent: category.id, permissionOverwrites: createPerms(match.teamB) });
+
+            match.createdChannelIds.push(voiceA.id);
+            match.createdChannelIds.push(voiceB.id);
+            await match.save();
+        }
+
+        // Oyuncuları Taşı
+        const move = async (id, cid) => { try { const m = await guild.members.fetch(id); if (m.voice.channel && m.voice.channelId !== cid) await m.voice.setChannel(cid); } catch (e) { } };
         await Promise.all([...match.teamA.map(id => move(id, voiceA.id)), ...match.teamB.map(id => move(id, voiceB.id))]);
 
-        const panelRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`match_endmatch_${match.matchId}`).setLabel('🛑 Maçı Bitir').setStyle(ButtonStyle.Danger));
+        const panelRow = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId(`match_endmatch_${match.matchId}`).setLabel('🛑 Maçı Bitir').setStyle(ButtonStyle.Danger),
+            new ButtonBuilder().setCustomId(`match_endlobby_${match.matchId}`).setLabel('❌ Lobiyi Bitir (Kapat)').setStyle(ButtonStyle.Secondary)
+        );
 
         const payload = {
             content: `✅ **MAÇ BAŞLADI!**\n🏰 Harita: **${match.selectedMap}**\n⚔️ Taraf: **${nameA} (${match.sideA}) vs ${nameB} (${match.sideB})**`,
@@ -148,194 +182,45 @@ module.exports = {
         const matchId = interaction.customId.split('_')[2];
         const match = await Match.findOne({ matchId });
         if (!match) return;
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId(`match_winner_${matchId}_A`).setLabel('🏆 Team A').setStyle(ButtonStyle.Primary),
-            new ButtonBuilder().setCustomId(`match_winner_${matchId}_B`).setLabel('🏆 Team B').setStyle(ButtonStyle.Danger),
-            new ButtonBuilder().setCustomId(`match_winner_${matchId}_CANCEL`).setLabel('❌ İptal').setStyle(ButtonStyle.Secondary)
-        );
-        const { MessageFlags } = require('discord.js');
-        await interaction.reply({ content: '🏁 Maç Sonucu?', components: [row], flags: MessageFlags.Ephemeral });
-    },
 
-    async handleMatchResult(interaction) {
-        const [_, __, matchId, winner] = interaction.customId.split('_');
-        const match = await Match.findOne({ matchId });
-        if (!match) return;
-
-        if (winner === 'CANCEL') {
-            await interaction.update({ content: '⏳ İptal ediliyor...', components: [] });
-            await manager.forceEndMatch(interaction.guild, match.matchId, 'Maç sonucu girilirken iptal edildi.');
-            const { MessageFlags } = require('discord.js');
-            await interaction.followUp({ content: '✅ Maç iptal edildi ve kanallar silindi.', flags: MessageFlags.Ephemeral });
-            return;
-        }
-
-        // Kazananı kaydet
-        match.winnerTeam = winner;
+        // Maçı Bitir (Kazanan sormadan)
         match.status = 'FINISHED';
+
+        // Oynanan haritayı kaydet
+        match.playedMaps.push(match.selectedMap);
         await match.save();
 
-        // Mesajı güncelleme, yeni mesaj atacağız
-        // await interaction.update({ content: '⏳ İşleniyor...', components: [] });
-        await interaction.deferUpdate();
+        const { MessageFlags } = require('discord.js');
+        await interaction.reply({ content: '🏁 Maç sona erdi. Seçenekler yükleniyor...', flags: MessageFlags.Ephemeral });
 
-        // Bahisleri işle
-        const betReport = await this.processBets(interaction.guild, match, winner);
-
-        // Skor Giriş Modal'ını Göster (Yeni mesaj olarak)
-        await this.showScoreModal(interaction, match, betReport);
+        // Yeni Kontrol Panelini Göster
+        await this.showNextMatchOptions(interaction.channel, match);
     },
 
-    // Skor Giriş Modal'ı
-    async showScoreModal(interaction, match, betReport) {
-        // betReport'u kaydet
-        match.betReport = betReport;
-        await match.save();
+    async showNextMatchOptions(channel, match) {
+        const embed = new EmbedBuilder()
+            .setColor(0x2F3136)
+            .setTitle('🏁 Maç Sonu Yönetimi')
+            .setDescription(`**Bu lobiyle ne yapmak istersiniz?**\n\n🔁 **Takımlar Aynı:** Kaptanlar ve takımlar değişmeden yeni harita seçimine geçer.\n🔄 **Takımları Değiştir:** Takımları sıfırlar, kaptan seçimine döner.\n🛑 **Lobiyi Bitir:** Her şeyi siler ve kapatır.`);
 
-        const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
-
-        const modal = new ModalBuilder()
-            .setCustomId(`modal_score_${match.matchId}`)
-            .setTitle('📊 Maç Skoru Girişi');
-
-        const scoreAInput = new TextInputBuilder()
-            .setCustomId('scoreA')
-            .setLabel('Team A Skoru')
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder('Örn: 13')
-            .setRequired(true);
-
-        const scoreBInput = new TextInputBuilder()
-            .setCustomId('scoreB')
-            .setLabel('Team B Skoru')
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder('Örn: 11')
-            .setRequired(true);
-
-        modal.addComponents(
-            new ActionRowBuilder().addComponents(scoreAInput),
-            new ActionRowBuilder().addComponents(scoreBInput)
-        );
-
-        // Modal'ı ayrı bir mesajla tetikle
         const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId(`match_openscore_${match.matchId}`)
-                .setLabel('📝 Skor Gir')
-                .setStyle(ButtonStyle.Primary)
+            new ButtonBuilder().setCustomId(`match_rematch_${match.matchId}`).setLabel('Takımlar Aynı (Devam)').setStyle(ButtonStyle.Success).setEmoji('🔁'),
+            new ButtonBuilder().setCustomId(`match_reset_${match.matchId}`).setLabel('Takımları Değiştir').setStyle(ButtonStyle.Primary).setEmoji('🔄'),
+            new ButtonBuilder().setCustomId(`match_endlobby_${match.matchId}`).setLabel('Lobiyi Bitir').setStyle(ButtonStyle.Danger).setEmoji('🛑')
         );
 
-        await interaction.channel.send({
-            content: `🏆 **Kazanan: Team ${match.winnerTeam}**\n\nLütfen maç skorunu girmek için butona tıklayın.`,
-            components: [row]
-        });
-    },
-
-    // Skor Modal Aç Butonu
-    async openScoreModal(interaction) {
-        const matchId = interaction.customId.split('_')[2];
-        const match = await Match.findOne({ matchId });
-        if (!match) return;
-
-        const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
-
-        const modal = new ModalBuilder()
-            .setCustomId(`modal_score_${match.matchId}`)
-            .setTitle('📊 Maç Skoru Girişi');
-
-        const scoreAInput = new TextInputBuilder()
-            .setCustomId('scoreA')
-            .setLabel('Team A Skoru (Round)')
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder('Örn: 13')
-            .setRequired(true);
-
-        const scoreBInput = new TextInputBuilder()
-            .setCustomId('scoreB')
-            .setLabel('Team B Skoru (Round)')
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder('Örn: 11')
-            .setRequired(true);
-
-        modal.addComponents(
-            new ActionRowBuilder().addComponents(scoreAInput),
-            new ActionRowBuilder().addComponents(scoreBInput)
-        );
-
-        await interaction.showModal(modal);
-    },
-
-    // Skor Modal Submit
-    async handleScoreSubmit(interaction) {
-        const matchId = interaction.customId.split('_')[2];
-
-        const scoreA = parseInt(interaction.fields.getTextInputValue('scoreA')) || 0;
-        const scoreB = parseInt(interaction.fields.getTextInputValue('scoreB')) || 0;
-
-        const match = await Match.findOne({ matchId });
-        if (!match) return;
-
-        // Skorları kaydet
-        match.scoreA = scoreA;
-        match.scoreB = scoreB;
-        await match.save();
-
-        await interaction.update({ content: '⏳ Maç sonucu oluşturuluyor...', components: [] });
-
-        // Sonuç kartını oluştur
-        await this.generateResultCard(interaction.guild, match, match.winnerTeam, match.betReport);
-
-        // Cleanup
-        await manager.cleanupMatchChannels(interaction.guild, match);
-    },
-
-    async generateResultCard(guild, match, winnerTeam, betReport = null) {
-        try {
-            let resultChannel = guild.channels.cache.find(c => c.name === 'maç-sonuçları');
-            if (!resultChannel) resultChannel = await guild.channels.create({ name: 'maç-sonuçları', type: ChannelType.GuildText });
-
-            const teamName = winnerTeam === 'A' ? 'TEAM A 🔵' : 'TEAM B 🔴';
-            const color = winnerTeam === 'A' ? 0x5865F2 : 0xED4245;
-
-            // Skor gösterimi (13-11 gibi)
-            const scoreDisplay = `**${match.scoreA || 0}** - **${match.scoreB || 0}**`;
-
-            const embed = new EmbedBuilder()
-                .setColor(color)
-                .setAuthor({ name: '🎮 MAÇ SONUCU' })
-                .setTitle(`🏆 KAZANAN: ${teamName}`)
-                .setDescription(`**🗺️ Harita:** ${match.selectedMap}\n**📊 Skor:** ${scoreDisplay}\n**📅 Tarih:** <t:${Math.floor(Date.now() / 1000)}:f>`)
-                .addFields(
-                    {
-                        name: '🔵 TEAM A',
-                        value: match.teamA.map(id => `<@${id}>`).join('\n') || 'Oyuncu yok',
-                        inline: true
-                    },
-                    {
-                        name: '🔴 TEAM B',
-                        value: match.teamB.map(id => `<@${id}>`).join('\n') || 'Oyuncu yok',
-                        inline: true
-                    }
-                )
-                .setTimestamp();
-
-            if (betReport) embed.addFields({ name: '💰 Bahis Sonuçları', value: betReport, inline: false });
-
-            await resultChannel.send({ embeds: [embed] });
-        } catch (e) { console.error('Result Card Error:', e); }
+        await channel.send({ embeds: [embed], components: [row] });
     },
 
     async processBets(guild, match, winnerTeam) {
         if (!match.bets) return null;
-        let winners = [];
         for (const bet of match.bets) {
             if (bet.team === winnerTeam && !bet.claimed) {
                 const winAmount = bet.amount * 2;
                 const user = await User.findOne({ odasi: bet.userId, odaId: guild.id });
-                if (user) { user.balance += winAmount; await user.save(); winners.push(`<@${bet.userId}> (+${winAmount})`); bet.claimed = true; }
+                if (user) { user.balance += winAmount; await user.save(); bet.claimed = true; }
             }
         }
         await match.save();
-        return winners.length ? `💰 **Kazananlar:** ${winners.join(', ')}` : null;
     }
 };

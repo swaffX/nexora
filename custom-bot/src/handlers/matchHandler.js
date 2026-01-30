@@ -79,6 +79,23 @@ module.exports = {
                     await game.openScoreModal(interaction);
                     break;
 
+                case 'rematch':
+                    // Takımlar Aynı (Rövanş) -> Direkt Oylama
+                    const mRematch = await Match.findOne({ matchId: parts[2] });
+                    if (mRematch) await voting.prepareVoting(interaction, mRematch, true);
+                    break;
+                case 'reset':
+                    // Takımları Değiştir -> Lobiye Dön
+                    await lobby.resetLobby(interaction);
+                    break;
+                case 'endlobby':
+                    // Lobiyi Bitir -> Sil
+                    await manager.forceEndMatch(interaction.guild, parts[2], 'Lobi yetkili tarafından sonlandırıldı.');
+                    await manager.cleanupVoiceChannels(interaction.guild, await Match.findOne({ matchId: parts[2] })); // Ekstra ses temizliği
+                    await interaction.reply({ content: '✅ Lobi sonlandırıldı.', flags: require('discord.js').MessageFlags.Ephemeral });
+                    await interaction.channel.delete().catch(() => { });
+                    break;
+
                 default:
                     // Bilinmeyen buton
                     // console.warn(`Unknown match action: ${action}`);

@@ -256,5 +256,71 @@ module.exports = {
 
             await interaction.update({ embeds: [embed], components: rows });
         }
+    },
+
+    async resetLobby(interaction) {
+        const matchId = interaction.customId.split('_')[2];
+        const match = await Match.findOne({ matchId });
+        if (!match) return;
+
+        // 1. ÖNCE: Oyuncuları Lobiye Taşı
+        const guild = interaction.guild;
+        if (match.lobbyVoiceId) {
+            const allPlayers = [...(match.teamA || []), ...(match.teamB || [])];
+            const move = async (pid) => {
+                try {
+                    const member = await guild.members.fetch(pid).catch(() => null);
+                    if (member && member.voice.channel) await member.voice.setChannel(match.lobbyVoiceId).catch(() => { });
+                } catch (e) { }
+            };
+            await Promise.all(allPlayers.map(pid => move(pid)));
+        }
+
+        // 2. SONRA: Ses Kanallarını Sil
+        const manager = require('./manager');
+        await manager.cleanupVoiceChannels(guild, match);
+
+        // 2. Verileri Sıfırla
+        match.captainA = null;
+        match.captainB = null;
+        match.teamA = [];
+        match.teamB = [];
+        match.status = 'SETUP';
+        match.createdChannelIds = match.createdChannelIds.filter(id => id === match.channelId); // Sadece yazı kanalını tut
+        await match.save();
+
+        // 3. UI'ı Yeniden Başlat (CreateLobby mantığının aynısı ama update ile)
+        const REQUIRED_VOICE_ID = '1463922466467483801';
+        const voiceChannel = interaction.guild.channels.cache.get(REQUIRED_VOICE_ID);
+        const voiceMembers = voiceChannel ? voiceChannel.members.filter(m => !m.user.bot) : new Map();
+
+        const memberOptions = voiceMembers.map(m => ({
+            label: m.displayName,
+            description: m.user.tag,
+            value: m.id,
+            emoji: '👤'
+        })).slice(0, 25);
+
+        if (memberOptions.length === 0) memberOptions.push({ label: 'Hata', value: 'null', description: 'Odada kimse yok' });
+
+        const embed = new EmbedBuilder().setColor(0x5865F2)
+            .setTitle(`👑 Match #${match.matchId.slice(-4)} | Kaptan Seçimi (Sıfırlandı)`)
+            .setDescription(`**Lobi Sıfırlandı!**\nKaptanları yeniden belirleyin.\n\nEv Sahibi: <@${match.hostId}>`)
+            .addFields({ name: '🔵 Team A', value: 'Seçilmedi', inline: true }, { name: '🔴 Team B', value: 'Seçilmedi', inline: true });
+
+        const rows = [
+            new ActionRowBuilder().addComponents(
+                new StringSelectMenuBuilder().setCustomId('match_cap_select_A').setPlaceholder('Team A Kaptanı Seç').addOptions(memberOptions)
+            ),
+            new ActionRowBuilder().addComponents(
+                new StringSelectMenuBuilder().setCustomId('match_cap_select_B').setPlaceholder('Team B Kaptanı Seç').addOptions(memberOptions)
+            ),
+            new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId(`match_randomcap_${match.matchId}`).setLabel('🎲 Rastgele').setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('Maçı İptal Et').setEmoji('🛑').setStyle(ButtonStyle.Danger)
+            )
+        ];
+
+        await interaction.update({ content: null, embeds: [embed], components: rows });
     }
 };

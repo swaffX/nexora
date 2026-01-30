@@ -56,7 +56,7 @@ const matchSchema = new mongoose.Schema({
 
     // Maç Sonucu
     winnerTeam: { type: String, enum: ['A', 'B'] },
-    betReport: { type: String } // Maç bitişi sırasında bahis sonucunu saklar
+    playedMaps: { type: [String], default: [] } // Bu lobide oynanan haritalar
 }, { timestamps: true });
 
 module.exports = mongoose.model('Match', matchSchema);

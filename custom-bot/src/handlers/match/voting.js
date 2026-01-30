@@ -21,7 +21,10 @@ module.exports = {
     },
 
     async startMapVoting(channel, match) {
-        const mapsToVote = MAPS;
+        // Oynanmış haritaları filtrele
+        const played = match.playedMaps || [];
+        const mapsToVote = MAPS.filter(m => !played.includes(m.name));
+
         const endUnix = Math.floor(match.voteEndTime.getTime() / 1000);
         const totalPlayers = match.teamA.length + match.teamB.length;
 
@@ -29,7 +32,13 @@ module.exports = {
             .setDescription(`Oynamak istediğiniz haritayı seçin!\n\n⏳ **Bitiş:** <t:${endUnix}:R>`)
             .setFooter({ text: `🗳️ Oy Durumu: 0/${totalPlayers}` });
 
+        if (played.length > 0) {
+            embed.addFields({ name: '🚫 Oynanmış Haritalar', value: played.join(', ') });
+        }
+
         const options = mapsToVote.map(m => ({ label: m.name, value: m.name, emoji: '🗺️' }));
+        // Eğer tüm haritalar oynandıysa sıfırla veya hepsi açık
+        const finalOptions = options.length > 0 ? options : MAPS.map(m => ({ label: m.name, value: m.name, emoji: '🗺️' }));
         const row = new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId(`match_vote_${match.matchId}`).setPlaceholder('Haritanı Seç!').addOptions(options));
         const row2 = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('Maçı İptal Et').setEmoji('🛑').setStyle(ButtonStyle.Danger));
 
