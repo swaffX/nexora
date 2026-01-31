@@ -70,9 +70,7 @@ module.exports = {
                 case 'endmatch':
                     await game.endMatch(interaction);
                     break;
-                case 'winner':
-                    await game.handleMatchResult(interaction);
-                    break;
+                // winner case is removed
 
                 // --- SCORE ---
                 case 'openscore':
@@ -90,10 +88,13 @@ module.exports = {
                     break;
                 case 'endlobby':
                     // Lobiyi Bitir -> Sil
+                    // Önce yanıt ver, yoksa kanal silinince yanıt verilemez
+                    await interaction.reply({ content: '✅ Lobi sonlandırılıyor...', flags: require('discord.js').MessageFlags.Ephemeral });
+
                     await manager.forceEndMatch(interaction.guild, parts[2], 'Lobi yetkili tarafından sonlandırıldı.');
                     await manager.cleanupVoiceChannels(interaction.guild, await Match.findOne({ matchId: parts[2] })); // Ekstra ses temizliği
-                    await interaction.reply({ content: '✅ Lobi sonlandırıldı.', flags: require('discord.js').MessageFlags.Ephemeral });
-                    await interaction.channel.delete().catch(() => { });
+
+                    setTimeout(() => interaction.channel.delete().catch(() => { }), 1000); // Biraz bekle sonra sil
                     break;
 
                 default:

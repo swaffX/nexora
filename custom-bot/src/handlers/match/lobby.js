@@ -263,6 +263,9 @@ module.exports = {
         const match = await Match.findOne({ matchId });
         if (!match) return;
 
+        // İşlem uzun sürebilir (taşıma vs.), o yüzden önce Discord'a 'Bekle' diyoruz.
+        await interaction.deferUpdate();
+
         // 1. ÖNCE: Oyuncuları Lobiye Taşı
         const guild = interaction.guild;
         if (match.lobbyVoiceId) {
@@ -321,6 +324,6 @@ module.exports = {
             )
         ];
 
-        await interaction.update({ content: null, embeds: [embed], components: rows });
+        await interaction.editReply({ content: null, embeds: [embed], components: rows });
     }
 };
