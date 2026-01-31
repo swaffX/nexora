@@ -30,7 +30,8 @@ module.exports = {
             // Timer temizle
             if (draftTimers.has(match.matchId)) clearTimeout(draftTimers.get(match.matchId));
 
-            await interaction.channel.send({ content: `✅ **Takımlar Belirlendi!** Oylamaya geçiliyor...` });
+            const msg = await interaction.channel.send({ content: `✅ **Takımlar Belirlendi!** Oylamaya geçiliyor...` });
+            setTimeout(() => msg.delete().catch(() => { }), 5000);
 
             return votingHandler.prepareVoting(interaction, match, true);
         }

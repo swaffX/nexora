@@ -79,7 +79,8 @@ module.exports = {
         } catch (e) { console.error('Vote Update Error:', e); }
 
         if (match.votes.length >= totalPlayers) {
-            await interaction.channel.send('⚡ **Herkes oy kullandı! Oylama sonlandırılıyor...**');
+            const doneMsg = await interaction.channel.send('⚡ **Herkes oy kullandı! Oylama sonlandırılıyor...**');
+            setTimeout(() => doneMsg.delete().catch(() => { }), 5000);
             await this.endVoting(interaction.channel, match.matchId);
         }
     },

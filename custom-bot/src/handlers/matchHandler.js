@@ -94,7 +94,9 @@ module.exports = {
                     await manager.forceEndMatch(interaction.guild, parts[2], 'Lobi yetkili tarafından sonlandırıldı.');
                     await manager.cleanupVoiceChannels(interaction.guild, await Match.findOne({ matchId: parts[2] })); // Ekstra ses temizliği
 
-                    setTimeout(() => interaction.channel.delete().catch(() => { }), 1000); // Biraz bekle sonra sil
+                    setTimeout(() => {
+                        if (interaction && interaction.channel) interaction.channel.delete().catch(() => { });
+                    }, 1000); // Biraz bekle sonra sil
                     break;
 
                 default:
