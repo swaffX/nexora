@@ -188,13 +188,18 @@ module.exports = {
 
         // Canlı Maç Embed'i Oluştur
         const mapData = MAPS.find(m => m.name === match.selectedMap);
+
+        // Oyuncu Listelerini Oluştur
+        const listA = match.teamA.map(id => `<@${id}>`).join('\n') || 'Oyuncu yok';
+        const listB = match.teamB.map(id => `<@${id}>`).join('\n') || 'Oyuncu yok';
+
         const embed = new EmbedBuilder()
             .setColor(0xE74C3C) // Live Red
             .setTitle(`🔴 MAÇ BAŞLADI! (LIVE)`)
             .setDescription(`**Harita:** ${match.selectedMap}`)
             .addFields(
-                { name: `🔹 Team A (${match.sideA})`, value: `${nameA}`, inline: true },
-                { name: `🔸 Team B (${match.sideB})`, value: `${nameB}`, inline: true }
+                { name: `🔹 ${nameA} (${match.sideA})`, value: listA, inline: true },
+                { name: `🔸 ${nameB} (${match.sideB})`, value: listB, inline: true }
             )
             .setFooter({ text: 'Maç devam ediyor... İyi şanslar!' })
             .setTimestamp();
