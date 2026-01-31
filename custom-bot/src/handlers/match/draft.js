@@ -58,7 +58,8 @@ module.exports = {
                 { name: `🔵 Team A (${match.teamA.length})`, value: match.teamA.map(id => `<@${id}>`).join('\n') || '-', inline: true },
                 { name: `🔴 Team B (${match.teamB.length})`, value: match.teamB.map(id => `<@${id}>`).join('\n') || '-', inline: true },
                 { name: '📍 Havuz', value: poolOptions.length > 0 ? poolOptions.map(p => p.label).join(', ') : 'Kimse kalmadı', inline: false }
-            );
+            )
+            .setFooter({ text: 'Made by Swaff' });
 
         const components = [];
         components.push(new ActionRowBuilder().addComponents(

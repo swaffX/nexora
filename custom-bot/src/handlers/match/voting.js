@@ -30,7 +30,7 @@ module.exports = {
 
         const embed = new EmbedBuilder().setColor(0xFFA500).setTitle('🗳️ Harita Oylaması')
             .setDescription(`Oynamak istediğiniz haritayı seçin!\n\n⏳ **Bitiş:** <t:${endUnix}:R>`)
-            .setFooter({ text: `🗳️ Oy Durumu: 0/${totalPlayers}` });
+            .setFooter({ text: `🗳️ Oy Durumu: 0/${totalPlayers} • Made by Swaff` });
 
         if (played.length > 0) {
             embed.addFields({ name: '🚫 Oynanmış Haritalar', value: played.join(', ') });
@@ -73,7 +73,7 @@ module.exports = {
             const votingMsg = await interaction.channel.messages.fetch(match.votingMessageId);
             if (votingMsg && votingMsg.embeds && votingMsg.embeds.length > 0) {
                 const embed = EmbedBuilder.from(votingMsg.embeds[0]);
-                embed.setFooter({ text: `🗳️ Oy Durumu: ${match.votes.length}/${totalPlayers}` });
+                embed.setFooter({ text: `🗳️ Oy Durumu: ${match.votes.length}/${totalPlayers} • Made by Swaff` });
                 await votingMsg.edit({ embeds: [embed] });
             }
         } catch (e) { console.error('Vote Update Error:', e); }

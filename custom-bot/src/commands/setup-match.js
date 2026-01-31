@@ -14,37 +14,21 @@ module.exports = {
 
         const embed = new EmbedBuilder()
             .setColor(0xFF4655) // Valorant Red
-            .setTitle('⚔️ NEXORA 5v5 SCRIM ARENA')
+            .setTitle('⚔️ 5v5 REKABET ARENASI')
             .setDescription(`
 **Hey Ajan!** 🌪️
-Rekabet dolu bir maça hazır mısın? Aşağıdaki butonu kullanarak lobini kur ve savaş meydanına in!
+Özel maçını kurmak ve savaş meydanına inmek için butona tıkla!
 
-**🚀 Maç Akışı Nasıl İşler?**
+**🎯 Sistem İşleyişi:**
+> **1️⃣ Lobi:** Odanı oluştur ve oyuncuları topla.
+> **2️⃣ Kaptanlar:** Liderleri seç veya kura ile belirle.
+> **3️⃣ Draft:** Sırayla oyuncularını takımına kat.
+> **4️⃣ Savaş:** Harita ve tarafını seç, maça başla!
 
-> **1️⃣ Lobi Kurulumu**
-> **"🎮 Maç Oluştur"** butonuna tıkla ve özel maç odanı aç.
-> *(Not: <#1463922466467483801> kanalında olman şart!)*
-> 
-> **2️⃣ Takım Kaptanları**
-> **Team A** ve **Team B** kaptanlarını ses kanalındaki oyunculardan seç veya **🎲 Rastgele** dağıt.
-> 
-> **3️⃣ Oyuncu Seçimi (Draft)**
-> Kaptanlar sırasıyla lobideki oyuncuları takımlarına seçer.
-> 
-> **4️⃣ Harita & Taraf**
-> Takımlar oylama ile haritayı seçer, yazı tura galibi ise tarafını (Attack/Defend) belirler.
-> 
-> **5️⃣ Maç Sonu**
-> Maç bittiğinde kazananı belirle ve skoru gir. İstatistikler anında işlenir!
-
-**🛑 Kontrol Sende:** Kurulumun herhangi bir aşamasında maçı iptal edebilirsin.
-
-🔒 **Gereksinimler:**
-• Ses Kanalı: <#1463922466467483801>
-• Yetkili Rolü: <@&1463875325019557920>
+🔒 **Gereksinim:** <#1463922466467483801> kanalında bulunmalısın.
             `)
             .setImage('https://cdn.discordapp.com/attachments/531892263652032522/1464235225818075147/standard_2.gif?ex=6974bad2&is=69736952&hm=16b14c0c7fa6d91ad8528683d2876891b5833d4d516ef5891cd91bc4b8c9804d&')
-            .setFooter({ text: 'Nexora Competitive System • v2.0' })
+            .setFooter({ text: 'Made by Swaff' })
             .setTimestamp();
 
         const row = new ActionRowBuilder().addComponents(

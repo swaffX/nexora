@@ -64,7 +64,8 @@ module.exports = {
             const embed = new EmbedBuilder().setColor(0x5865F2)
                 .setTitle(`👑 Match #${matchShortId} | Kaptan Seçimi`)
                 .setDescription(`**Lobi Hazır!**\nKaptanları belirleyin ve takımları kurmaya başlayın.\n\nEv Sahibi: <@${interaction.user.id}>`)
-                .addFields({ name: '🔵 Team A', value: 'Seçilmedi', inline: true }, { name: '🔴 Team B', value: 'Seçilmedi', inline: true });
+                .addFields({ name: '🔵 Team A', value: 'Seçilmedi', inline: true }, { name: '🔴 Team B', value: 'Seçilmedi', inline: true })
+                .setFooter({ text: 'Made by Swaff' });
 
             // 4. Ses Kanalındaki Üyeleri Getir (Filtreleme için)
             const voiceChannel = guild.channels.cache.get(REQUIRED_VOICE_ID);
@@ -309,7 +310,8 @@ module.exports = {
         const embed = new EmbedBuilder().setColor(0x5865F2)
             .setTitle(`👑 Match #${match.matchId.slice(-4)} | Kaptan Seçimi (Sıfırlandı)`)
             .setDescription(`**Lobi Sıfırlandı!**\nKaptanları yeniden belirleyin.\n\nEv Sahibi: <@${match.hostId}>`)
-            .addFields({ name: '🔵 Team A', value: 'Seçilmedi', inline: true }, { name: '🔴 Team B', value: 'Seçilmedi', inline: true });
+            .addFields({ name: '🔵 Team A', value: 'Seçilmedi', inline: true }, { name: '🔴 Team B', value: 'Seçilmedi', inline: true })
+            .setFooter({ text: 'Made by Swaff' });
 
         const rows = [
             new ActionRowBuilder().addComponents(

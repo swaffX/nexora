@@ -74,7 +74,8 @@ module.exports = {
         const embed = new EmbedBuilder()
             .setColor(0xFFD700)
             .setTitle(`🏰 Harita: ${match.selectedMap}`)
-            .setDescription(`**Taraf Seçimi:** Team ${winnerTeam} (<@${winnerId}>)\nLütfen başlamak istediğiniz tarafı seçin.`);
+            .setDescription(`**Taraf Seçimi:** Team ${winnerTeam} (<@${winnerId}>)\nLütfen başlamak istediğiniz tarafı seçin.`)
+            .setFooter({ text: 'Made by Swaff' });
 
         const files = [];
         if (mapData && mapData.file) {
@@ -201,7 +202,7 @@ module.exports = {
                 { name: `🔹 ${nameA} (${match.sideA})`, value: listA, inline: true },
                 { name: `🔸 ${nameB} (${match.sideB})`, value: listB, inline: true }
             )
-            .setFooter({ text: 'Maç devam ediyor... İyi şanslar!' })
+            .setFooter({ text: 'Maç devam ediyor... İyi şanslar! • Made by Swaff' })
             .setTimestamp();
 
         const files = [];
@@ -257,7 +258,8 @@ module.exports = {
         const embed = new EmbedBuilder()
             .setColor(0x2F3136)
             .setTitle('🏁 Maç Sonu Yönetimi')
-            .setDescription(`**Bu lobiyle ne yapmak istersiniz?**\n\n🔁 **Takımlar Aynı:** Kaptanlar ve takımlar değişmeden yeni harita seçimine geçer.\n🔄 **Takımları Değiştir:** Takımları sıfırlar, kaptan seçimine döner.\n🛑 **Lobiyi Bitir:** Her şeyi siler ve kapatır.`);
+            .setDescription(`**Bu lobiyle ne yapmak istersiniz?**\n\n🔁 **Takımlar Aynı:** Kaptanlar ve takımlar değişmeden yeni harita seçimine geçer.\n🔄 **Takımları Değiştir:** Takımları sıfırlar, kaptan seçimine döner.\n🛑 **Lobiyi Bitir:** Her şeyi siler ve kapatır.`)
+            .setFooter({ text: 'Made by Swaff' });
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`match_rematch_${match.matchId}`).setLabel('Takımlar Aynı (Devam)').setStyle(ButtonStyle.Success).setEmoji('🔁'),
