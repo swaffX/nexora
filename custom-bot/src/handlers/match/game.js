@@ -36,29 +36,31 @@ module.exports = {
         const { MessageFlags } = require('discord.js');
         if (interaction.user.id !== match.captainA) return interaction.reply({ content: 'Sadece Team A Kaptanı seçebilir.', flags: MessageFlags.Ephemeral });
 
+        // İşlemi kabul et
         await interaction.deferUpdate();
+
+        // 1. Paneli Sil
+        await interaction.message.delete().catch(() => { });
 
         // Sonucu Belirle
         const result = Math.random() < 0.5 ? 'HEADS' : 'TAILS';
         const win = (choice === result);
 
         // Kazanan Kim?
-        // Eğer A bildiyse -> A kazanır.
-        // Bilemediyse -> B kazanır.
         const winnerTeam = win ? 'A' : 'B';
         match.coinFlipWinner = winnerTeam;
         const winnerId = winnerTeam === 'A' ? match.captainA : match.captainB;
 
-        // Animasyonlu Mesaj (3 saniye gecikmeli gibi yapabiliriz ama Discord API izin vermez, direkt sonucu atalım)
+        // Sonucu Göster (5 saniye sonra silinir)
         const resultEmbed = new EmbedBuilder()
             .setColor(win ? 0x00FF00 : 0xFF0000)
             .setTitle(`🪙 Sonuç: ${result === 'HEADS' ? 'YAZI' : 'TURA'}!`)
             .setDescription(`**${choice === 'HEADS' ? 'Yazı' : 'Tura'}** seçildi.\n\n🎉 **Kazanan:** Team ${winnerTeam} (<@${winnerId}>)\nTaraf seçme hakkı kazandınız!`);
 
-        await interaction.editReply({ components: [] });
-        await interaction.channel.send({ embeds: [resultEmbed] });
+        const resMsg = await interaction.channel.send({ embeds: [resultEmbed] });
+        setTimeout(() => resMsg.delete().catch(() => { }), 5000);
 
-        // Taraf Seçimine Geç
+        // Taraf Seçimine Geç (Kısa bekleme ile)
         setTimeout(() => this.showSidePicker(interaction.channel, match, winnerTeam), 2000);
     },
 
@@ -72,8 +74,19 @@ module.exports = {
         const embed = new EmbedBuilder()
             .setColor(0xFFD700)
             .setTitle(`🏰 Harita: ${match.selectedMap}`)
-            .setDescription(`**Taraf Seçimi:** Team ${winnerTeam} (<@${winnerId}>)\nLütfen başlamak istediğiniz tarafı seçin.`)
-            .setImage(mapData ? mapData.img : null);
+            .setDescription(`**Taraf Seçimi:** Team ${winnerTeam} (<@${winnerId}>)\nLütfen başlamak istediğiniz tarafı seçin.`);
+
+        const files = [];
+        if (mapData && mapData.file) {
+            try {
+                const filePath = path.join(__dirname, '..', '..', '..', 'assets', 'maps', mapData.file);
+                const attachment = new AttachmentBuilder(filePath);
+                embed.setImage(`attachment://${mapData.file}`);
+                files.push(attachment);
+            } catch (e) {
+                console.error('Map image load error:', e);
+            }
+        }
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`match_sidepick_${match.matchId}_ATTACK`).setLabel('🗡️ Attack').setStyle(ButtonStyle.Danger),
@@ -81,7 +94,7 @@ module.exports = {
             new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('İptal').setEmoji('🛑').setStyle(ButtonStyle.Danger)
         );
 
-        await channel.send({ content: `<@${winnerId}>`, embeds: [embed], components: [row] });
+        await channel.send({ content: `<@${winnerId}>`, embeds: [embed], components: [row], files: files });
     },
 
     async handleSidePick(interaction) {
@@ -104,7 +117,10 @@ module.exports = {
         match.status = 'LIVE';
         await match.save();
 
-        await interaction.update({ components: [] });
+        // Paneli Sil (Taraf Seçimi Paneli)
+        await interaction.deferUpdate();
+        await interaction.message.delete().catch(() => { });
+
         await this.setupVoiceAndStart(interaction.guild, match, interaction.channel);
     },
 
