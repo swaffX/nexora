@@ -186,12 +186,30 @@ module.exports = {
             new ButtonBuilder().setCustomId(`match_endlobby_${match.matchId}`).setLabel('❌ Lobiyi Bitir (Kapat)').setStyle(ButtonStyle.Secondary)
         );
 
-        const payload = {
-            content: `✅ **MAÇ BAŞLADI!**\n🏰 Harita: **${match.selectedMap}**\n⚔️ Taraf: **${nameA} (${match.sideA}) vs ${nameB} (${match.sideB})**`,
-            components: [panelRow]
-        };
+        // Canlı Maç Embed'i Oluştur
+        const mapData = MAPS.find(m => m.name === match.selectedMap);
+        const embed = new EmbedBuilder()
+            .setColor(0xE74C3C) // Live Red
+            .setTitle(`🔴 MAÇ BAŞLADI! (LIVE)`)
+            .setDescription(`**Harita:** ${match.selectedMap}`)
+            .addFields(
+                { name: `🔹 Team A (${match.sideA})`, value: `${nameA}`, inline: true },
+                { name: `🔸 Team B (${match.sideB})`, value: `${nameB}`, inline: true }
+            )
+            .setFooter({ text: 'Maç devam ediyor... İyi şanslar!' })
+            .setTimestamp();
 
-        await infoChannel.send(payload);
+        const files = [];
+        if (mapData && mapData.file) {
+            try {
+                const filePath = path.join(__dirname, '..', '..', '..', 'assets', 'maps', mapData.file);
+                const attachment = new AttachmentBuilder(filePath);
+                embed.setImage(`attachment://${mapData.file}`);
+                files.push(attachment);
+            } catch (e) { console.error('Live Map Image Error:', e); }
+        }
+
+        await infoChannel.send({ embeds: [embed], components: [panelRow], files: files });
     },
 
     async endMatch(interaction) {
@@ -206,6 +224,9 @@ module.exports = {
 
         const { MessageFlags } = require('discord.js');
         await interaction.reply({ content: '🏁 Maç bitti! Oyuncular lobiye taşınıyor...', flags: MessageFlags.Ephemeral });
+
+        // Canlı Maç panelini sil
+        await interaction.message.delete().catch(() => { });
 
         // 2. Oyuncuları Lobiye Taşı
         const guild = interaction.guild;
