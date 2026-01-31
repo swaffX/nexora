@@ -183,17 +183,31 @@ module.exports = {
         const match = await Match.findOne({ matchId });
         if (!match) return;
 
-        // Maçı Bitir (Kazanan sormadan)
+        // 1. Durumu Güncelle
         match.status = 'FINISHED';
-
-        // Oynanan haritayı kaydet
         match.playedMaps.push(match.selectedMap);
         await match.save();
 
         const { MessageFlags } = require('discord.js');
-        await interaction.reply({ content: '🏁 Maç sona erdi. Seçenekler yükleniyor...', flags: MessageFlags.Ephemeral });
+        await interaction.reply({ content: '🏁 Maç bitti! Oyuncular lobiye taşınıyor...', flags: MessageFlags.Ephemeral });
 
-        // Yeni Kontrol Panelini Göster
+        // 2. Oyuncuları Lobiye Taşı
+        const guild = interaction.guild;
+        if (match.lobbyVoiceId) {
+            const allPlayers = [...(match.teamA || []), ...(match.teamB || [])];
+            const move = async (pid) => {
+                try {
+                    const member = await guild.members.fetch(pid).catch(() => null);
+                    if (member && member.voice.channel) await member.voice.setChannel(match.lobbyVoiceId).catch(() => { });
+                } catch (e) { }
+            };
+            await Promise.all(allPlayers.map(pid => move(pid)));
+        }
+
+        // 3. Ses Kanallarını Sil
+        await manager.cleanupVoiceChannels(guild, match);
+
+        // 4. Yeni Kontrol Panelini Göster
         await this.showNextMatchOptions(interaction.channel, match);
     },
 
