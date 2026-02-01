@@ -252,37 +252,53 @@ module.exports = {
     },
 
     async endMatch(interaction) {
-        // Sadece butonlardan gelen istekleri kabul et (Otomatik tetiklenmeleri engelle)
+        // Sadece butonlardan gelen istekleri kabul et
         if (!interaction.isMessageComponent()) return;
 
         const matchId = interaction.customId.split('_')[2];
         const match = await Match.findOne({ matchId });
         if (!match) return;
 
-        // Zaten bitmişse tekrar işlem yapma (Çift tıklama koruması)
-        if (match.status === 'FINISHED') {
-            return interaction.reply({ content: '⚠️ Bu maç zaten sonlandırılmış.', flags: require('discord.js').MessageFlags.Ephemeral });
+        // Onay İste (Güvenlik Kilidi)
+        if (interaction.customId.includes('_confirm')) {
+            // İkinci kez basılmış (Onaylanmış)
+
+            // Zaten bitmişse tekrar işlem yapma
+            if (match.status === 'FINISHED') {
+                return interaction.reply({ content: '⚠️ Bu maç zaten sonlandırılmış.', flags: require('discord.js').MessageFlags.Ephemeral });
+            }
+
+            // Durumu Güncelle
+            match.status = 'FINISHED';
+            if (!match.playedMaps.includes(match.selectedMap)) {
+                match.playedMaps.push(match.selectedMap);
+            }
+            await match.save();
+
+            const { MessageFlags } = require('discord.js');
+            await interaction.reply({ content: '🏁 Maç bitti! Yönetim paneli açılıyor...', flags: MessageFlags.Ephemeral });
+
+            // Canlı Maç panelini sil
+            await interaction.message.delete().catch(() => { });
+
+            // Yeni Kontrol Panelini Göster
+            await this.showNextMatchOptions(interaction.channel, match);
+
+        } else {
+            // İlk kez basılmış -> Onay sor
+            const { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
+
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId(`match_endmatch_${matchId}_confirm`).setLabel('Evet, Bitir').setStyle(ButtonStyle.Danger),
+                new ButtonBuilder().setCustomId('match_abort_end').setLabel('İptal').setStyle(ButtonStyle.Secondary)
+            );
+
+            await interaction.reply({
+                content: '⚠️ **Maçı bitirmek üzeresiniz!**\nBu işlem geri alınamaz. Emin misiniz?',
+                components: [row],
+                flags: MessageFlags.Ephemeral
+            });
         }
-
-        // 1. Durumu Güncelle
-        match.status = 'FINISHED';
-        if (!match.playedMaps.includes(match.selectedMap)) {
-            match.playedMaps.push(match.selectedMap);
-        }
-        await match.save();
-
-        const { MessageFlags } = require('discord.js');
-        // Kullanıcıya bilgi ver (ama lobiye dönüyoruz deme!)
-        await interaction.reply({ content: '🏁 Maç bitti! Yönetim paneli açılıyor...', flags: MessageFlags.Ephemeral });
-
-        // Canlı Maç panelini sil
-        await interaction.message.delete().catch(() => { });
-
-        // NOT: Oyuncuları lobiye taşıma ve kanalları silme işlemi İPTAL EDİLDİ.
-        // Bu işlemler artık sadece "Lobiyi Bitir" veya "Takımları Değiştir" dendiğinde yapılacak.
-
-        // 4. Yeni Kontrol Panelini Göster
-        await this.showNextMatchOptions(interaction.channel, match);
     },
 
 

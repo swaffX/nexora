@@ -38,6 +38,12 @@ module.exports = {
                 case 'cancel':
                     await lobby.cancelMatch(interaction);
                     break;
+                case 'abort':
+                    // Ephemeral mesajı veya modalı iptal et
+                    // customId: match_abort_...
+                    await interaction.update({ content: '❌ İşlem iptal edildi.', components: [] });
+                    setTimeout(() => interaction.deleteReply().catch(() => { }), 2000);
+                    break;
                 case 'captainA': // (Yedek)
                 case 'cap': // match_cap_select_A_MATCHID
                     if (parts && parts[2] === 'select') {

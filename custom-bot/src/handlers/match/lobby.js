@@ -240,7 +240,11 @@ module.exports = {
                 )
             ];
 
-            await interaction.update({ embeds: [embed], components: rows });
+            try {
+                await interaction.update({ embeds: [embed], components: rows });
+            } catch (e) {
+                console.warn('Captain UI Update Error (Mesaj silinmiş olabilir):', e.message);
+            }
         }
     },
 
