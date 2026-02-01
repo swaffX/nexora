@@ -15,13 +15,15 @@ module.exports = {
         await match.save();
 
         const embed = new EmbedBuilder()
-            .setColor(0xF1C40F)
-            .setTitle('🪙 Yazı Tura (Coinflip)')
-            .setDescription(`**Team A Kaptanı** (<@${match.captainA}>), seçimini yap!\nKazanan taraf seçme hakkını elde eder.`);
+            .setColor(0xF1C40F) // Gold
+            .setTitle('🪙 YAZI TURA ZAMANI')
+            .setDescription(`**Kaptan'ın Kararı Bekleniyor!**\n\n<@${match.captainA}>, parayı havaya at!\nKazanan taraf, harita tarafını (Attack/Defend) seçer.`)
+            .setThumbnail('https://media.tenor.com/T0T_vO3h6kEAAAAi/coin-flip-coin.gif') // Ufak bir spin animasyonu
+            .setFooter({ text: 'Nexora Coin System' });
 
         const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId(`match_coin_HEADS_${match.matchId}`).setLabel('Yazı').setStyle(ButtonStyle.Primary).setEmoji('🪙'),
-            new ButtonBuilder().setCustomId(`match_coin_TAILS_${match.matchId}`).setLabel('Tura').setStyle(ButtonStyle.Secondary).setEmoji('🦅'),
+            new ButtonBuilder().setCustomId(`match_coin_HEADS_${match.matchId}`).setLabel('Yazı').setStyle(ButtonStyle.Secondary).setEmoji('1467551334621253866'),
+            new ButtonBuilder().setCustomId(`match_coin_TAILS_${match.matchId}`).setLabel('Tura').setStyle(ButtonStyle.Secondary).setEmoji('1467551298327937044'),
             new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('İptal').setEmoji('🛑').setStyle(ButtonStyle.Danger)
         );
 
@@ -36,32 +38,44 @@ module.exports = {
         const { MessageFlags } = require('discord.js');
         if (interaction.user.id !== match.captainA) return interaction.reply({ content: 'Sadece Team A Kaptanı seçebilir.', flags: MessageFlags.Ephemeral });
 
-        // İşlemi kabul et
-        await interaction.deferUpdate();
+        // İşlemi kabul et (Button loading state'e geçer)
+        await interaction.update({ components: [] }); // Butonları sil (animasyon sırasında basılmasın)
 
-        // 1. Paneli Sil
-        await interaction.message.delete().catch(() => { });
+        // 1. ANIMASYON (Dönen Para)
+        const spinEmbed = new EmbedBuilder()
+            .setColor(0xF1C40F)
+            .setTitle('💫 Para Dönüyor...')
+            .setDescription(`**${choice === 'HEADS' ? 'Yazı' : 'Tura'}** seçildi. Şans seninle olsun!`)
+            .setImage('https://media.tenor.com/On7kvXhzml4AAAAi/loading-gif.gif'); // Daha kaliteli bir spin GIF'i
 
-        // Sonucu Belirle
-        const result = Math.random() < 0.5 ? 'HEADS' : 'TAILS';
-        const win = (choice === result);
+        await interaction.message.edit({ embeds: [spinEmbed], components: [] });
 
-        // Kazanan Kim?
-        const winnerTeam = win ? 'A' : 'B';
-        match.coinFlipWinner = winnerTeam;
-        const winnerId = winnerTeam === 'A' ? match.captainA : match.captainB;
+        // 3 Saniye Bekle
+        setTimeout(async () => {
+            // Sonucu Belirle
+            const result = Math.random() < 0.5 ? 'HEADS' : 'TAILS';
+            const win = (choice === result);
+            const winnerTeam = win ? 'A' : 'B';
+            match.coinFlipWinner = winnerTeam;
+            const winnerId = winnerTeam === 'A' ? match.captainA : match.captainB;
 
-        // Sonucu Göster (5 saniye sonra silinir)
-        const resultEmbed = new EmbedBuilder()
-            .setColor(win ? 0x00FF00 : 0xFF0000)
-            .setTitle(`🪙 Sonuç: ${result === 'HEADS' ? 'YAZI' : 'TURA'}!`)
-            .setDescription(`**${choice === 'HEADS' ? 'Yazı' : 'Tura'}** seçildi.\n\n🎉 **Kazanan:** Team ${winnerTeam} (<@${winnerId}>)\nTaraf seçme hakkı kazandınız!`);
+            // Kazanılan Emojinin Resmi
+            const resultImage = result === 'HEADS'
+                ? 'https://cdn.discordapp.com/emojis/1467551334621253866.png' // Yazı
+                : 'https://cdn.discordapp.com/emojis/1467551298327937044.png'; // Tura
 
-        const resMsg = await interaction.channel.send({ embeds: [resultEmbed] });
-        setTimeout(() => resMsg.delete().catch(() => { }), 5000);
+            const resultEmbed = new EmbedBuilder()
+                .setColor(win ? 0x2ECC71 : 0xE74C3C)
+                .setTitle(`🪙 SONUÇ: ${result === 'HEADS' ? 'YAZI' : 'TURA'}!`)
+                .setDescription(`**Kazanan:** Team ${winnerTeam} (<@${winnerId}>)\n\nSeçim yapma hakkı kazandınız!`)
+                .setThumbnail(resultImage);
 
-        // Taraf Seçimine Geç (Kısa bekleme ile)
-        setTimeout(() => this.showSidePicker(interaction.channel, match, winnerTeam), 2000);
+            await interaction.message.edit({ embeds: [resultEmbed] });
+
+            // Taraf Seçimine Geç (2 saniye sonra)
+            setTimeout(() => this.showSidePicker(interaction.channel, match, winnerTeam), 2500);
+
+        }, 3000);
     },
 
     async showSidePicker(channel, match, winnerTeam) {
