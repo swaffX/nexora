@@ -39,9 +39,10 @@ module.exports = {
                     await lobby.cancelMatch(interaction);
                     break;
                 case 'captainA': // (Yedek)
-                case 'cap': // match_cap_select_A
+                case 'cap': // match_cap_select_A_MATCHID
                     if (parts && parts[2] === 'select') {
-                        await lobby.selectCaptain(interaction, parts[3]);
+                        // parts[3] = Team (A/B), parts[4] = MatchID
+                        await lobby.selectCaptain(interaction, parts[3], parts[4]);
                     }
                     break;
                 case 'captainB': // (Yedek)

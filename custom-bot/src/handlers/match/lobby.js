@@ -34,7 +34,6 @@ module.exports = {
             }
 
             // 2. Özel Kanalları Oluştur (Dinamik Lobi - Sadece Yazı)
-            // Herkesin görebileceği ama sadece yetkililerin yönetebileceği izinler
             const everyone = guild.roles.everyone;
 
             const textChannel = await guild.channels.create({
@@ -42,44 +41,39 @@ module.exports = {
                 type: ChannelType.GuildText,
                 parent: category.id,
                 permissionOverwrites: [
-                    { id: everyone.id, allow: [PermissionsBitField.Flags.ViewChannel], deny: [PermissionsBitField.Flags.SendMessages] }, // Herkes görebilir
-                    { id: interaction.user.id, allow: [PermissionsBitField.Flags.SendMessages] } // Host yazabilir
+                    { id: everyone.id, allow: [PermissionsBitField.Flags.ViewChannel], deny: [PermissionsBitField.Flags.SendMessages] },
+                    { id: interaction.user.id, allow: [PermissionsBitField.Flags.SendMessages] }
                 ]
             });
 
             // 3. Veritabanı Kayıt
-            // lobbyVoiceId: Kullanıcıların maç bitince döneceği yer (şu an bulundukları Main Lobby)
             const newMatch = new Match({
                 matchId: interaction.id,
                 guildId: guild.id,
                 hostId: interaction.user.id,
-                channelId: textChannel.id, // İşlemler yeni kanalda dönecek
-                lobbyVoiceId: REQUIRED_VOICE_ID, // Maç bitince buraya (Main Lobiye) postala
-                createdChannelIds: [textChannel.id], // Silinecekler listesi (Sadece Yazı)
+                channelId: textChannel.id,
+                lobbyVoiceId: REQUIRED_VOICE_ID,
+                createdChannelIds: [textChannel.id],
                 status: 'SETUP'
             });
             await newMatch.save();
 
-            // 5. Paneli Yeni Kanala Gönder
+            // 4. Panel Tasarımı (Modernize Edildi)
             const embed = new EmbedBuilder().setColor(0x5865F2)
-                .setTitle(`👑 Match #${matchShortId} | Kaptan Seçimi`)
-                .setDescription(`**Lobi Hazır!**\nKaptanları belirleyin ve takımları kurmaya başlayın.\n\nEv Sahibi: <@${interaction.user.id}>`)
-                .addFields({ name: '🔵 Team A', value: 'Seçilmedi', inline: true }, { name: '🔴 Team B', value: 'Seçilmedi', inline: true })
-                .setFooter({ text: 'Made by Swaff' });
+                .setTitle(`🛡️ LOBİ YÖNETİMİ`)
+                .setDescription(`**Lobi Hazır!**\nKaptanları belirleyip takımları kurmaya başlayın.\n\n👑 **Yetkili:** <@${interaction.user.id}>`)
+                .addFields(
+                    { name: '🔵 Team A', value: 'Wait...', inline: true },
+                    { name: '🔴 Team B', value: 'Wait...', inline: true }
+                )
+                .setFooter({ text: `Nexora Competitive • ID: ${matchShortId}` });
 
-            // 4. Ses Kanalındaki Üyeleri Getir (Filtreleme için)
+            // 5. Ses Kanalındaki Üyeleri Getir
             const voiceChannel = guild.channels.cache.get(REQUIRED_VOICE_ID);
             const voiceMembers = voiceChannel ? voiceChannel.members.filter(m => !m.user.bot) : new Map();
 
-            console.log(`[Lobby Debug] Kanal ID: ${REQUIRED_VOICE_ID}`);
-            console.log(`[Lobby Debug] Kanalda Bulunanlar: ${voiceMembers.map(m => m.user.username).join(', ')}`);
+            // Eğer kanalda kimse yoksa uyar ama devam et (Test için vs.)
 
-            // Eğer kanalda kimse yoksa
-            if (voiceMembers.size === 0) {
-                return interaction.editReply({ content: '❌ Lobi kanalında kimse bulunamadı! Lütfen ses kanalına girin.' });
-            }
-
-            // Seçenekleri Hazırla (Max 25 kişi)
             const memberOptions = voiceMembers.map(m => ({
                 label: m.displayName,
                 description: m.user.tag,
@@ -89,27 +83,28 @@ module.exports = {
 
             if (memberOptions.length === 0) memberOptions.push({ label: 'Hata', value: 'null', description: 'Kimse bulunamadı' });
 
-            // ID'leri değiştirdim ki cache sorunu varsa çözülsün: match_captainA -> match_cap_select_A
+            // ID'lere Match ID eklendi: match_cap_select_A_MATCHID
             const rows = [
                 new ActionRowBuilder().addComponents(
                     new StringSelectMenuBuilder()
-                        .setCustomId('match_cap_select_A')
-                        .setPlaceholder('Team A Kaptanı Seç (Ses Kanalından)')
+                        .setCustomId(`match_cap_select_A_${interaction.id}`)
+                        .setPlaceholder('Team A Kaptanı Seç')
                         .addOptions(memberOptions)
                 ),
                 new ActionRowBuilder().addComponents(
                     new StringSelectMenuBuilder()
-                        .setCustomId('match_cap_select_B')
-                        .setPlaceholder('Team B Kaptanı Seç (Ses Kanalından)')
+                        .setCustomId(`match_cap_select_B_${interaction.id}`)
+                        .setPlaceholder('Team B Kaptanı Seç')
                         .addOptions(memberOptions)
                 ),
                 new ActionRowBuilder().addComponents(
                     new ButtonBuilder().setCustomId(`match_randomcap_${interaction.id}`).setLabel('🎲 Rastgele').setStyle(ButtonStyle.Secondary),
-                    new ButtonBuilder().setCustomId(`match_cancel_${interaction.id}`).setLabel('Maçı İptal Et').setEmoji('🛑').setStyle(ButtonStyle.Danger)
+                    new ButtonBuilder().setCustomId(`match_cancel_${interaction.id}`).setLabel('İptal').setEmoji('🛑').setStyle(ButtonStyle.Danger)
                 )
             ];
 
-            await textChannel.send({ content: `Match ID: ${interaction.id}\n<@${interaction.user.id}> maç oluşturuldu!`, embeds: [embed], components: rows });
+            // Content temizlendi!
+            await textChannel.send({ embeds: [embed], components: rows });
 
             await interaction.editReply({ content: `✅ Maç oluşturuldu! Lütfen panele gidin:\nKanal: <#${textChannel.id}>` });
 
@@ -121,7 +116,6 @@ module.exports = {
 
     async cancelMatch(interaction) {
         const REQUIRED_ROLE_ID = '1463875325019557920';
-        // Admin yetkisi veya özel rol kontrolü
         if (!interaction.member.permissions.has('Administrator') && !interaction.member.roles.cache.has(REQUIRED_ROLE_ID)) {
             return interaction.reply({ content: '❌ Bu işlemi sadece yetkililer yapabilir.', flags: require('discord.js').MessageFlags.Ephemeral });
         }
@@ -129,19 +123,15 @@ module.exports = {
         const matchId = interaction.customId.split('_')[2];
         const match = await Match.findOne({ matchId });
 
-        // Onay mesajı gönderip silebiliriz veya direkt silebiliriz. Hızlı olması için direkt siliyoruz.
         try {
             if (match) {
-                // Kanalları sil
                 if (match.createdChannelIds && match.createdChannelIds.length > 0) {
                     for (const cId of match.createdChannelIds) {
                         await interaction.guild.channels.delete(cId).catch(() => console.log('Kanal zaten silinmiş'));
                     }
                 }
-                // DB'den sil
                 await Match.deleteOne({ matchId });
             } else {
-                // Match yoksa bile kanalı sil (Artık kanalın içinden basıldıysa)
                 await interaction.channel.delete().catch(() => { });
             }
         } catch (error) {
@@ -150,18 +140,14 @@ module.exports = {
         }
     },
 
-    async selectCaptain(interaction, team) {
+    async selectCaptain(interaction, team, matchIdFromCustomId) {
         const { MessageFlags } = require('discord.js');
 
-        // Match ID'yi güvenli şekilde çıkar (satır sonu veya boşluk varsa temizle)
-        const content = interaction.message.content || '';
-        const matchLine = content.split('\n')[0]; // İlk satırı al
-        const matchId = matchLine.replace('Match ID: ', '').trim();
+        // Match ID Artık CustomID ile geliyor!
+        if (!matchIdFromCustomId) return interaction.reply({ content: 'Match ID bulunamadı.', flags: MessageFlags.Ephemeral });
 
-        if (!matchId) return interaction.reply({ content: 'Match ID bulunamadı.', flags: MessageFlags.Ephemeral });
-
-        const match = await Match.findOne({ matchId });
-        if (!match) return interaction.reply({ content: 'Maç bulunamadı.', flags: MessageFlags.Ephemeral });
+        const match = await Match.findOne({ matchId: matchIdFromCustomId });
+        if (!match) return interaction.reply({ content: 'Maç verisi bulunamadı.', flags: MessageFlags.Ephemeral });
 
         const selectedId = interaction.values[0];
         if (team === 'A') {
@@ -196,31 +182,28 @@ module.exports = {
     },
 
     async updateCaptainUI(interaction, match) {
-        // Embed kontrolü
         if (!interaction.message.embeds || interaction.message.embeds.length === 0) {
             return interaction.reply({ content: '❌ Panel bulunamadı.', flags: require('discord.js').MessageFlags.Ephemeral });
         }
 
         const embed = EmbedBuilder.from(interaction.message.embeds[0]);
+        // Update fields
         embed.spliceFields(0, 2,
-            { name: '🔵 Team A Kaptanı', value: match.captainA ? `<@${match.captainA}>` : 'Seçilmedi', inline: true },
-            { name: '🔴 Team B Kaptanı', value: match.captainB ? `<@${match.captainB}>` : 'Seçilmedi', inline: true }
+            { name: '🔵 Team A', value: match.captainA ? `<@${match.captainA}>` : 'Seçilmedi', inline: true },
+            { name: '🔴 Team B', value: match.captainB ? `<@${match.captainB}>` : 'Seçilmedi', inline: true }
         );
 
         if (match.captainA && match.captainB) {
             match.status = 'DRAFT';
             await match.save();
             await interaction.message.delete().catch(() => { });
-
-            // Draft Modülüne Geç
             await draftHandler.startDraftMode(interaction, match);
         } else {
-            // MENÜLERİ GÜNCELLE (Seçilenleri çıkar)
+            // MENÜLERİ YENİLE
             const REQUIRED_VOICE_ID = '1463922466467483801';
             const voiceChannel = interaction.guild.channels.cache.get(REQUIRED_VOICE_ID);
             const voiceMembers = voiceChannel ? voiceChannel.members.filter(m => !m.user.bot) : new Map();
 
-            // Tüm uygun adaylar
             let candidates = voiceMembers.map(m => ({
                 label: m.displayName,
                 description: m.user.tag,
@@ -230,28 +213,26 @@ module.exports = {
 
             if (candidates.length === 0) candidates.push({ label: 'Hata', value: 'null', description: 'Kimse bulunamadı' });
 
-            // Team A için Menü: (Eğer Team A zaten seçildiyse disabled yap, değilse Team B kaptanını listeden çıkar)
             const optionsA = candidates.filter(c => c.value !== match.captainB);
             const selectA = new StringSelectMenuBuilder()
-                .setCustomId('match_cap_select_A')
+                .setCustomId(`match_cap_select_A_${match.matchId}`) // ID EKLENDİ
                 .setPlaceholder(match.captainA ? '✅ Seçildi' : 'Team A Kaptanı Seç')
-                .setDisabled(!!match.captainA) // Varsa disable et
+                .setDisabled(!!match.captainA)
                 .addOptions(optionsA.length > 0 ? optionsA.slice(0, 25) : [{ label: 'Uygun Aday Yok', value: 'null' }]);
 
-            // Team B için Menü: (Eğer Team B zaten seçildiyse disabled yap, değilse Team A kaptanını listeden çıkar)
             const optionsB = candidates.filter(c => c.value !== match.captainA);
             const selectB = new StringSelectMenuBuilder()
-                .setCustomId('match_cap_select_B')
+                .setCustomId(`match_cap_select_B_${match.matchId}`) // ID EKLENDİ
                 .setPlaceholder(match.captainB ? '✅ Seçildi' : 'Team B Kaptanı Seç')
-                .setDisabled(!!match.captainB) // Varsa disable et
+                .setDisabled(!!match.captainB)
                 .addOptions(optionsB.length > 0 ? optionsB.slice(0, 25) : [{ label: 'Uygun Aday Yok', value: 'null' }]);
 
             const rows = [
                 new ActionRowBuilder().addComponents(selectA),
                 new ActionRowBuilder().addComponents(selectB),
                 new ActionRowBuilder().addComponents(
-                    new ButtonBuilder().setCustomId(`match_randomcap_${interaction.message.id.replace(/\D/g, '')}`).setLabel('🎲 Rastgele').setStyle(ButtonStyle.Secondary),
-                    new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('Maçı İptal Et').setEmoji('🛑').setStyle(ButtonStyle.Danger)
+                    new ButtonBuilder().setCustomId(`match_randomcap_${match.matchId}`).setLabel('🎲 Rastgele').setStyle(ButtonStyle.Secondary),
+                    new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('İptal').setEmoji('🛑').setStyle(ButtonStyle.Danger)
                 )
             ];
 
@@ -264,10 +245,8 @@ module.exports = {
         const match = await Match.findOne({ matchId });
         if (!match) return;
 
-        // İşlem uzun sürebilir (taşıma vs.), o yüzden önce Discord'a 'Bekle' diyoruz.
         await interaction.deferUpdate();
 
-        // 1. ÖNCE: Oyuncuları Lobiye Taşı
         const guild = interaction.guild;
         if (match.lobbyVoiceId) {
             const allPlayers = [...(match.teamA || []), ...(match.teamB || [])];
@@ -280,20 +259,17 @@ module.exports = {
             await Promise.all(allPlayers.map(pid => move(pid)));
         }
 
-        // 2. SONRA: Ses Kanallarını Sil
         const manager = require('./manager');
         await manager.cleanupVoiceChannels(guild, match);
 
-        // 2. Verileri Sıfırla
         match.captainA = null;
         match.captainB = null;
         match.teamA = [];
         match.teamB = [];
         match.status = 'SETUP';
-        match.createdChannelIds = match.createdChannelIds.filter(id => id === match.channelId); // Sadece yazı kanalını tut
+        match.createdChannelIds = match.createdChannelIds.filter(id => id === match.channelId);
         await match.save();
 
-        // 3. UI'ı Yeniden Başlat (CreateLobby mantığının aynısı ama update ile)
         const REQUIRED_VOICE_ID = '1463922466467483801';
         const voiceChannel = interaction.guild.channels.cache.get(REQUIRED_VOICE_ID);
         const voiceMembers = voiceChannel ? voiceChannel.members.filter(m => !m.user.bot) : new Map();
@@ -308,21 +284,21 @@ module.exports = {
         if (memberOptions.length === 0) memberOptions.push({ label: 'Hata', value: 'null', description: 'Odada kimse yok' });
 
         const embed = new EmbedBuilder().setColor(0x5865F2)
-            .setTitle(`👑 Match #${match.matchId.slice(-4)} | Kaptan Seçimi (Sıfırlandı)`)
-            .setDescription(`**Lobi Sıfırlandı!**\nKaptanları yeniden belirleyin.\n\nEv Sahibi: <@${match.hostId}>`)
+            .setTitle(`🛡️ LOBİ YÖNETİMİ`)
+            .setDescription(`**Lobi Sıfırlandı!**\nKaptanları yeniden belirleyin.\n\n👑 **Yetkili:** <@${match.hostId}>`)
             .addFields({ name: '🔵 Team A', value: 'Seçilmedi', inline: true }, { name: '🔴 Team B', value: 'Seçilmedi', inline: true })
-            .setFooter({ text: 'Made by Swaff' });
+            .setFooter({ text: `Nexora Competitive • ID: ${match.matchId.slice(-4)}` });
 
         const rows = [
             new ActionRowBuilder().addComponents(
-                new StringSelectMenuBuilder().setCustomId('match_cap_select_A').setPlaceholder('Team A Kaptanı Seç').addOptions(memberOptions)
+                new StringSelectMenuBuilder().setCustomId(`match_cap_select_A_${match.matchId}`).setPlaceholder('Team A Kaptanı Seç').addOptions(memberOptions)
             ),
             new ActionRowBuilder().addComponents(
-                new StringSelectMenuBuilder().setCustomId('match_cap_select_B').setPlaceholder('Team B Kaptanı Seç').addOptions(memberOptions)
+                new StringSelectMenuBuilder().setCustomId(`match_cap_select_B_${match.matchId}`).setPlaceholder('Team B Kaptanı Seç').addOptions(memberOptions)
             ),
             new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId(`match_randomcap_${match.matchId}`).setLabel('🎲 Rastgele').setStyle(ButtonStyle.Secondary),
-                new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('Maçı İptal Et').setEmoji('🛑').setStyle(ButtonStyle.Danger)
+                new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('İptal').setEmoji('🛑').setStyle(ButtonStyle.Danger)
             )
         ];
 
