@@ -15,6 +15,7 @@ module.exports = {
         match.voteEndTime = new Date(Date.now() + 60000); // 1 Dakika
         match.votes = [];
         match.selectedMap = null;
+        match.votingMessageId = null;
         await match.save();
 
         this.startMapVoting(interaction.channel, match);
@@ -76,7 +77,9 @@ module.exports = {
                 embed.setFooter({ text: `🗳️ Oy Durumu: ${match.votes.length}/${totalPlayers} • Made by Swaff` });
                 await votingMsg.edit({ embeds: [embed] });
             }
-        } catch (e) { console.error('Vote Update Error:', e); }
+        } catch (e) {
+            if (e.code !== 10008) console.error('Vote Update Error:', e);
+        }
 
         if (match.votes.length >= totalPlayers) {
             const doneMsg = await interaction.channel.send('⚡ **Herkes oy kullandı! Oylama sonlandırılıyor...**');

@@ -19,6 +19,7 @@ const matchSchema = new mongoose.Schema({
     // Draft
     pickTurn: { type: String, enum: ['A', 'B'], default: 'A' },
     availablePlayerIds: [{ type: String }],
+    draftMessageId: { type: String },
 
     // Map Oylama (Yeni Sistem)
     votes: [{

@@ -35,10 +35,16 @@ module.exports = {
             }
         }
 
-        match.status = 'CANCELLED';
-        match.finishReason = reason;
-        match.createdChannelIds = []; // Temizle
-        await match.save();
+        await Match.findOneAndUpdate(
+            { matchId },
+            {
+                $set: {
+                    status: 'CANCELLED',
+                    finishReason: reason,
+                    createdChannelIds: []
+                }
+            }
+        );
         return true;
     },
 

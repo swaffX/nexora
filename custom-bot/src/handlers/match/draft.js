@@ -74,7 +74,9 @@ module.exports = {
 
         try {
             if (sendNew) {
-                await interaction.channel.send({ content: `Match ID: ${match.matchId}`, embeds: [embed], components: components });
+                const msg = await interaction.channel.send({ content: `Match ID: ${match.matchId}`, embeds: [embed], components: components });
+                match.draftMessageId = msg.id;
+                await match.save();
             } else {
                 // Eğer interaction cevaplanmamışsa update, cevaplanmışsa editReply veya yeni mesaj denemesi
                 if (interaction.replied || interaction.deferred) {
@@ -124,21 +126,37 @@ module.exports = {
         await match.save();
 
         if (channel) {
-            await channel.send({ content: `⏳ **Süre Doldu!**\nSistem otomatik olarak **<@${randomPlayer}>** oyuncusunu seçti.` });
+            const notification = await channel.send({ content: `⏳ **Süre Doldu!**\nSistem otomatik olarak **<@${randomPlayer}>** oyuncusunu seçti.` });
+            setTimeout(() => notification.delete().catch(() => { }), 5000);
 
-            // UI'ı güncellemek için normal akışı çağırıyoruz, ancak "sendNew" flag'i ile
-            // Fake interaction yerine dummy obje oluşturup sadece gerekli dataları paslıyoruz
-            const dummyInteraction = {
-                channel: channel,
-                guild: channel.guild,
-                user: { id: "SYSTEM" }, // Sistem tarafından tetiklendi
-                replied: false,
-                deferred: false,
-                isMessageComponent: () => false
-            };
+            let draftMsg;
+            if (match.draftMessageId) {
+                try { draftMsg = await channel.messages.fetch(match.draftMessageId); } catch (e) { }
+            }
 
-            // sendNew=true ile yeni mesaj attırarak eski mesaj karmaşasından kurtuluyoruz
-            await this.updateDraftUI(dummyInteraction, match, true);
+            if (draftMsg) {
+                const dummyInteraction = {
+                    channel: channel,
+                    guild: channel.guild,
+                    user: { id: "SYSTEM" },
+                    replied: true,
+                    deferred: false,
+                    isMessageComponent: () => true,
+                    update: async (payload) => await draftMsg.edit(payload),
+                    message: draftMsg
+                };
+                await this.updateDraftUI(dummyInteraction, match, false);
+            } else {
+                const dummyInteraction = {
+                    channel: channel,
+                    guild: channel.guild,
+                    user: { id: "SYSTEM" },
+                    replied: false,
+                    deferred: false,
+                    isMessageComponent: () => false
+                };
+                await this.updateDraftUI(dummyInteraction, match, true);
+            }
         }
     },
 
