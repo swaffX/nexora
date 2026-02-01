@@ -10,10 +10,17 @@ module.exports = {
     name: 'voiceStateUpdate',
     async execute(oldState, newState, client) {
         if (!newState.guild) return;
-        if (oldState.member?.user.bot || newState.member?.user.bot) return;
-
         const guildId = newState.guild.id;
-        const userId = newState.member.id;
+
+        // Üyeyi güvenli şekilde al
+        let member = newState.member;
+        if (!member) {
+            try { member = await newState.guild.members.fetch(newState.id); }
+            catch (e) { return; } // Üye bulunamazsa işlem yapma
+        }
+
+        const userId = member.id;
+        if (member.user.bot) return;
 
         // ==================== 🛠️ MASTER VOICE HUB LOGIC ====================
         try {
@@ -37,9 +44,9 @@ module.exports = {
             // Kullanıcı verisini çek
             let user = await User.findOne({ odasi: userId, odaId: guildId });
             if (!user) {
-                user = await User.create({ odasi: userId, odaId: guildId, username: newState.member.user.username });
-            } else if (user.username !== newState.member.user.username) {
-                user.username = newState.member.user.username;
+                user = await User.create({ odasi: userId, odaId: guildId, username: member.user.username });
+            } else if (user.username !== member.user.username) {
+                user.username = member.user.username;
             }
 
             // ==================== DURUM 1: KANALA KATILMA ====================
