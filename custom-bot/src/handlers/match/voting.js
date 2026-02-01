@@ -89,8 +89,12 @@ module.exports = {
     },
 
     async endVoting(channel, matchId) {
-        const match = await Match.findOne({ matchId });
-        if (!match || match.voteStatus !== 'VOTING') return;
+        const match = await Match.findOneAndUpdate(
+            { matchId, voteStatus: 'VOTING' },
+            { $set: { voteStatus: 'FINISHED' } },
+            { new: true }
+        );
+        if (!match) return;
 
         // TEMİZLİK: Oylama mesajını sil
         try {
@@ -129,7 +133,7 @@ module.exports = {
         // Sonuç mesajını 5 saniye sonra sil
         if (resMsg) setTimeout(() => resMsg.delete().catch(() => { }), 5000);
 
-        match.voteStatus = 'FINISHED'; await match.save();
+        await match.save();
 
         // Game Handler'a geç
         gameHandler.startSideSelection(channel, match);
