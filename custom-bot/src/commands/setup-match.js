@@ -14,28 +14,18 @@ module.exports = {
 
         const embed = new EmbedBuilder()
             .setColor(0xFF4655) // Valorant Red
-            .setTitle('⚔️ 5v5 REKABET ARENASI')
-            .setDescription(`
-**Hey Ajan!** 🌪️
-Özel maçını kurmak ve savaş meydanına inmek için butona tıkla!
-
-**🎯 Sistem İşleyişi:**
-> **1️⃣ Lobi:** Odanı oluştur ve oyuncuları topla.
-> **2️⃣ Kaptanlar:** Liderleri seç veya kura ile belirle.
-> **3️⃣ Draft:** Sırayla oyuncularını takımına kat.
-> **4️⃣ Savaş:** Harita ve tarafını seç, maça başla!
-
-🔒 **Gereksinim:** <#1463922466467483801> kanalında bulunmalısın.
-            `)
+            .setTitle('⚔️ NEXORA 5v5 ARENA')
+            .setDescription(`**Hey Ajan!** <a:tacticbear:1467545426009002055>\nKendi lobini kur, takımını topla ve rekabete başla.\n\n**<a:jetto:1467545477221318750> Sistem İşleyişi**\n\n> **🏛️ Oda Kur** • Butona tıkla ve özel lobini oluştur.\n> **👑 Kaptanlar** • Liderleri belirle veya şansa bırak.\n> **👥 Draft** • En iyi oyuncuları takımına seç.\n> **⚔️ Savaş** • Haritanı belirle ve maça başla!\n\nℹ️ _Lobi oluşturmak için **<#1463922466467483801>** kanalında olmalısın._`)
             .setImage('https://cdn.discordapp.com/attachments/531892263652032522/1464235225818075147/standard_2.gif?ex=6974bad2&is=69736952&hm=16b14c0c7fa6d91ad8528683d2876891b5833d4d516ef5891cd91bc4b8c9804d&')
-            .setFooter({ text: 'Made by Swaff' })
+            .setFooter({ text: 'Nexora Competitive Systems' })
             .setTimestamp();
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId('match_create')
-                .setLabel('🎮 Maç Oluştur')
-                .setStyle(ButtonStyle.Success)
+                .setLabel('Maç Oluştur')
+                .setEmoji('1467546027518197915')
+                .setStyle(ButtonStyle.Secondary)
         );
 
         // Hedef kanalı ve mesajı bulmaya çalış
