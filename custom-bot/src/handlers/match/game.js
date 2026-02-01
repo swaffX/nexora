@@ -52,29 +52,41 @@ module.exports = {
 
         // 3 Saniye Bekle
         setTimeout(async () => {
-            // Sonucu Belirle
-            const result = Math.random() < 0.5 ? 'HEADS' : 'TAILS';
-            const win = (choice === result);
-            const winnerTeam = win ? 'A' : 'B';
-            match.coinFlipWinner = winnerTeam;
-            const winnerId = winnerTeam === 'A' ? match.captainA : match.captainB;
+            try {
+                // Maç halen var mı kontrol et (Silindiyse işlem yapma)
+                const currentMatch = await Match.findOne({ matchId });
+                if (!currentMatch) return;
 
-            // Kazanılan Emojinin Resmi
-            const resultImage = result === 'HEADS'
-                ? 'https://cdn.discordapp.com/emojis/1467551334621253866.png' // Yazı
-                : 'https://cdn.discordapp.com/emojis/1467551298327937044.png'; // Tura
+                // Sonucu Belirle
+                const result = Math.random() < 0.5 ? 'HEADS' : 'TAILS';
+                const win = (choice === result);
+                const winnerTeam = win ? 'A' : 'B';
 
-            const resultEmbed = new EmbedBuilder()
-                .setColor(win ? 0x2ECC71 : 0xE74C3C)
-                .setTitle(`🪙 SONUÇ: ${result === 'HEADS' ? 'YAZI' : 'TURA'}!`)
-                .setDescription(`**Kazanan:** Team ${winnerTeam} (<@${winnerId}>)\n\nSeçim yapma hakkı kazandınız!`)
-                .setThumbnail(resultImage);
+                // match nesnesini güncelle (yukarıdaki 'match' referansı eski kalmış olabilir ama ID aynı)
+                currentMatch.coinFlipWinner = winnerTeam;
+                await currentMatch.save();
 
-            await interaction.message.edit({ embeds: [resultEmbed] });
+                const winnerId = winnerTeam === 'A' ? currentMatch.captainA : currentMatch.captainB;
 
-            // Taraf Seçimine Geç (2 saniye sonra)
-            setTimeout(() => this.showSidePicker(interaction.channel, match, winnerTeam), 2500);
+                // Kazanılan Emojinin Resmi
+                const resultImage = result === 'HEADS'
+                    ? 'https://cdn.discordapp.com/emojis/1467551334621253866.png' // Yazı
+                    : 'https://cdn.discordapp.com/emojis/1467551298327937044.png'; // Tura
 
+                const resultEmbed = new EmbedBuilder()
+                    .setColor(win ? 0x2ECC71 : 0xE74C3C)
+                    .setTitle(`🪙 SONUÇ: ${result === 'HEADS' ? 'YAZI' : 'TURA'}!`)
+                    .setDescription(`**Kazanan:** Team ${winnerTeam} (<@${winnerId}>)\n\nSeçim yapma hakkı kazandınız!`)
+                    .setThumbnail(resultImage);
+
+                await interaction.message.edit({ embeds: [resultEmbed] }).catch(() => { });
+
+                // Taraf Seçimine Geç (2 saniye sonra)
+                setTimeout(() => this.showSidePicker(interaction.channel, currentMatch, winnerTeam), 2500);
+
+            } catch (error) {
+                console.error('Coinflip Animation Error:', error);
+            }
         }, 3000);
     },
 

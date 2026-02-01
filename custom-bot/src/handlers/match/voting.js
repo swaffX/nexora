@@ -139,6 +139,22 @@ module.exports = {
             // Sonuç mesajını 5 saniye sonra sil
             if (resMsg) setTimeout(() => resMsg.delete().catch(() => { }), 5000);
 
+            // "KADROLAR BELİRLENDİ" Embed'ine Haritayı Ekle
+            try {
+                if (match.draftMessageId) {
+                    const draftMsg = await channel.messages.fetch(match.draftMessageId).catch(() => null);
+                    if (draftMsg) {
+                        const oldEmbed = draftMsg.embeds[0];
+                        if (oldEmbed) {
+                            const newEmbed = EmbedBuilder.from(oldEmbed);
+                            // Açıklamanın sonuna haritayı ekle
+                            newEmbed.setDescription(oldEmbed.description + `\n\n✅ **Harita:** ${match.selectedMap}`);
+                            await draftMsg.edit({ embeds: [newEmbed] });
+                        }
+                    }
+                }
+            } catch (e) { }
+
             await match.save();
 
             // Game Handler'a geç
