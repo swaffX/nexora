@@ -27,11 +27,28 @@ module.exports = {
 
     async updateDraftUI(interaction, match, sendNew = false) {
         if ((match.teamA.length >= 5 && match.teamB.length >= 5) || match.availablePlayerIds.length === 0) {
-            // Timer temizle
             if (draftTimers.has(match.matchId)) clearTimeout(draftTimers.get(match.matchId));
 
-            const msg = await interaction.channel.send({ content: `✅ **Takımlar Belirlendi!** Oylamaya geçiliyor...` });
-            setTimeout(() => msg.delete().catch(() => { }), 5000);
+            // Son durumu gösteren temiz embed (Menüsüz)
+            const finalEmbed = new EmbedBuilder().setColor(0x2ECC71).setTitle('✅ Draft Tamamlandı')
+                .setDescription('Takımlar kuruldu, harita oylamasına geçiliyor...')
+                .addFields(
+                    { name: `🔵 Team A (${match.teamA.length})`, value: match.teamA.map(id => `<@${id}>`).join('\n') || '-', inline: true },
+                    { name: `🔴 Team B (${match.teamB.length})`, value: match.teamB.map(id => `<@${id}>`).join('\n') || '-', inline: true }
+                )
+                .setFooter({ text: 'Made by Swaff' });
+
+            // Mevcut mesajı güncelle (Menüleri kaldır)
+            try {
+                if (interaction.update) {
+                    await interaction.update({ embeds: [finalEmbed], components: [] });
+                } else if (interaction.message) {
+                    await interaction.message.edit({ embeds: [finalEmbed], components: [] });
+                }
+            } catch (e) { }
+
+            const msg = await interaction.channel.send({ content: `✅ **Harika!** Takımlar hazır, kaptanlar lütfen harita seçimine odaklanın.` });
+            setTimeout(() => msg.delete().catch(() => { }), 4000);
 
             return votingHandler.prepareVoting(interaction, match, true);
         }

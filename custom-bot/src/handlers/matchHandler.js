@@ -20,6 +20,15 @@ module.exports = {
             action = parts[1];
         } else return;
 
+        const ADMIN_ACTIONS = ['create', 'cancel', 'endmatch', 'endlobby', 'reset', 'rematch', 'enddraft', 'randomcap'];
+        const REQUIRED_ROLE_ID = '1463875325019557920';
+
+        if (ADMIN_ACTIONS.includes(action)) {
+            if (!interaction.member.permissions.has('Administrator') && !interaction.member.roles.cache.has(REQUIRED_ROLE_ID)) {
+                return interaction.reply({ content: '❌ Bu işlemi yapmak için yetkiniz yok!', flags: require('discord.js').MessageFlags.Ephemeral });
+            }
+        }
+
         try {
             switch (action) {
                 // --- LOBBY ---

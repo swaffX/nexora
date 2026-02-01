@@ -131,8 +131,15 @@ module.exports = {
         const everyone = guild.roles.everyone;
 
         const createPerms = (teamIds) => [
-            { id: everyone.id, deny: [PermissionsBitField.Flags.ViewChannel] },
-            ...teamIds.map(id => ({ id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.Connect, PermissionsBitField.Flags.Speak] }))
+            {
+                id: everyone.id,
+                allow: [PermissionsBitField.Flags.ViewChannel],
+                deny: [PermissionsBitField.Flags.Connect, PermissionsBitField.Flags.SendMessages]
+            },
+            ...teamIds.map(id => ({
+                id,
+                allow: [PermissionsBitField.Flags.Connect, PermissionsBitField.Flags.Speak, PermissionsBitField.Flags.Stream, PermissionsBitField.Flags.UseVAD]
+            }))
         ];
 
         const captainA = await guild.members.fetch(match.captainA).catch(() => ({ displayName: 'PLAYER A' }));
@@ -219,40 +226,35 @@ module.exports = {
     },
 
     async endMatch(interaction) {
+        // Sadece butonlardan gelen istekleri kabul et (Otomatik tetiklenmeleri engelle)
+        if (!interaction.isMessageComponent()) return;
+
         const matchId = interaction.customId.split('_')[2];
         const match = await Match.findOne({ matchId });
         if (!match) return;
 
         // 1. Durumu Güncelle
         match.status = 'FINISHED';
-        match.playedMaps.push(match.selectedMap);
+        if (!match.playedMaps.includes(match.selectedMap)) {
+            match.playedMaps.push(match.selectedMap);
+        }
         await match.save();
 
         const { MessageFlags } = require('discord.js');
-        await interaction.reply({ content: '🏁 Maç bitti! Oyuncular lobiye taşınıyor...', flags: MessageFlags.Ephemeral });
+        // Kullanıcıya bilgi ver (ama lobiye dönüyoruz deme!)
+        await interaction.reply({ content: '🏁 Maç bitti! Yönetim paneli açılıyor...', flags: MessageFlags.Ephemeral });
 
         // Canlı Maç panelini sil
         await interaction.message.delete().catch(() => { });
 
-        // 2. Oyuncuları Lobiye Taşı
-        const guild = interaction.guild;
-        if (match.lobbyVoiceId) {
-            const allPlayers = [...(match.teamA || []), ...(match.teamB || [])];
-            const move = async (pid) => {
-                try {
-                    const member = await guild.members.fetch(pid).catch(() => null);
-                    if (member && member.voice.channel) await member.voice.setChannel(match.lobbyVoiceId).catch(() => { });
-                } catch (e) { }
-            };
-            await Promise.all(allPlayers.map(pid => move(pid)));
-        }
-
-        // 3. Ses Kanallarını Sil
-        await manager.cleanupVoiceChannels(guild, match);
+        // NOT: Oyuncuları lobiye taşıma ve kanalları silme işlemi İPTAL EDİLDİ.
+        // Bu işlemler artık sadece "Lobiyi Bitir" veya "Takımları Değiştir" dendiğinde yapılacak.
 
         // 4. Yeni Kontrol Panelini Göster
         await this.showNextMatchOptions(interaction.channel, match);
     },
+
+
 
     async showNextMatchOptions(channel, match) {
         const embed = new EmbedBuilder()
