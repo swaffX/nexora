@@ -81,8 +81,11 @@ module.exports = {
 
                 await interaction.message.edit({ embeds: [resultEmbed] }).catch(() => { });
 
-                // Taraf Seçimine Geç (2 saniye sonra)
-                setTimeout(() => this.showSidePicker(interaction.channel, currentMatch, winnerTeam), 2500);
+                // 4 Saniye sonra sil ve Taraf Seçimine geç
+                setTimeout(async () => {
+                    await interaction.message.delete().catch(() => { });
+                    this.showSidePicker(interaction.channel, currentMatch, winnerTeam);
+                }, 4000);
 
             } catch (error) {
                 console.error('Coinflip Animation Error:', error);
@@ -121,7 +124,8 @@ module.exports = {
             new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('İptal').setEmoji('🛑').setStyle(ButtonStyle.Danger)
         );
 
-        await channel.send({ content: `<@${winnerId}>`, embeds: [embed], components: [row], files: files });
+        // Content (Etiket) kaldırıldı
+        await channel.send({ embeds: [embed], components: [row], files: files });
     },
 
     async handleSidePick(interaction) {
