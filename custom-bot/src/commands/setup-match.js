@@ -14,8 +14,8 @@ module.exports = {
 
         const embed = new EmbedBuilder()
             .setColor(0xFF4655) // Valorant Red
-            .setTitle('🏆 NEXORA E-SPORTS ARENA')
-            .setDescription(`**🔥 REKABET SENİ ÇAĞIRIYOR!**\n\nGerçek bir ajan gibi savaşmaya hazır mısın?\nKendi lobini kur, stratejini belirle ve zafere ulaş.\n\n🔻 **Sistem Nasıl Çalışır?**\n• **Lobi Kur:** Takım arkadaşlarını topla.\n• **Draft Yap:** En iyi kadroyu kur.\n• **Savaş:** Haritanı seç ve maça başla!\n\n<a:jetto:1467545477221318750> _Lobi oluşturmak için **<#1463922466467483801>** kanalında olmalısın._`)
+            .setTitle('⚔️ NEXORA 5v5 ARENA')
+            .setDescription(`**Hey Ajan!** <a:tacticbear:1467545426009002055>\nKendi lobini kur, takımını topla ve rekabete başla.\n\n<a:jetto:1467545477221318750> _Lobi oluşturmak için **<#1463922466467483801>** kanalında olmalısın._`)
             .setImage('https://cdn.discordapp.com/attachments/531892263652032522/1464235225818075147/standard_2.gif?ex=6974bad2&is=69736952&hm=16b14c0c7fa6d91ad8528683d2876891b5833d4d516ef5891cd91bc4b8c9804d&')
             .setFooter({ text: 'Nexora Competitive Systems' })
             .setTimestamp();
