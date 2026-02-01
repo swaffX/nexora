@@ -233,6 +233,11 @@ module.exports = {
         const match = await Match.findOne({ matchId });
         if (!match) return;
 
+        // Zaten bitmişse tekrar işlem yapma (Çift tıklama koruması)
+        if (match.status === 'FINISHED') {
+            return interaction.reply({ content: '⚠️ Bu maç zaten sonlandırılmış.', flags: require('discord.js').MessageFlags.Ephemeral });
+        }
+
         // 1. Durumu Güncelle
         match.status = 'FINISHED';
         if (!match.playedMaps.includes(match.selectedMap)) {
