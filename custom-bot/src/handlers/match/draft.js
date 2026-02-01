@@ -3,7 +3,6 @@ const path = require('path');
 const { Match } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const votingHandler = require('./voting');
 
-
 // Her maç için aktif timer'ı tutar
 const draftTimers = new Map();
 
@@ -29,16 +28,14 @@ module.exports = {
         if ((match.teamA.length >= 5 && match.teamB.length >= 5) || match.availablePlayerIds.length === 0) {
             if (draftTimers.has(match.matchId)) clearTimeout(draftTimers.get(match.matchId));
 
-            // Son durumu gösteren temiz embed (Menüsüz)
             const finalEmbed = new EmbedBuilder().setColor(0x2ECC71).setTitle('✅ Draft Tamamlandı')
                 .setDescription('Takımlar kuruldu, harita oylamasına geçiliyor...')
                 .addFields(
                     { name: `🔵 Team A (${match.teamA.length})`, value: match.teamA.map(id => `<@${id}>`).join('\n') || '-', inline: true },
                     { name: `🔴 Team B (${match.teamB.length})`, value: match.teamB.map(id => `<@${id}>`).join('\n') || '-', inline: true }
                 )
-                .setFooter({ text: 'Made by Swaff' });
+                .setFooter({ text: 'Nexora Competitive Systems' });
 
-            // Mevcut mesajı güncelle (Menüleri kaldır)
             try {
                 if (interaction.update) {
                     await interaction.update({ embeds: [finalEmbed], components: [] });
@@ -54,6 +51,8 @@ module.exports = {
         }
 
         const currentTurnCaptain = match.pickTurn === 'A' ? match.captainA : match.captainB;
+        const turnColor = match.pickTurn === 'A' ? 0x3498DB : 0xE74C3C; // Mavi veya Kırmızı
+        const turnEmoji = match.pickTurn === 'A' ? '🔵' : '🔴';
 
         // ZAMAN AŞIMI BAŞLAT (30 Sn)
         this.startTurnTimer(interaction, match);
@@ -66,17 +65,28 @@ module.exports = {
             } catch (e) { }
         }
 
-        // Zaman bilgisini embed'e ekle
         const nextTime = Math.floor(Date.now() / 1000) + 30;
 
-        const embed = new EmbedBuilder().setColor(0xFEE75C).setTitle('👥 Draft Aşaması')
-            .setDescription(`**Sıra:** <@${currentTurnCaptain}> (Team ${match.pickTurn})\n⏰ **Süre Bitişi:** <t:${nextTime}:R>`)
+        // --- TAKIM LİSTELERİNİ OLUŞTUR (Slotlu) ---
+        const formatTeam = (teamIds) => {
+            const maxSlots = 5;
+            const lines = [];
+            for (let i = 0; i < maxSlots; i++) {
+                if (teamIds[i]) lines.push(`${i + 1}. <@${teamIds[i]}>`);
+                else lines.push(`${i + 1}. \`▪️ Boş\``);
+            }
+            return lines.join('\n');
+        };
+
+        const embed = new EmbedBuilder().setColor(turnColor)
+            .setTitle(`${turnEmoji} OYUNCU SEÇİMİ`)
+            .setDescription(`**Sıra:** <@${currentTurnCaptain}> (Team ${match.pickTurn}) **seçiyor.**\n⏰ **Süre:** <t:${nextTime}:R>`)
             .addFields(
-                { name: `🔵 Team A (${match.teamA.length})`, value: match.teamA.map(id => `<@${id}>`).join('\n') || '-', inline: true },
-                { name: `🔴 Team B (${match.teamB.length})`, value: match.teamB.map(id => `<@${id}>`).join('\n') || '-', inline: true },
-                { name: '📍 Havuz', value: poolOptions.length > 0 ? poolOptions.map(p => p.label).join(', ') : 'Kimse kalmadı', inline: false }
+                { name: `🔵 Team A`, value: formatTeam(match.teamA), inline: true },
+                { name: `🔴 Team B`, value: formatTeam(match.teamB), inline: true },
+                { name: `📍 Havuzda Bekleyenler (${poolOptions.length})`, value: poolOptions.length > 0 ? poolOptions.map(p => p.label).join(', ') : '⚠️ Kimse kalmadı', inline: false }
             )
-            .setFooter({ text: 'Made by Swaff' });
+            .setFooter({ text: `Nexora Draft System • ID: ${match.matchId.slice(-4)}` });
 
         const components = [];
         components.push(new ActionRowBuilder().addComponents(
@@ -85,43 +95,35 @@ module.exports = {
                 : new ButtonBuilder().setCustomId(`match_enddraft_${match.matchId}`).setLabel('Seçimi Bitir').setStyle(ButtonStyle.Success)
         ));
         components.push(new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId(`match_refresh_${match.matchId}`).setLabel('🔄 Yenile').setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('Maçı İptal Et').setEmoji('🛑').setStyle(ButtonStyle.Danger)
+            new ButtonBuilder().setCustomId(`match_refresh_${match.matchId}`).setLabel('Yenile').setStyle(ButtonStyle.Secondary).setEmoji('🔄'),
+            new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('İptal').setEmoji('🛑').setStyle(ButtonStyle.Danger)
         ));
 
         try {
             if (sendNew) {
-                const msg = await interaction.channel.send({ content: `Match ID: ${match.matchId}`, embeds: [embed], components: components });
+                const msg = await interaction.channel.send({ embeds: [embed], components: components });
                 match.draftMessageId = msg.id;
                 await match.save();
             } else {
-                // Eğer interaction cevaplanmamışsa update, cevaplanmışsa editReply veya yeni mesaj denemesi
                 if (interaction.replied || interaction.deferred) {
-                    // interaction.message varsa edit, yoksa channel send
-                    if (interaction.message) await interaction.update({ content: `Match ID: ${match.matchId}`, embeds: [embed], components: components });
-                    else await interaction.channel.send({ content: `Match ID: ${match.matchId}`, embeds: [embed], components: components });
+                    if (interaction.message) await interaction.update({ content: null, embeds: [embed], components: components });
+                    else await interaction.channel.send({ embeds: [embed], components: components });
                 } else {
-                    if (interaction.isMessageComponent()) await interaction.update({ content: `Match ID: ${match.matchId}`, embeds: [embed], components: components });
-                    else await interaction.update({ content: `Match ID: ${match.matchId}`, embeds: [embed], components: components });
+                    if (interaction.isMessageComponent()) await interaction.update({ content: null, embeds: [embed], components: components });
+                    else await interaction.update({ content: null, embeds: [embed], components: components });
                 }
             }
         } catch (e) { console.error("Update Draft UI Error:", e); }
     },
 
     startTurnTimer(interaction, match) {
-        // Eski timer'ı iptal et
         if (draftTimers.has(match.matchId)) clearTimeout(draftTimers.get(match.matchId));
-
-        // Kanalı garantiye al (interaction veya DB'den)
-        // AutoPick tetiklenirse interaction objesi olmayabilir, o yüzden kanalı bulmamız lazım.
-        // Ama timer callback içinde interaction objesini kullanmak riskli (süresi dolmuş olabilir).
-        // En iyisi kanalı bulup saklamak.
 
         const channel = interaction.channel;
 
         const timer = setTimeout(async () => {
-            await this.handleAutoPick(channel, match.matchId); // interaction değil channel yolluyoruz
-        }, 30 * 1000); // 30 Saniye
+            await this.handleAutoPick(channel, match.matchId);
+        }, 30 * 1000);
 
         draftTimers.set(match.matchId, timer);
     },
@@ -130,12 +132,10 @@ module.exports = {
         const match = await Match.findOne({ matchId });
         if (!match || match.status !== 'DRAFT') return;
 
-        // Rastgele seçim
-        if (match.availablePlayerIds.length === 0) return; // Kimse yok
+        if (match.availablePlayerIds.length === 0) return;
 
         const randomPlayer = match.availablePlayerIds[Math.floor(Math.random() * match.availablePlayerIds.length)];
 
-        // Takıma ekle
         if (match.pickTurn === 'A') { match.teamA.push(randomPlayer); match.pickTurn = 'B'; }
         else { match.teamB.push(randomPlayer); match.pickTurn = 'A'; }
 
@@ -208,9 +208,6 @@ module.exports = {
         const matchId = interaction.customId.split('_')[2];
         const match = await Match.findOne({ matchId });
         if (!match) return;
-
-        // Timer'ı resetle (refresh basınca süre sıfırlanır mı? Hayır, kötüye kullanım olur. Timer devam etsin.)
-        // Ama timer'ı yeniden başlatmak gerekmiyor.
 
         try {
             const host = await interaction.guild.members.fetch(match.hostId);
