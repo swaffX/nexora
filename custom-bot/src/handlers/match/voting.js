@@ -89,39 +89,35 @@ module.exports = {
     },
 
     async endVoting(channel, matchId) {
-        const match = await Match.findOneAndUpdate(
-            { matchId, voteStatus: 'VOTING' },
-            { $set: { voteStatus: 'FINISHED' } },
-            { new: true }
-        );
-        if (!match) return;
-
-        // KANAL KONTROLÜ (Güvenli Erişim)
         try {
+            const match = await Match.findOneAndUpdate(
+                { matchId, voteStatus: 'VOTING' },
+                { $set: { voteStatus: 'FINISHED' } },
+                { new: true }
+            );
+            if (!match) return;
+
+            // KANAL KONTROLÜ (Güvenli Erişim)
             if (channel.guild) {
                 const fetched = await channel.guild.channels.fetch(channel.id).catch(() => null);
-                if (!fetched) return; // Kanal silinmiş, işlem durduruluyor
+                if (!fetched) return; // Kanal silinmiş
                 channel = fetched;
             }
-        } catch (e) { return; }
 
-        // TEMİZLİK: Oylama mesajını sil
-        try {
+            // TEMİZLİK: Oylama mesajını sil
             if (match.votingMessageId) {
                 const msg = await channel.messages.fetch(match.votingMessageId).catch(() => null);
                 if (msg) await msg.delete().catch(() => { });
             }
-        } catch (e) { }
 
-        const counts = {};
-        match.votes.forEach(v => { counts[v.mapName] = (counts[v.mapName] || 0) + 1; });
-        const sortedMaps = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+            const counts = {};
+            match.votes.forEach(v => { counts[v.mapName] = (counts[v.mapName] || 0) + 1; });
+            const sortedMaps = Object.entries(counts).sort((a, b) => b[1] - a[1]);
 
-        let resMsg;
-        try {
+            let resMsg;
             if (sortedMaps.length === 0) {
                 match.selectedMap = MAPS[Math.floor(Math.random() * MAPS.length)].name;
-                resMsg = await channel.send(`⚠️ Kimse oy kullanmadı. Rastgele: **${match.selectedMap}**`);
+                resMsg = await channel.send(`⚠️ Kimse oy kullanmadı. Rastgele: **${match.selectedMap}**`).catch(() => null);
             } else {
                 const topMap = sortedMaps[0];
                 if (sortedMaps.length > 1 && sortedMaps[1][1] === topMap[1]) {
@@ -133,23 +129,23 @@ module.exports = {
 
                     resMsg = await channel.send({
                         content: `⚖️ **OYLAMA SONUCU EŞİT!**\n\n📌 Eşit Oy Alanlar: **${tiedMapNames.join(', ')}**\n🎲 Sistem tarafından rastgele seçilen harita: **${match.selectedMap}**`
-                    });
+                    }).catch(() => null);
                 } else {
                     match.selectedMap = topMap[0];
-                    resMsg = await channel.send(`✅ **Kazanan Harita:** **${match.selectedMap}** (${topMap[1]} oy)`);
+                    resMsg = await channel.send(`✅ **Kazanan Harita:** **${match.selectedMap}** (${topMap[1]} oy)`).catch(() => null);
                 }
             }
 
             // Sonuç mesajını 5 saniye sonra sil
             if (resMsg) setTimeout(() => resMsg.delete().catch(() => { }), 5000);
-        } catch (e) {
-            // Kanal silindiyse veya erişim yoksa sessizce geç
-            return;
+
+            await match.save();
+
+            // Game Handler'a geç
+            gameHandler.startSideSelection(channel, match);
+        } catch (error) {
+            // Hata olursa (Kanal yoksa vb.) sessiz kal
+            // console.error('EndVoting Error:', error);
         }
-
-        await match.save();
-
-        // Game Handler'a geç
-        gameHandler.startSideSelection(channel, match);
     }
 };
