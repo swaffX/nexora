@@ -28,11 +28,20 @@ module.exports = {
         if ((match.teamA.length >= 5 && match.teamB.length >= 5) || match.availablePlayerIds.length === 0) {
             if (draftTimers.has(match.matchId)) clearTimeout(draftTimers.get(match.matchId));
 
-            const finalEmbed = new EmbedBuilder().setColor(0x2ECC71).setTitle('✅ Draft Tamamlandı')
-                .setDescription('Takımlar kuruldu, harita oylamasına geçiliyor...')
+            // Kaptan isimlerini çek
+            const capA = await interaction.guild.members.fetch(match.captainA).catch(() => null);
+            const capB = await interaction.guild.members.fetch(match.captainB).catch(() => null);
+            const nameA = capA ? capA.displayName : 'Team A';
+            const nameB = capB ? capB.displayName : 'Team B';
+
+            // Liste formatı (Genişletilmiş)
+            const formatFinalTeam = (ids) => ids.map(id => `<@${id}>\u2000`).join('\n');
+
+            const finalEmbed = new EmbedBuilder().setColor(0x2ECC71).setTitle('⚔️ KADROLAR BELİRLENDİ')
+                .setDescription(`**Draft Tamamlandı!** Savaş hazırlıkları başlıyor.\n\n🔥 **Eşleşme:** \`${nameA}\` 🆚 \`${nameB}\`\nHarita oylamasına geçiliyor...`)
                 .addFields(
-                    { name: `🔵 Team A (${match.teamA.length})`, value: match.teamA.map(id => `<@${id}>`).join('\n') || '-', inline: true },
-                    { name: `🔴 Team B (${match.teamB.length})`, value: match.teamB.map(id => `<@${id}>`).join('\n') || '-', inline: true }
+                    { name: `🔵 ${nameA}`, value: formatFinalTeam(match.teamA), inline: true },
+                    { name: `🔴 ${nameB}`, value: formatFinalTeam(match.teamB), inline: true }
                 )
                 .setFooter({ text: 'Nexora Competitive Systems' });
 
@@ -67,13 +76,16 @@ module.exports = {
 
         const nextTime = Math.floor(Date.now() / 1000) + 30;
 
-        // --- TAKIM LİSTELERİNİ OLUŞTUR (Slotlu) ---
+        // --- TAKIM LİSTELERİNİ OLUŞTUR (Slotlu ve Geniş) ---
         const formatTeam = (teamIds) => {
             const maxSlots = 5;
             const lines = [];
+            // \u2000 (En Quad) veya \u3000 (Ideographic Space) kullanarak yapay genişlik oluşturuyoruz.
+            const padding = '\u2000\u2000\u2000\u2000';
+
             for (let i = 0; i < maxSlots; i++) {
-                if (teamIds[i]) lines.push(`${i + 1}. <@${teamIds[i]}>`);
-                else lines.push(`${i + 1}. \`▪️ Boş\``);
+                if (teamIds[i]) lines.push(`\`${i + 1}.\` <@${teamIds[i]}>${padding}`);
+                else lines.push(`\`${i + 1}.\` ▫️ _Boş_${padding}`);
             }
             return lines.join('\n');
         };
@@ -86,7 +98,7 @@ module.exports = {
                 { name: `🔴 Team B`, value: formatTeam(match.teamB), inline: true },
                 { name: `📍 Havuzda Bekleyenler (${poolOptions.length})`, value: poolOptions.length > 0 ? poolOptions.map(p => p.label).join(', ') : '⚠️ Kimse kalmadı', inline: false }
             )
-            .setFooter({ text: `Nexora Draft System • ID: ${match.matchId.slice(-4)}` });
+            .setFooter({ text: `Nexora Draft System • Match #${match.matchNumber || '?'}` });
 
         const components = [];
         components.push(new ActionRowBuilder().addComponents(

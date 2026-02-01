@@ -22,7 +22,10 @@ module.exports = {
 
         try {
             const guild = interaction.guild;
-            const matchShortId = interaction.id.slice(-4);
+
+            // Sıralı Maç Numarasını Bul
+            const lastMatch = await Match.findOne({ guildId: guild.id }).sort({ matchNumber: -1 });
+            const currentMatchNumber = (lastMatch && lastMatch.matchNumber) ? lastMatch.matchNumber + 1 : 1;
 
             // 1. Kategori Kontrol (veya oluştur)
             let MATCH_CATEGORY_ID = getCategoryId();
@@ -37,7 +40,7 @@ module.exports = {
             const everyone = guild.roles.everyone;
 
             const textChannel = await guild.channels.create({
-                name: `match-${matchShortId}`,
+                name: `match-${currentMatchNumber}`,
                 type: ChannelType.GuildText,
                 parent: category.id,
                 permissionOverwrites: [
@@ -50,6 +53,7 @@ module.exports = {
             const newMatch = new Match({
                 matchId: interaction.id,
                 guildId: guild.id,
+                matchNumber: currentMatchNumber, // Yeni Eklenen Alan
                 hostId: interaction.user.id,
                 channelId: textChannel.id,
                 lobbyVoiceId: REQUIRED_VOICE_ID,
@@ -66,7 +70,7 @@ module.exports = {
                     { name: '🔵 Team A', value: 'Wait...', inline: true },
                     { name: '🔴 Team B', value: 'Wait...', inline: true }
                 )
-                .setFooter({ text: `Nexora Competitive • ID: ${matchShortId}` });
+                .setFooter({ text: `Nexora Competitive • Match #${currentMatchNumber}` });
 
             // 5. Ses Kanalındaki Üyeleri Getir
             const voiceChannel = guild.channels.cache.get(REQUIRED_VOICE_ID);
@@ -287,7 +291,7 @@ module.exports = {
             .setTitle(`🛡️ LOBİ YÖNETİMİ`)
             .setDescription(`**Lobi Sıfırlandı!**\nKaptanları yeniden belirleyin.\n\n👑 **Yetkili:** <@${match.hostId}>`)
             .addFields({ name: '🔵 Team A', value: 'Seçilmedi', inline: true }, { name: '🔴 Team B', value: 'Seçilmedi', inline: true })
-            .setFooter({ text: `Nexora Competitive • ID: ${match.matchId.slice(-4)}` });
+            .setFooter({ text: `Nexora Competitive • Match #${match.matchNumber || '?'}` });
 
         const rows = [
             new ActionRowBuilder().addComponents(

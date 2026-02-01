@@ -6,6 +6,7 @@ const matchSchema = new mongoose.Schema({
     hostId: { type: String, required: true },
     channelId: { type: String, required: true }, // Komutun kullanıldığı kanal
     lobbyVoiceId: { type: String }, // Oyuncuların geri döneceği kanal
+    matchNumber: { type: Number, index: true }, // Sıralı Maç ID (Örn: #1, #2...)
 
     // Durum
     status: { type: String, enum: ['SETUP', 'DRAFT', 'VOTING', 'VETO', 'COIN_FLIP', 'SIDE_SELECTION', 'LIVE', 'FINISHED', 'CANCELLED'], default: 'SETUP' },
