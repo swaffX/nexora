@@ -5,7 +5,7 @@ const {
 const path = require('path');
 
 const { Match, User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
-const { MAPS, getCategoryId } = require('./constants');
+const { MAPS } = require('./constants');
 const manager = require('./manager');
 
 module.exports = {
