@@ -156,7 +156,28 @@ module.exports = {
     },
 
     async setupVoiceAndStart(guild, match, infoChannel) {
-        const MATCH_CATEGORY_ID = getCategoryId();
+        const { getLobbyConfig, LOBBY_CONFIG, getCategoryId } = require('./constants');
+
+        // Kategori ID'yi dinamik olarak bul
+        let MATCH_CATEGORY_ID;
+
+        // 1. Yöntem: match.lobbyVoiceId üzerinden bul
+        if (match.lobbyVoiceId) {
+            const config = Object.values(LOBBY_CONFIG).find(l => l.voiceId === match.lobbyVoiceId);
+            if (config) {
+                MATCH_CATEGORY_ID = config.categoryId;
+            }
+        }
+
+        // 2. Yöntem: Bulunamazsa fallback (veya eski yöntem)
+        if (!MATCH_CATEGORY_ID) {
+            // Eski kodda getCategoryId vardı ama artık constants.js'den kaldırdık mı?
+            // constants.js'i kontrol ettim, getCategoryId kaldırılmış.
+            // O yüzden varsayılan bir ID veya hata yönetimi gerekli.
+            // En güvenlisi LOBBY_CONFIG[1].categoryId (Varsayılan Lobi 1)
+            MATCH_CATEGORY_ID = LOBBY_CONFIG[1].categoryId;
+        }
+
         const category = guild.channels.cache.get(MATCH_CATEGORY_ID);
         const everyone = guild.roles.everyone;
 
