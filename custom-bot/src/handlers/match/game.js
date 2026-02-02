@@ -240,6 +240,16 @@ module.exports = {
         const move = async (id, cid) => { try { const m = await guild.members.fetch(id); if (m.voice.channel && m.voice.channelId !== cid) await m.voice.setChannel(cid); } catch (e) { } };
         await Promise.all([...match.teamA.map(id => move(id, voiceA.id)), ...match.teamB.map(id => move(id, voiceB.id))]);
 
+        // ESKİ MESAJI SİL (KADROLAR BELİRLENDİ)
+        if (match.draftMessageId) {
+            try {
+                const draftMsg = await infoChannel.messages.fetch(match.draftMessageId).catch(() => null);
+                if (draftMsg) await draftMsg.delete().catch(() => { });
+                match.draftMessageId = null; // ID'yi temizle
+                await match.save();
+            } catch (e) { }
+        }
+
         const panelRow = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`match_endmatch_${match.matchId}`).setLabel('🛑 Maçı Bitir').setStyle(ButtonStyle.Danger)
         );
@@ -248,16 +258,17 @@ module.exports = {
         const mapData = MAPS.find(m => m.name === match.selectedMap);
 
         // Oyuncu Listelerini Oluştur
-        const listA = match.teamA.map(id => `<@${id}>`).join('\n') || 'Oyuncu yok';
-        const listB = match.teamB.map(id => `<@${id}>`).join('\n') || 'Oyuncu yok';
+        // Tasarım Güncellemesi
+        const listA = `<a:ayrma:1468003499072688309>\n${match.teamA.map(id => `<@${id}>`).join('\n') || 'Oyuncu yok'}`;
+        const listB = `<a:ayrma:1468003499072688309>\n${match.teamB.map(id => `<@${id}>`).join('\n') || 'Oyuncu yok'}`;
 
         const embed = new EmbedBuilder()
             .setColor(0xE74C3C) // Live Red
             .setTitle(`🔴 MAÇ BAŞLADI! (LIVE)`)
-            .setDescription(`**Harita:** ${match.selectedMap}`)
+            .setDescription(`## 🗺️ Harita: **${match.selectedMap.toUpperCase()}**\nMaç şu an aktif olarak oynanıyor.`)
             .addFields(
-                { name: `🔹 ${nameA} (${match.sideA})`, value: listA, inline: true },
-                { name: `🔸 ${nameB} (${match.sideB})`, value: listB, inline: true }
+                { name: `🔹 ${nameA} (${match.sideA === 'ATTACK' ? '🗡️ ATTACK' : '🛡️ DEFEND'})`, value: listA, inline: true },
+                { name: `🔸 ${nameB} (${match.sideB === 'ATTACK' ? '🗡️ ATTACK' : '🛡️ DEFEND'})`, value: listB, inline: true }
             )
             .setFooter({ text: 'Maç devam ediyor... İyi şanslar! • Made by Swaff' })
             .setTimestamp();

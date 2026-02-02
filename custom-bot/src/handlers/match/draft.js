@@ -38,7 +38,7 @@ module.exports = {
             const formatFinalTeam = (ids) => ids.map(id => `<@${id}>\u2000`).join('\n');
 
             const finalEmbed = new EmbedBuilder().setColor(0x2ECC71).setTitle('⚔️ KADROLAR BELİRLENDİ')
-                .setDescription(`**Draft Tamamlandı!** Savaş hazırlıkları başlıyor.\n\n🔥 **Eşleşme:** \`${nameA}\` 🆚 \`${nameB}\`\nHarita oylamasına geçiliyor...`)
+                .setDescription(`**Draft Tamamlandı!** Savaş hazırlıkları başlıyor.\n\n🔥 **Eşleşme:** \`${nameA}\` <:versus:1468000422752161844> \`${nameB}\`\nHarita oylamasına geçiliyor...`)
                 .addFields(
                     { name: `🔵 ${nameA}`, value: formatFinalTeam(match.teamA), inline: true },
                     { name: `🔴 ${nameB}`, value: formatFinalTeam(match.teamB), inline: true }

@@ -75,7 +75,7 @@ module.exports = {
         match.votes = match.votes.filter(v => v.userId !== userId);
         match.votes.push({ userId, mapName: selectedMap });
         await match.save();
-        await interaction.reply({ content: `✅ Oyunuz **${selectedMap}** için kaydedildi.`, flags: MessageFlags.Ephemeral });
+        await interaction.reply({ content: `<a:tik:1242549144887754853> Oyunuz **${selectedMap}** için kaydedildi.`, flags: MessageFlags.Ephemeral });
 
         // GÖRSEL GÜNCELLE
         const totalPlayers = match.teamA.length + match.teamB.length;
@@ -142,7 +142,7 @@ module.exports = {
                     }).catch(() => null);
                 } else {
                     match.selectedMap = topMap[0];
-                    resMsg = await channel.send(`✅ **Kazanan Harita:** **${match.selectedMap}** (${topMap[1]} oy)`).catch(() => null);
+                    resMsg = await channel.send(`<a:tik:1242549144887754853> **Kazanan Harita:** **${match.selectedMap}** (${topMap[1]} oy)`).catch(() => null);
                 }
             }
 
@@ -158,7 +158,7 @@ module.exports = {
                         if (oldEmbed) {
                             const newEmbed = EmbedBuilder.from(oldEmbed);
                             // Açıklamanın sonuna haritayı ekle
-                            newEmbed.setDescription(oldEmbed.description + `\n\n✅ **Harita:** ${match.selectedMap}`);
+                            newEmbed.setDescription(oldEmbed.description + `\n\n<a:tik:1242549144887754853> **Harita:** ${match.selectedMap}`);
                             await draftMsg.edit({ embeds: [newEmbed] });
                         }
                     }
