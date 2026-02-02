@@ -10,9 +10,18 @@ module.exports = {
         .addStringOption(opt =>
             opt.setName('bahis')
                 .setDescription('Bahis miktarı (veya \'all\')')
-                .setRequired(true)),
+                .setRequired(true))
+        .setDefaultMemberPermissions(null),
 
     async execute(interaction) {
+        // ROL KONTROLÜ (1463875340513317089)
+        const { PermissionsBitField } = require('discord.js');
+        const ALLOWED_ROLE_ID = '1463875340513317089';
+
+        if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator) && !interaction.member.roles.cache.has(ALLOWED_ROLE_ID)) {
+            return interaction.reply({ content: '❌ Bu komutu kullanmak için gerekli **Casino Erişim Rolüne** sahip değilsiniz.', flags: MessageFlags.Ephemeral });
+        }
+
         const betInput = interaction.options.getString('bahis');
         const userId = interaction.user.id;
         const guildId = interaction.guild.id;

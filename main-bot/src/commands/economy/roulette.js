@@ -12,9 +12,18 @@ module.exports = {
         .addStringOption(option =>
             option.setName('amount')
                 .setDescription('Bahis miktarı (veya \'all\')')
-                .setRequired(true)), // String oldu
+                .setRequired(true))
+        .setDefaultMemberPermissions(null), // String oldu
 
     async execute(interaction) {
+        // ROL KONTROLÜ (1463875340513317089)
+        const { PermissionsBitField } = require('discord.js');
+        const ALLOWED_ROLE_ID = '1463875340513317089';
+
+        if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator) && !interaction.member.roles.cache.has(ALLOWED_ROLE_ID)) {
+            return interaction.reply({ content: '❌ Bu komutu kullanmak için gerekli **Casino Erişim Rolüne** sahip değilsiniz.', flags: MessageFlags.Ephemeral });
+        }
+
         const choiceInput = interaction.options.getString('choice').toLowerCase();
         const amountInput = interaction.options.getString('amount');
         const guildId = interaction.guild.id;

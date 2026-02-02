@@ -19,6 +19,9 @@ module.exports = {
             catch (e) { return; } // Üye bulunamazsa işlem yapma
         }
 
+        // KRİTİK: Member ve User check
+        if (!member || !member.user) return;
+
         const userId = member.id;
         if (member.user.bot) return;
 
@@ -97,6 +100,14 @@ async function processVoiceSession(user, guild, client) {
     const durationMinutes = Math.floor(durationMs / 1000 / 60);
     const durationSeconds = Math.floor(durationMs / 1000);
 
+    // KANAL ADINI KAYDET (DB güncellenmeden önce)
+    const lastChannelId = user.currentVoiceChannel;
+    let channelName = 'Bilinmiyor';
+    if (lastChannelId) {
+        const ch = guild.channels.cache.get(lastChannelId);
+        if (ch) channelName = ch.name;
+    }
+
     // Veriyi sıfırla
     user.voiceJoinedAt = null;
     user.currentVoiceChannel = null;
@@ -158,7 +169,7 @@ async function processVoiceSession(user, guild, client) {
         .setTitle('🔊 Ses Oturumu Sonlandı')
         .setDescription(`<@${user.odasi}> ses kanalından ayrıldı.`)
         .addFields(
-            { name: 'Kanal', value: `${guild.channels.cache.get(user.currentVoiceChannel)?.name || 'Bilinmiyor'}`, inline: true },
+            { name: 'Kanal', value: `${channelName}`, inline: true },
             { name: 'Süre', value: `⏱️ ${durationMinutes} dakika (${durationSeconds} sn)`, inline: true },
             { name: 'Kazanılan XP', value: `✨ ${xpEarned} XP`, inline: true }
         )
