@@ -10,16 +10,34 @@ module.exports = {
         const match = await Match.findOne({ matchId });
         if (!match) return false;
 
-        // 1. ÖNCE: Oyuncuları lobiye taşı
-        if (match.lobbyVoiceId) {
-            const allPlayers = [...(match.teamA || []), ...(match.teamB || [])];
-            for (const pid of allPlayers) {
+        // 1. ÖNCE: Ses Kanallarındaki HERKESİ taşı
+        if (match.lobbyVoiceId && match.createdChannelIds && match.createdChannelIds.length > 0) {
+            const movePromises = [];
+
+            for (const cid of match.createdChannelIds) {
                 try {
-                    const member = await guild.members.fetch(pid).catch(() => null);
-                    if (member && member.voice.channel) {
-                        await member.voice.setChannel(match.lobbyVoiceId).catch(() => { });
+                    const channel = guild.channels.cache.get(cid);
+                    // Sadece Ses Kanallarını kontrol et
+                    if (channel && channel.type === ChannelType.GuildVoice) {
+                        // Kanaldaki HERKESİ (members) al
+                        for (const [memberId, member] of channel.members) {
+                            if (member.voice.channelId !== match.lobbyVoiceId) {
+                                movePromises.push(
+                                    member.voice.setChannel(match.lobbyVoiceId).catch(e => console.log(`Move Error (${member.user.tag}):`, e.message))
+                                );
+                            }
+                        }
                     }
-                } catch (e) { }
+                } catch (e) {
+                    console.error('Channel fetch error in cleanup:', e);
+                }
+            }
+
+            // Hepsini taşı ve bekle
+            if (movePromises.length > 0) {
+                await Promise.allSettled(movePromises);
+                // Ekstra güvenlik beklemesi (Discord bazen gecikir)
+                await new Promise(resolve => setTimeout(resolve, 1500));
             }
         }
 

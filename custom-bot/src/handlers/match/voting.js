@@ -59,8 +59,18 @@ module.exports = {
         const match = await Match.findOne({ matchId });
         if (!match || match.voteStatus !== 'VOTING') return interaction.reply({ content: 'Oylama aktif değil.', flags: MessageFlags.Ephemeral });
 
-        const selectedMap = interaction.values[0];
         const userId = interaction.user.id;
+        const allPlayers = [...(match.teamA || []), ...(match.teamB || [])];
+
+        // SADECE TAKIM OYUNCULARI OY KULLANABİLİR
+        if (!allPlayers.includes(userId)) {
+            return interaction.reply({
+                content: '⛔ **Hata:** Oylamaya sadece takımlara seçilmiş oyuncular katılabilir!',
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        const selectedMap = interaction.values[0];
 
         match.votes = match.votes.filter(v => v.userId !== userId);
         match.votes.push({ userId, mapName: selectedMap });

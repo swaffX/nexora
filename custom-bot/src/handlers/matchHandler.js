@@ -13,14 +13,18 @@ module.exports = {
         let action;
         let parts = []; // parts dizisini tanımladık
 
-        if (interaction.commandName === 'setup-match' || interaction.customId === 'match_create') {
+        if (interaction.commandName === 'setup-match' || (interaction.customId && interaction.customId.startsWith('match_create'))) {
             action = 'create';
+            // Custom ID: match_create_1
+            if (interaction.customId) {
+                parts = interaction.customId.split('_');
+            }
         } else if (interaction.customId) {
             parts = interaction.customId.split('_');
             action = parts[1];
         } else return;
 
-        const ADMIN_ACTIONS = ['create', 'cancel', 'endmatch', 'endlobby', 'reset', 'rematch', 'enddraft', 'randomcap'];
+        const ADMIN_ACTIONS = ['create', 'cancel', 'endmatch', 'endlobby', 'reset', 'rematch', 'enddraft', 'randomcap', 'cap', 'captainA', 'captainB'];
         const REQUIRED_ROLE_ID = '1463875325019557920';
 
         if (ADMIN_ACTIONS.includes(action)) {
@@ -33,7 +37,8 @@ module.exports = {
             switch (action) {
                 // --- LOBBY ---
                 case 'create':
-                    await lobby.createLobby(interaction);
+                    // parts[2] = lobbyId (1, 2, 3)
+                    await lobby.createLobby(interaction, parts ? parts[2] : null);
                     break;
                 case 'cancel':
                     await lobby.cancelMatch(interaction);

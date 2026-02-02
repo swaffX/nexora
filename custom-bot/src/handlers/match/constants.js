@@ -21,11 +21,37 @@ const MAPS = [
     { name: 'Sunset', file: 'Sunset.png' }
 ];
 
-let MATCH_CATEGORY_ID = '1463883244436197397';
+
+const LOBBY_CONFIG = {
+    1: {
+        id: 1,
+        name: 'Lobby 1',
+        voiceId: '1463922466467483801',
+        categoryId: '1463883244436197397',
+        setupChannelId: '1464222855398166612'
+    },
+    2: {
+        id: 2,
+        name: 'Lobby 2',
+        voiceId: '1467987380530184194',
+        categoryId: '1467987284623233218',
+        setupChannelId: '1467987345461743638'
+    },
+    3: {
+        id: 3,
+        name: 'Lobby 3',
+        voiceId: '1467987533039403119',
+        categoryId: '1467987452039004346',
+        setupChannelId: '1467987505792946196'
+    }
+};
+
+const BLOCKED_ROLE_ID = '1463875341553635553';
 
 module.exports = {
     MAPS,
-    MATCH_CATEGORY_ID,
-    getCategoryId: () => MATCH_CATEGORY_ID,
-    setCategoryId: (id) => { MATCH_CATEGORY_ID = id; }
+    LOBBY_CONFIG,
+    BLOCKED_ROLE_ID,
+    getLobbyConfig: (lobbyId) => LOBBY_CONFIG[lobbyId],
+    getLobbyBySetupChannel: (channelId) => Object.values(LOBBY_CONFIG).find(l => l.setupChannelId === channelId)
 };

@@ -220,8 +220,7 @@ module.exports = {
         await Promise.all([...match.teamA.map(id => move(id, voiceA.id)), ...match.teamB.map(id => move(id, voiceB.id))]);
 
         const panelRow = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId(`match_endmatch_${match.matchId}`).setLabel('🛑 Maçı Bitir').setStyle(ButtonStyle.Danger),
-            new ButtonBuilder().setCustomId(`match_endlobby_${match.matchId}`).setLabel('❌ Lobiyi Bitir (Kapat)').setStyle(ButtonStyle.Secondary)
+            new ButtonBuilder().setCustomId(`match_endmatch_${match.matchId}`).setLabel('🛑 Maçı Bitir').setStyle(ButtonStyle.Danger)
         );
 
         // Canlı Maç Embed'i Oluştur
@@ -280,13 +279,17 @@ module.exports = {
             await match.save();
 
             const { MessageFlags } = require('discord.js');
-            await interaction.reply({ content: '🏁 Maç bitti! Yönetim paneli açılıyor...', flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: '🏁 Maç ve Lobi sonlandırılıyor...', flags: MessageFlags.Ephemeral });
 
-            // Canlı Maç panelini sil
-            await interaction.message.delete().catch(() => { });
+            // LOBİ BİTİRME İŞLEMİ (Eskiden 'endlobby' idi)
+            const manager = require('./manager');
+            await manager.forceEndMatch(interaction.guild, matchId, 'Maç Bitir butonu ile sonlandırıldı.');
+            await manager.cleanupVoiceChannels(interaction.guild, match);
 
-            // Yeni Kontrol Panelini Göster
-            await this.showNextMatchOptions(interaction.channel, match);
+            // Kanalı 2 saniye sonra sil ki kullanıcı mesajı görsün
+            setTimeout(() => {
+                if (interaction.channel) interaction.channel.delete().catch(() => { });
+            }, 2000);
 
         } else {
             // İlk kez basılmış -> Onay sor
