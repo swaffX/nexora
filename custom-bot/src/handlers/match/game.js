@@ -24,6 +24,7 @@ module.exports = {
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`match_coin_HEADS_${match.matchId}`).setLabel('Yazı').setStyle(ButtonStyle.Secondary).setEmoji('1467551334621253866'),
             new ButtonBuilder().setCustomId(`match_coin_TAILS_${match.matchId}`).setLabel('Tura').setStyle(ButtonStyle.Secondary).setEmoji('1467551298327937044'),
+            new ButtonBuilder().setCustomId(`match_setcode_${match.matchId}`).setLabel('Lobi Kodu Gir').setStyle(ButtonStyle.Primary).setEmoji('🎮'),
             new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('İptal').setEmoji('🛑').setStyle(ButtonStyle.Danger)
         );
 
@@ -266,8 +267,9 @@ module.exports = {
         const embed = new EmbedBuilder()
             .setColor(0xE74C3C) // Live Red
             .setTitle(`🔴 MAÇ BAŞLADI! (LIVE)`)
-            .setDescription(`## 🗺️ Harita: **${match.selectedMap.toUpperCase()}**\nMaç şu an aktif olarak oynanıyor.`)
+            .setDescription(`## 🗺️ Harita: **${match.selectedMap.toUpperCase()}** ${divider}`)
             .addFields(
+                { name: '🎮 VALORANT Lobi Kodu', value: `\`\`\`${match.lobbyCode || 'BEKLENİYOR'}\`\`\``, inline: false },
                 { name: `🔹 ${nameA} (${match.sideA === 'ATTACK' ? '🗡️ ATTACK' : '🛡️ DEFEND'})`, value: listA, inline: true },
                 { name: `🔸 ${nameB} (${match.sideB === 'ATTACK' ? '🗡️ ATTACK' : '🛡️ DEFEND'})`, value: listB, inline: true }
             )

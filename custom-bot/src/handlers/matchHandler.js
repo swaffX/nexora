@@ -88,6 +88,27 @@ module.exports = {
                 case 'sidepick':
                     await game.handleSidePick(interaction);
                     break;
+
+                // --- LOBBY CODE ---
+                case 'setcode':
+                    const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
+                    const modal = new ModalBuilder()
+                        .setCustomId(`modal_lobbycode_${parts[2]}`)
+                        .setTitle('Valorant Lobi Kodu Gir');
+
+                    const codeInput = new TextInputBuilder()
+                        .setCustomId('code_input')
+                        .setLabel("6 Haneli Lobi Kodu")
+                        .setStyle(TextInputStyle.Short)
+                        .setPlaceholder('Örn: ABC123')
+                        .setMinLength(6)
+                        .setMaxLength(6)
+                        .setRequired(true);
+
+                    modal.addComponents(new ActionRowBuilder().addComponents(codeInput));
+                    await interaction.showModal(modal);
+                    break;
+
                 case 'endmatch':
                     await game.endMatch(interaction);
                     break;

@@ -52,7 +52,7 @@ module.exports = {
             // İzinleri Hazırla
             const permissionOverwrites = [
                 { id: guild.roles.everyone.id, deny: [PermissionsBitField.Flags.ViewChannel] }, // Herkese yasak
-                { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }, // Kurucuya izin
+                { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel], deny: [PermissionsBitField.Flags.SendMessages] }, // Kurucu Sadece Okur
                 { id: BLOCKED_ROLE_ID, deny: [PermissionsBitField.Flags.ViewChannel] } // Yasaklı Role Yasak (Garanti)
             ];
 

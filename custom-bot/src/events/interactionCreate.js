@@ -41,6 +41,12 @@ module.exports = {
                 await game.handleScoreSubmit(interaction);
             }
 
+            // Lobby Code Submit
+            if (customId.startsWith('modal_lobbycode_')) {
+                const manager = require('../handlers/match/manager');
+                await manager.handleLobbyCodeSubmit(interaction);
+            }
+
             // Tournament System
             if (customId.startsWith('tour_') || customId.startsWith('modal_tour')) {
                 const tournamentHandler = require('../handlers/tournamentHandler');

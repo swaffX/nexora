@@ -160,5 +160,26 @@ module.exports = {
     async checkTimeouts(client) {
         // Otomatik silme iptal edildi.
         return;
+    },
+
+    async handleLobbyCodeSubmit(interaction) {
+        const matchId = interaction.customId.split('_')[2];
+        const { Match } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
+        const match = await Match.findOne({ matchId });
+
+        if (!match) return interaction.reply({ content: 'Maç bulunamadı.', flags: require('discord.js').MessageFlags.Ephemeral });
+
+        const code = interaction.fields.getTextInputValue('code_input');
+
+        if (!code || code.length !== 6) {
+            return interaction.reply({ content: '❌ Lobi kodu 6 haneli olmalıdır!', flags: require('discord.js').MessageFlags.Ephemeral });
+        }
+
+        match.lobbyCode = code.toUpperCase();
+        await match.save();
+
+        await interaction.reply({ content: `✅ **Lobi Kodu Kaydedildi:** \`${match.lobbyCode}\``, flags: require('discord.js').MessageFlags.Ephemeral });
+
+        // (Opsiyonel) Embed güncellemesi buradan da yapılabilir ama zaten Live geçince görünecek.
     }
 };
