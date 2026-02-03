@@ -19,6 +19,7 @@ module.exports = {
             .setTitle('🪙 YAZI TURA ZAMANI')
             .setDescription(`**Kaptan'ın Kararı Bekleniyor!**\n\n<@${match.captainA}>, parayı havaya at!\nKazanan taraf, harita tarafını (Attack/Defend) seçer.`)
             .setThumbnail('https://media.tenor.com/T0T_vO3h6kEAAAAi/coin-flip-coin.gif') // Ufak bir spin animasyonu
+            .addFields({ name: '🎮 VALORANT Lobi Kodu', value: match.lobbyCode ? `\`\`\`${match.lobbyCode}\`\`\`` : 'Bekleniyor...', inline: false })
             .setFooter({ text: 'Nexora Coin System' });
 
         const row = new ActionRowBuilder().addComponents(

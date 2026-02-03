@@ -37,6 +37,8 @@ module.exports = {
             embed.addFields({ name: '🚫 Oynanmış Haritalar', value: played.join(', ') });
         }
 
+        embed.addFields({ name: '🎮 VALORANT Lobi Kodu', value: match.lobbyCode ? `\`\`\`${match.lobbyCode}\`\`\`` : 'Bekleniyor...', inline: false });
+
         const options = mapsToVote.map(m => ({ label: m.name, value: m.name, emoji: '🗺️' }));
         // Eğer tüm haritalar oynandıysa sıfırla veya hepsi açık
         const finalOptions = options.length > 0 ? options : MAPS.map(m => ({ label: m.name, value: m.name, emoji: '🗺️' }));
