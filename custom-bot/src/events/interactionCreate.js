@@ -47,6 +47,14 @@ module.exports = {
                 await manager.handleLobbyCodeSubmit(interaction);
             }
 
+            // Lobby Code Submit (Admin Setup)
+            if (customId.startsWith('modal_create_match_')) {
+                const lobbyId = customId.split('_')[3];
+                const code = interaction.fields.getTextInputValue('lobby_code');
+                const lobby = require('../handlers/match/lobby');
+                await lobby.createLobby(interaction, lobbyId, code);
+            }
+
             // Tournament System
             if (customId.startsWith('tour_') || customId.startsWith('modal_tour')) {
                 const tournamentHandler = require('../handlers/tournamentHandler');

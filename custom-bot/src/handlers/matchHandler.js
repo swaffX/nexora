@@ -36,10 +36,26 @@ module.exports = {
         try {
             switch (action) {
                 // --- LOBBY ---
-                case 'create':
+                case 'create': {
                     // parts[2] = lobbyId (1, 2, 3)
-                    await lobby.createLobby(interaction, parts ? parts[2] : null);
+                    const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
+                    const modal = new ModalBuilder()
+                        .setCustomId(`modal_create_match_${parts ? parts[2] : '1'}`)
+                        .setTitle('Maç Oluştur');
+
+                    const codeInput = new TextInputBuilder()
+                        .setCustomId('lobby_code')
+                        .setLabel("Valorant Lobi Kodu (6 Hane)")
+                        .setStyle(TextInputStyle.Short)
+                        .setPlaceholder('Örn: ABC123')
+                        .setMinLength(6)
+                        .setMaxLength(6)
+                        .setRequired(true);
+
+                    modal.addComponents(new ActionRowBuilder().addComponents(codeInput));
+                    await interaction.showModal(modal);
                     break;
+                }
                 case 'cancel':
                     await lobby.cancelMatch(interaction);
                     break;
@@ -90,7 +106,7 @@ module.exports = {
                     break;
 
                 // --- LOBBY CODE ---
-                case 'setcode':
+                case 'setcode': {
                     const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
                     const modal = new ModalBuilder()
                         .setCustomId(`modal_lobbycode_${parts[2]}`)
@@ -108,6 +124,7 @@ module.exports = {
                     modal.addComponents(new ActionRowBuilder().addComponents(codeInput));
                     await interaction.showModal(modal);
                     break;
+                }
 
                 case 'endmatch':
                     await game.endMatch(interaction);

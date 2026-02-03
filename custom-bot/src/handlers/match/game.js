@@ -24,7 +24,6 @@ module.exports = {
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`match_coin_HEADS_${match.matchId}`).setLabel('Yazı').setStyle(ButtonStyle.Secondary).setEmoji('1467551334621253866'),
             new ButtonBuilder().setCustomId(`match_coin_TAILS_${match.matchId}`).setLabel('Tura').setStyle(ButtonStyle.Secondary).setEmoji('1467551298327937044'),
-            new ButtonBuilder().setCustomId(`match_setcode_${match.matchId}`).setLabel('Lobi Kodu Gir').setStyle(ButtonStyle.Primary).setEmoji('🎮'),
             new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('İptal').setEmoji('🛑').setStyle(ButtonStyle.Danger)
         );
 
