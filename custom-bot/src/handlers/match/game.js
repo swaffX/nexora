@@ -297,50 +297,41 @@ module.exports = {
         const match = await Match.findOne({ matchId });
         if (!match) return;
 
-        // Onay İste (Güvenlik Kilidi)
-        if (interaction.customId.includes('_confirm')) {
-            // İkinci kez basılmış (Onaylanmış)
-
-            // Zaten bitmişse tekrar işlem yapma
-            if (match.status === 'FINISHED') {
-                return interaction.reply({ content: '⚠️ Bu maç zaten sonlandırılmış.', flags: require('discord.js').MessageFlags.Ephemeral });
-            }
-
-            // Durumu Güncelle
-            match.status = 'FINISHED';
-            if (!match.playedMaps.includes(match.selectedMap)) {
-                match.playedMaps.push(match.selectedMap);
-            }
-            await match.save();
-
-            const { MessageFlags } = require('discord.js');
-            await interaction.reply({ content: '🏁 Maç ve Lobi sonlandırılıyor...', flags: MessageFlags.Ephemeral });
-
-            // LOBİ BİTİRME İŞLEMİ (Eskiden 'endlobby' idi)
-            const manager = require('./manager');
-            await manager.forceEndMatch(interaction.guild, matchId, 'Maç Bitir butonu ile sonlandırıldı.');
-            await manager.cleanupVoiceChannels(interaction.guild, match);
-
-            // Kanalı 2 saniye sonra sil ki kullanıcı mesajı görsün
-            setTimeout(() => {
-                if (interaction.channel) interaction.channel.delete().catch(() => { });
-            }, 2000);
-
-        } else {
-            // İlk kez basılmış -> Onay sor
-            const { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
-
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId(`match_endmatch_${matchId}_confirm`).setLabel('Evet, Bitir').setStyle(ButtonStyle.Danger),
-                new ButtonBuilder().setCustomId('match_abort_end').setLabel('İptal').setStyle(ButtonStyle.Secondary)
-            );
-
-            await interaction.reply({
-                content: '⚠️ **Maçı bitirmek üzeresiniz!**\nBu işlem geri alınamaz. Emin misiniz?',
-                components: [row],
-                flags: MessageFlags.Ephemeral
-            });
+        // ÇİFT BASMA KORUMASI
+        // Eğer durumu zaten FINISHING veya FINISHED ise durdur
+        if (match.status === 'FINISHING' || match.status === 'FINISHED') {
+            return interaction.reply({ content: '⚠️ Bu maç şu an sonlandırılıyor veya zaten bitti.', flags: require('discord.js').MessageFlags.Ephemeral });
         }
+
+        // Durumu kilitle (Diğer yetkili basamasın)
+        match.status = 'FINISHING';
+        await match.save();
+
+        const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
+
+        const modal = new ModalBuilder()
+            .setCustomId(`modal_score_${matchId}`)
+            .setTitle('Maç Sonucu & Skor');
+
+        const scoreA = new TextInputBuilder()
+            .setCustomId('score_a')
+            .setLabel(`Team A Skoru (${interaction.guild.members.cache.get(match.captainA)?.displayName || 'A'})`)
+            .setStyle(TextInputStyle.Short)
+            .setPlaceholder('Örn: 13')
+            .setMaxLength(2)
+            .setRequired(true);
+
+        const scoreB = new TextInputBuilder()
+            .setCustomId('score_b')
+            .setLabel(`Team B Skoru (${interaction.guild.members.cache.get(match.captainB)?.displayName || 'B'})`)
+            .setStyle(TextInputStyle.Short)
+            .setPlaceholder('Örn: 9')
+            .setMaxLength(2)
+            .setRequired(true);
+
+        modal.addComponents(new ActionRowBuilder().addComponents(scoreA), new ActionRowBuilder().addComponents(scoreB));
+
+        await interaction.showModal(modal);
     },
 
 
@@ -371,5 +362,85 @@ module.exports = {
             }
         }
         await match.save();
+    },
+
+    async handleScoreSubmit(interaction) {
+        const matchId = interaction.customId.split('_')[2];
+        const match = await Match.findOne({ matchId });
+        if (!match) return interaction.reply({ content: 'Maç bulunamadı.', flags: require('discord.js').MessageFlags.Ephemeral });
+
+        const scoreA = interaction.fields.getTextInputValue('score_a');
+        const scoreB = interaction.fields.getTextInputValue('score_b');
+
+        // Skorları kaydet (Database şemasına bu alanlar eklenmeli veya metaData içinde tutulmalı)
+        // Şimdilik basitleştirilmiş bir yapı kullanıyorum, gerekirse modele ekleriz.
+        match.scoreA = scoreA;
+        match.scoreB = scoreB;
+        await match.save();
+
+        const { MessageFlags } = require('discord.js');
+        await interaction.reply({
+            content: `✅ Skorlar alındı: **${scoreA} - ${scoreB}**\n\n📸 **Lütfen Maç Sonu Tablosunun Ekran Görüntüsünü (SS) bu kanala yükleyin.**\nSS yüklendiği an maç otomatik sonlandırılacak ve geçmişe işlenecektir.`,
+            flags: MessageFlags.Ephemeral
+        });
+
+        // SS Bekleme Mesajı
+        await interaction.channel.send({ content: `🛎️ <@${interaction.user.id}> **Skor Tablosu SS'i bekleniyor...**\nLütfen görseli buraya yükleyin.` });
+    },
+
+    async completeMatchWithEvidence(message, match) {
+        const { EmbedBuilder } = require('discord.js');
+        const manager = require('./manager');
+
+        // Maçı Bitir
+        match.status = 'FINISHED';
+        match.evidenceUrl = message.attachments.first().url; // Kanıtı kaydet
+        if (!match.playedMaps.includes(match.selectedMap)) {
+            match.playedMaps.push(match.selectedMap);
+        }
+        await match.save();
+
+        message.channel.send('✅ **Kanıt Alındı!** Maç sonlandırılıyor ve istatistiklere işleniyor...');
+
+        // LOG KANALI (Match History)
+        const LOG_CHANNEL_ID = '1468318739278729472';
+        const logChannel = message.guild.channels.cache.get(LOG_CHANNEL_ID);
+
+        if (logChannel) {
+            const date = new Date().toLocaleDateString('tr-TR');
+            const time = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+
+            // LOBİ ADINI BUL
+            const { LOBBY_CONFIG } = require('./constants');
+            const lobbyConfig = Object.values(LOBBY_CONFIG).find(l => l.voiceId === match.lobbyVoiceId);
+            const lobbyName = lobbyConfig ? lobbyConfig.name : 'Unknown Lobby';
+
+            const historyEmbed = new EmbedBuilder()
+                .setColor(0x2F3136)
+                .setAuthor({ name: `Maç Özeti • #${match.matchNumber}`, iconURL: message.guild.iconURL() })
+                .setDescription(`**Bitiş Nedeni:** Maç Bitir butonu ile sonlandırıldı.\nKısa süre önce sonlandırıldı.`)
+                .addFields(
+                    { name: '🗺️ Oynanan Harita', value: match.selectedMap || 'Bilinmiyor', inline: true },
+                    { name: '📍 Lobi', value: lobbyName, inline: true },
+                    { name: '⏱️ Oynanış Süresi', value: `${date}`, inline: true }, // Süre hesaplama eklenebilir
+                    { name: '👑 Oluşturan', value: `<@${match.hostId}>`, inline: true },
+                    { name: '📆 Tarih', value: `${date}`, inline: true },
+                    { name: '\u200b', value: '\u200b', inline: true }, // Boşluk
+                    { name: `🔵 DEFEND`, value: match.teamA.map(id => `<@${id}>`).join(', ') || 'Yok', inline: false },
+                    { name: `🔴 ATTACK`, value: match.teamB.map(id => `<@${id}>`).join(', ') || 'Yok', inline: false }
+                )
+                .setImage(match.evidenceUrl)
+                .setFooter({ text: `Nexora Competitive • Match ID: ${match.matchId} • ${date} ${time}` });
+
+            await logChannel.send({ embeds: [historyEmbed] });
+        }
+
+        // Lobi Temizliği ve Kapanış
+        await manager.forceEndMatch(message.guild, match.matchId, 'Skor ve SS ile sonlandırıldı.');
+        await manager.cleanupVoiceChannels(message.guild, match);
+
+        setTimeout(() => {
+            if (message.channel) message.channel.delete().catch(() => { });
+        }, 5000); // 5 Saniye sonra sil
     }
 };
