@@ -132,8 +132,9 @@ module.exports = {
                 // winner case is removed
 
                 // --- SCORE ---
-                case 'openscore':
-                    await game.openScoreModal(interaction);
+                case 'openscore': // Legacy/Backup
+                case 'enterscore':
+                    await game.showScoreModal(interaction);
                     break;
 
                 case 'rematch':
