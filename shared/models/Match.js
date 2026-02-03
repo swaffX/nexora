@@ -9,7 +9,7 @@ const matchSchema = new mongoose.Schema({
     matchNumber: { type: Number, index: true }, // Sıralı Maç ID (Örn: #1, #2...)
 
     // Durum
-    status: { type: String, enum: ['SETUP', 'DRAFT', 'VOTING', 'VETO', 'COIN_FLIP', 'SIDE_SELECTION', 'LIVE', 'FINISHED', 'CANCELLED'], default: 'SETUP' },
+    status: { type: String, enum: ['SETUP', 'DRAFT', 'VOTING', 'VETO', 'COIN_FLIP', 'SIDE_SELECTION', 'LIVE', 'FINISHING', 'FINISHED', 'CANCELLED'], default: 'SETUP' },
 
     // Takımlar
     captainA: { type: String },
@@ -36,6 +36,9 @@ const matchSchema = new mongoose.Schema({
     bannedMaps: [{ type: String }],
     selectedMap: { type: String },
 
+    // Lobby Code (Yeni)
+    lobbyCode: { type: String },
+
     // Side Selection
     coinFlipWinner: { type: String }, // A veya B
     sideA: { type: String }, // Attack / Defend
@@ -56,9 +59,10 @@ const matchSchema = new mongoose.Schema({
     scoreA: { type: Number, default: 0 },
     scoreB: { type: Number, default: 0 },
 
-    // Maç Sonucu
+    // Maç Sonucu ve Kanıt
     winnerTeam: { type: String, enum: ['A', 'B'] },
-    playedMaps: { type: [String], default: [] } // Bu lobide oynanan haritalar
+    playedMaps: { type: [String], default: [] }, // Bu lobide oynanan haritalar
+    evidenceUrl: { type: String } // Maç Sonu SS Linki
 }, { timestamps: true });
 
 module.exports = mongoose.model('Match', matchSchema);
