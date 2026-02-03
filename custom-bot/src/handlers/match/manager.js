@@ -71,23 +71,35 @@ module.exports = {
                 const endTime = new Date();
                 const durationMs = endTime - startTime;
                 const durationMinutes = Math.floor(durationMs / 60000);
-                const durationHours = Math.floor(durationMinutes / 60);
-                const durationStr = `${durationHours > 0 ? `${durationHours} sa ` : ''}${durationMinutes % 60} dk`;
+                const durationStr = `${Math.floor(durationMinutes / 60)}s ${durationMinutes % 60}dk`;
 
                 // Katılımcılar
-                const formatTeam = (ids) => ids.map(id => `<@${id}>`).join(', ') || 'Yok';
+                const formatTeamData = (ids) => {
+                    const list = ids.map(id => `<@${id}>`).join(', ');
+                    return list.length > 1024 ? list.substring(0, 1021) + '...' : list || 'Yok';
+                };
+
+                // Taraf Bilgisi (Varsa)
+                const sideA = match.sideA === 'ATTACK' ? '🗡️ ATTACK' : (match.sideA === 'DEFEND' ? '🛡️ DEFEND' : 'Team A');
+                const sideB = match.sideB === 'ATTACK' ? '🗡️ ATTACK' : (match.sideB === 'DEFEND' ? '🛡️ DEFEND' : 'Team B');
 
                 const embed = new EmbedBuilder()
-                    .setColor(0x3498DB)
-                    .setTitle(`📝 Maç Sonuçlandı (#${match.matchNumber || '?'})`)
+                    .setColor(0x2B2D31) // Modern Dark Grey
+                    .setAuthor({ name: `Maç Özeti • #${match.matchNumber || match.matchId}`, iconURL: guild.iconURL() })
+                    .setDescription(`**Bitiş Nedeni:** ${reason}\n<t:${Math.floor(endTime.getTime() / 1000)}:R> sonlandırıldı.`)
                     .addFields(
-                        { name: '📍 Lobi', value: lobbyName, inline: true },
-                        { name: '👑 Oluşturan Yetkili', value: `<@${match.hostId}>`, inline: true },
-                        { name: '⏱️ Süre', value: `\`${durationStr}\`\n(<t:${Math.floor(startTime.getTime() / 1000)}:t> - <t:${Math.floor(endTime.getTime() / 1000)}:t>)`, inline: true },
-                        { name: '🔵 Team A', value: formatTeam(match.teamA), inline: false },
-                        { name: '🔴 Team B', value: formatTeam(match.teamB), inline: false }
+                        { name: '🗺️ Oynanan Harita', value: `\`\`\`${match.selectedMap?.toUpperCase() || 'SEÇİLMEDİ'}\`\`\``, inline: true },
+                        { name: '📍 Lobi', value: `**${lobbyName}**`, inline: true },
+                        { name: '⏱️ Oynanış Süresi', value: `\`${durationStr}\``, inline: true },
+
+                        { name: '👑 Oluşturan', value: `<@${match.hostId}>`, inline: true },
+                        { name: '📅 Tarih', value: `<t:${Math.floor(Date.now() / 1000)}:d>`, inline: true },
+                        { name: '\u200b', value: '\u200b', inline: true }, // Hizalama Boşluğu
+
+                        { name: `🔵 ${sideA}`, value: formatTeamData(match.teamA), inline: false },
+                        { name: `🔴 ${sideB}`, value: formatTeamData(match.teamB), inline: false }
                     )
-                    .setFooter({ text: `Nexora Logs • Match ID: ${matchId}` })
+                    .setFooter({ text: `Nexora Competitive • Match ID: ${matchId}` })
                     .setTimestamp();
 
                 await logsChannel.send({ embeds: [embed] });
