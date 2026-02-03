@@ -259,8 +259,9 @@ module.exports = {
 
         // Oyuncu Listelerini Oluştur
         // Tasarım Güncellemesi
-        const listA = `<a:ayrma:1468003499072688309>\n${match.teamA.map(id => `<@${id}>`).join('\n') || 'Oyuncu yok'}`;
-        const listB = `<a:ayrma:1468003499072688309>\n${match.teamB.map(id => `<@${id}>`).join('\n') || 'Oyuncu yok'}`;
+        const divider = '<a:ayrma:1468003499072688309>'.repeat(5); // 5 tane yan yana
+        const listA = `${divider}\n${match.teamA.map(id => `<@${id}>`).join('\n') || 'Oyuncu yok'}`;
+        const listB = `${divider}\n${match.teamB.map(id => `<@${id}>`).join('\n') || 'Oyuncu yok'}`;
 
         const embed = new EmbedBuilder()
             .setColor(0xE74C3C) // Live Red
