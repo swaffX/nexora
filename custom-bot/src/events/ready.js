@@ -41,5 +41,18 @@ module.exports = {
 
         // Otomatik maç timeout kontrolü devre dışı bırakıldı
         // Maçlar artık manuel olarak bitirilmeli
+
+        // --- LEADERBOARD GÜNCELLEYİCİ ---
+        try {
+            const leaderboard = require('../handlers/leaderboard');
+            leaderboard.updateLeaderboard(client); // İlk açılışta bir kez çalıştır
+
+            setInterval(() => {
+                leaderboard.updateLeaderboard(client);
+            }, 10 * 60 * 1000); // Her 10 dakikada bir güncelle
+            logger.info('📊 Leaderboard servisi başlatıldı.');
+        } catch (err) {
+            logger.error('Leaderboard servisi hatası:', err);
+        }
     },
 };

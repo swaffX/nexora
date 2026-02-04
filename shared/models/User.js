@@ -112,6 +112,15 @@ const userSchema = new mongoose.Schema({
         jailedAt: { type: Date, default: null },
         jailedUntil: { type: Date, default: null }, // Tahliye tarihi
         reason: { type: String, default: null }
+    },
+
+    // Maç İstatistikleri (FaceIT ELO Sistemi)
+    matchStats: {
+        totalMatches: { type: Number, default: 0 },
+        totalWins: { type: Number, default: 0 },
+        totalLosses: { type: Number, default: 0 },
+        elo: { type: Number, default: 1000 }, // Başlangıç 1000
+        matchLevel: { type: Number, default: 3 } // Başlangıç Level 3
     }
 
 }, { timestamps: true });

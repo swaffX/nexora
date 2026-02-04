@@ -1,6 +1,6 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder, AttachmentBuilder } = require('discord.js');
 const path = require('path');
-const { Match } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
+const { Match, User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const votingHandler = require('./voting');
 
 // Her maç için aktif timer'ı tutar
@@ -71,7 +71,24 @@ module.exports = {
         for (const pid of match.availablePlayerIds) {
             try {
                 const p = await interaction.guild.members.fetch(pid);
-                poolOptions.push({ label: p.displayName.substring(0, 25), value: p.id, emoji: '👤' });
+
+                // Level ve ELO bilgisini çek
+                let userLevel = 1; // Default
+                let userElo = 1000; // Default
+
+                try {
+                    const userDoc = await User.findOne({ odasi: pid, odaId: interaction.guild.id });
+                    if (userDoc && userDoc.matchStats) {
+                        userLevel = userDoc.matchStats.matchLevel || 3;
+                        userElo = userDoc.matchStats.elo !== undefined ? userDoc.matchStats.elo : 1000;
+                    }
+                } catch (err) { }
+
+                poolOptions.push({
+                    label: `[Lv. ${userLevel} - ${userElo}] ${p.displayName.substring(0, 15)}`,
+                    value: p.id,
+                    emoji: '👤'
+                });
             } catch (e) { }
         }
 
@@ -81,7 +98,6 @@ module.exports = {
         const formatTeam = (teamIds) => {
             const maxSlots = 5;
             const lines = [];
-            // \u2000 (En Quad) veya \u3000 (Ideographic Space) kullanarak yapay genişlik oluşturuyoruz.
             const padding = '\u2000\u2000\u2000\u2000';
 
             for (let i = 0; i < maxSlots; i++) {
@@ -118,12 +134,12 @@ module.exports = {
                 match.draftMessageId = msg.id;
                 await match.save();
             } else {
+                // Güvenli Yanıt (Replied? Deferred?)
                 if (interaction.replied || interaction.deferred) {
                     if (interaction.message) await interaction.update({ content: null, embeds: [embed], components: components });
-                    else await interaction.channel.send({ embeds: [embed], components: components });
+                    else await interaction.channel.send({ embeds: [embed], components: components }); // Fallback
                 } else {
-                    if (interaction.isMessageComponent()) await interaction.update({ content: null, embeds: [embed], components: components });
-                    else await interaction.update({ content: null, embeds: [embed], components: components });
+                    await interaction.update({ content: null, embeds: [embed], components: components });
                 }
             }
         } catch (e) { console.error("Update Draft UI Error:", e); }

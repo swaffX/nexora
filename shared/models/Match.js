@@ -62,7 +62,9 @@ const matchSchema = new mongoose.Schema({
     // Maç Sonucu ve Kanıt
     winnerTeam: { type: String, enum: ['A', 'B'] },
     playedMaps: { type: [String], default: [] }, // Bu lobide oynanan haritalar
-    evidenceUrl: { type: String } // Maç Sonu SS Linki
+    lobbyCode: { type: String }, // Valorant Lobi Kodu
+    evidenceUrl: { type: String }, // Maç Sonu SS Linki
+    mvpPlayerId: { type: String } // Maçın MVP'si
 }, { timestamps: true });
 
 module.exports = mongoose.model('Match', matchSchema);

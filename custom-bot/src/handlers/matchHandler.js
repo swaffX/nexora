@@ -131,10 +131,14 @@ module.exports = {
                     break;
                 // winner case is removed
 
-                // --- SCORE ---
+                // --- SCORE & MVP ---
                 case 'openscore': // Legacy/Backup
-                case 'enterscore':
-                    await game.showScoreModal(interaction);
+                case 'enterscore': // Legacy
+                case 'selectmvp':
+                    await game.openMVPSelectMenu(interaction);
+                    break;
+                case 'mvp': // User Select Menu
+                    await game.handleMVPSelect(interaction);
                     break;
 
                 case 'rematch':
