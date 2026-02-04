@@ -121,8 +121,8 @@ const userSchema = new mongoose.Schema({
         totalLosses: { type: Number, default: 0, min: 0 },
         elo: {
             type: Number,
-            default: 100,
-            min: [100, 'ELO cannot be below 100'],
+            default: 200,
+            min: [0, 'ELO cannot be below 0'],
             max: [3000, 'ELO cannot exceed 3000']
         },
         matchLevel: {
