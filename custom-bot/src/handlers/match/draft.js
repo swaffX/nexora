@@ -75,20 +75,34 @@ module.exports = {
 
                 // Level ve ELO bilgisini çek
                 let userLevel = 1; // Default
-                let userElo = 1000; // Default
+                let userElo = 100; // Default (1000 değil, 100 Floor)
 
                 try {
                     const userDoc = await User.findOne({ odasi: pid, odaId: interaction.guild.id });
                     if (userDoc && userDoc.matchStats) {
-                        userLevel = userDoc.matchStats.matchLevel || 3;
-                        userElo = userDoc.matchStats.elo !== undefined ? userDoc.matchStats.elo : 1000;
+                        userLevel = userDoc.matchStats.matchLevel || 1;
+                        userElo = userDoc.matchStats.elo !== undefined ? userDoc.matchStats.elo : 100;
                     }
                 } catch (err) { }
 
+                const LEVEL_EMOJIS = {
+                    1: '1468451643355041815',
+                    2: '1468451665265819749',
+                    3: '1468451677295345829',
+                    4: '1468451696693743729',
+                    5: '1468451709754933389',
+                    6: '1468451723071717426',
+                    7: '1468451735478472923',
+                    8: '1468451750813110312',
+                    9: '1468451768009621525',
+                    10: '1468451780777214185'
+                };
+
                 poolOptions.push({
-                    label: `[Lv. ${userLevel} - ${userElo}] ${p.displayName.substring(0, 15)}`,
+                    label: `${p.displayName.substring(0, 25)}`,
                     value: p.id,
-                    emoji: '👤'
+                    emoji: LEVEL_EMOJIS[userLevel] || '1468451643355041815', // Varsayılan Level 1
+                    description: `Level: ${userLevel} • ELO: ${userElo}`
                 });
             } catch (e) { }
         }

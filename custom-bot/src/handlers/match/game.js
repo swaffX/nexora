@@ -64,8 +64,15 @@ module.exports = {
                     parent: parentCategory.id,
                     userLimit: 5,
                     permissionOverwrites: [
-                        { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
-                        ...match.teamA.map(id => ({ id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect] }))
+                        {
+                            id: guild.roles.everyone.id,
+                            allow: [PermissionFlagsBits.ViewChannel],
+                            deny: [PermissionFlagsBits.Connect, PermissionFlagsBits.SendMessages]
+                        },
+                        ...match.teamA.map(id => ({
+                            id,
+                            allow: [PermissionFlagsBits.Connect, PermissionFlagsBits.Speak, PermissionFlagsBits.Stream, PermissionFlagsBits.UseVAD]
+                        }))
                     ]
                 });
 
@@ -76,8 +83,15 @@ module.exports = {
                     parent: parentCategory.id,
                     userLimit: 5,
                     permissionOverwrites: [
-                        { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
-                        ...match.teamB.map(id => ({ id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect] }))
+                        {
+                            id: guild.roles.everyone.id,
+                            allow: [PermissionFlagsBits.ViewChannel],
+                            deny: [PermissionFlagsBits.Connect, PermissionFlagsBits.SendMessages]
+                        },
+                        ...match.teamB.map(id => ({
+                            id,
+                            allow: [PermissionFlagsBits.Connect, PermissionFlagsBits.Speak, PermissionFlagsBits.Stream, PermissionFlagsBits.UseVAD]
+                        }))
                     ]
                 });
 
@@ -145,37 +159,33 @@ module.exports = {
             }
         }
 
-        const formatTeamList = (ids) => ids.map(id => `> <@${id}>`).join('\n');
+        const captainA = await channel.guild.members.fetch(match.captainA).catch(() => ({ displayName: 'PLAYER A' }));
+        const captainB = await channel.guild.members.fetch(match.captainB).catch(() => ({ displayName: 'PLAYER B' }));
+
+        const nameA = `TEAM ${captainA.displayName.toUpperCase()}`;
+        const nameB = `TEAM ${captainB.displayName.toUpperCase()}`;
+
+        const divider = '<a:ayrma:1468003499072688309>'.repeat(5);
+
+        const listA = `${divider}\n${match.teamA.map(id => `<@${id}>`).join('\n') || 'Oyuncu yok'}`;
+        const listB = `${divider}\n${match.teamB.map(id => `<@${id}>`).join('\n') || 'Oyuncu yok'}`;
 
         const embed = new EmbedBuilder()
-            .setColor(0xFF4654)
-            .setTitle(`⚔️ MAÇ BAŞLADI! (#${match.matchNumber})`)
-            .setDescription(`Savaş başladı! İyi olan kazansın.\n\n🗺️ **Harita:** \`${match.selectedMap}\``)
+            .setColor(0xE74C3C) // Live Red
+            .setTitle(`🔴 MAÇ BAŞLADI! (LIVE)`)
+            .setDescription(`## 🗺️ Harita: **${match.selectedMap.toUpperCase()}** ${divider}`)
             .addFields(
-                {
-                    name: `🔵 TEAM A (${match.teamASide === 'ATTACK' ? '🗡️ Saldırı' : '🛡️ Savunma'})`,
-                    value: formatTeamList(match.teamA),
-                    inline: true
-                },
-                {
-                    name: `🔴 TEAM B (${match.teamBSide === 'ATTACK' ? '🗡️ Saldırı' : '🛡️ Savunma'})`,
-                    value: formatTeamList(match.teamB),
-                    inline: true
-                },
-                {
-                    name: 'Kaptanlar',
-                    value: `🔵 <@${match.captainA}> vs 🔴 <@${match.captainB}>`,
-                    inline: false
-                }
+                { name: '🎮 VALORANT Lobi Kodu', value: `\`\`\`${match.lobbyCode || 'BEKLENİYOR'}\`\`\``, inline: false },
+                { name: `🔹 ${nameA} (${match.teamASide === 'ATTACK' ? '🗡️ ATTACK' : '🛡️ DEFEND'})`, value: listA, inline: true },
+                { name: `🔸 ${nameB} (${match.teamBSide === 'ATTACK' ? '🗡️ ATTACK' : '🛡️ DEFEND'})`, value: listB, inline: true }
             )
-            .setThumbnail('https://cdn-icons-png.flaticon.com/512/12369/12369138.png')
-            .setFooter({ text: `Nexora Competitive • Match ID: ${match.matchId} • İyi Oyunlar!` })
+            .setFooter({ text: 'Maç devam ediyor... İyi şanslar! • Made by Swaff' })
             .setTimestamp();
 
         if (mapAttachment) {
             embed.setImage(`attachment://${mapImageName}`);
         } else {
-            // İnternetten bulmaya çalış veya gif koy
+            // Fallback
             embed.setImage('https://media1.tenor.com/m/xR0y16wVbQcAAAAC/valorant-clutch.gif');
         }
 
@@ -193,7 +203,6 @@ module.exports = {
             );
 
         const payload = {
-            content: `<@&${match.guildId === '123' ? 'ROLE_ID' : ''}> @here **Maç Başladı!** Ses kanallarına geçiş yapıldı.`,
             embeds: [embed],
             components: [row]
         };
@@ -443,7 +452,7 @@ module.exports = {
             interaction.channel.send(`✅ **Maç Bitti! Puanlar Hesaplandı (Balanced System).**\n📊 **Ortalamalar:** Team A (${avgEloA}) vs Team B (${avgEloB})\nKanal siliniyor...`);
             setTimeout(() => {
                 interaction.channel.delete().catch(() => { });
-            }, 4000);
+            }, 3000);
         }
     }
 };
