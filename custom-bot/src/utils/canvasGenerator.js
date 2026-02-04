@@ -3,7 +3,7 @@ const path = require('path');
 
 // ELO ARALIKLARI
 // Level 1: 100 - 500
-// Level 2: 501 - 700 
+// Level 2: 501 - 750
 // ...
 const getLevelInfo = (elo) => {
     if (elo <= 500) return { lv: 1, min: 100, max: 500, color: '#00ff00' };
@@ -53,13 +53,11 @@ module.exports = {
         const centerX = 300;
         const centerY = 250;
 
-        // *Yuvarlak Bar Kaldırıldı*
-        // Sadece İkon
         try {
             const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${currentLevel}.png`);
             const icon = await loadImage(iconPath);
 
-            const iconSize = 250; // İkon biraz daha büyüdü
+            const iconSize = 250;
             ctx.drawImage(icon, centerX - (iconSize / 2), centerY - (iconSize / 2), iconSize, iconSize);
         } catch (e) {
             console.error('Icon Load Error:', e);
@@ -141,8 +139,8 @@ module.exports = {
         return canvas.toBuffer();
     },
 
-    // Leaderboard logic remains similar but simplified if needed
     async createLeaderboardImage(users) {
+        // LEIDEBOARD DA RETINA KALİTESİ
         const rowHeight = 150;
         const width = 2000;
         const height = (users.length * rowHeight) + 200;
@@ -152,26 +150,32 @@ module.exports = {
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
 
+        // Arkaplan
         ctx.fillStyle = '#181818';
         ctx.fillRect(0, 0, width, height);
 
+        // Header
         ctx.fillStyle = '#ff5500';
         ctx.fillRect(0, 0, 20, height);
 
+        // Başlık (Sol)
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 80px sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText('NEXORA TOP 10 LEADERBOARD', 100, 120);
+        ctx.fillText('TOP 10 LEADERBOARD', 60, 120);
 
+        // Tarih (Sağ - Çakışmayı Önlemek İçin)
         ctx.font = '40px sans-serif';
         ctx.fillStyle = '#888';
-        ctx.fillText(`Last Update: ${new Date().toLocaleTimeString('tr-TR')}`, 1300, 120);
+        ctx.textAlign = 'right'; // EN SAĞA YASLA
+        ctx.fillText(`Update: ${new Date().toLocaleTimeString('tr-TR')}`, 1950, 120);
 
+        // Çizgi
         ctx.strokeStyle = '#333';
         ctx.lineWidth = 4;
         ctx.beginPath();
-        ctx.moveTo(100, 180);
-        ctx.lineTo(1900, 180);
+        ctx.moveTo(60, 180);
+        ctx.lineTo(1940, 180);
         ctx.stroke();
 
         let y = 280;
@@ -181,6 +185,7 @@ module.exports = {
             const stats = user.matchStats || { elo: 100 };
             const lvlInfo = getLevelInfo(stats.elo);
 
+            // Sıra No
             ctx.font = 'bold 60px sans-serif';
             ctx.textAlign = 'center';
             let rankColor = '#ffffff';
@@ -212,7 +217,7 @@ module.exports = {
             const wr = total > 0 ? Math.round((wins / total) * 100) : 0;
             ctx.fillStyle = wr >= 50 ? '#00ff00' : '#ff4400';
             ctx.font = '40px sans-serif';
-            ctx.fillText(`%${wr} WR`, 1800, y + 15);
+            ctx.fillText(`%${wr} WR`, 1900, y + 15);
 
             y += rowHeight;
         }
