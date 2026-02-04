@@ -355,6 +355,11 @@ module.exports = {
     },
 
     async handleWinnerMVP(interaction, match) {
+        // Zaten seçildiyse yoksay (race condition önlemi)
+        if (match.mvpPlayerId) {
+            return interaction.reply({ content: '🏆 Zaten Kazanan MVP seçildi!', flags: MessageFlags.Ephemeral });
+        }
+
         const selectedMVPId = interaction.values[0];
         match.mvpPlayerId = selectedMVPId; // Winner MVP
         await match.save();
@@ -421,6 +426,11 @@ module.exports = {
     },
 
     async handleLoserMVP(interaction, match) {
+        // Zaten seçildiyse yoksay
+        if (match.mvpLoserId || match.status === 'FINISHED') {
+            return interaction.reply({ content: '💔 Zaten Kaybeden MVP seçildi!', flags: MessageFlags.Ephemeral });
+        }
+
         const selectedLoserMVPId = interaction.values[0];
         match.mvpLoserId = selectedLoserMVPId;
 
@@ -566,11 +576,11 @@ module.exports = {
 
         // --- LOGLAMA (Maç Sonucu Log Kanalına) ---
         try {
-            const logsChannelId = '1468002079632134369';
+            const logsChannelId = '1468664219997175984';
             const logsChannel = interaction.guild.channels.cache.get(logsChannelId);
 
             if (logsChannel) {
-                const winnerTeamName = winnerTeam === 'A' ? 'Team A' : 'Team B';
+                const winnerTeamName = winnerTeam === 'A' ? 'Blue Team' : 'Red Team';
                 const mvpWinnerMention = match.mvpPlayerId ? `<@${match.mvpPlayerId}>` : 'Seçilmedi';
                 const mvpLoserMention = match.mvpLoserId ? `<@${match.mvpLoserId}>` : 'Seçilmedi';
 
@@ -583,6 +593,17 @@ module.exports = {
                 const durationMs = new Date() - match.createdAt;
                 const durationMinutes = Math.floor(durationMs / 60000);
 
+                // ELO Değişim Metni
+                let eloChangesText = '';
+                for (const change of eloChanges) {
+                    const sign = change.change > 0 ? '+' : '';
+                    const level = eloService.getLevelFromElo(change.newElo);
+                    // Direkt emoji ID'si yerine formatlı stringi alalım (örn: <:level1:123...>)
+                    const emoji = eloService.LEVEL_EMOJIS[level] || '';
+
+                    eloChangesText += `${emoji} <@${change.userId}>: \`${change.oldElo}\` → \`${change.newElo}\` (**${sign}${change.change}**) [${change.reason}]\n`;
+                }
+
                 const logEmbed = new EmbedBuilder()
                     .setColor(0x2B2D31)
                     .setAuthor({ name: `Maç Sonucu • #${match.matchNumber || match.matchId}`, iconURL: interaction.guild.iconURL() })
@@ -594,6 +615,7 @@ module.exports = {
                         { name: '⭐ Kazanan MVP', value: mvpWinnerMention, inline: true },
                         { name: '💔 Kaybeden MVP', value: mvpLoserMention, inline: true },
                         { name: '📊 Ortalamalar', value: `A: ${avgEloA} | B: ${avgEloB}`, inline: true },
+                        { name: `📈 ELO Değişimleri`, value: eloChangesText.length > 1000 ? eloChangesText.substring(0, 1000) + '...' : eloChangesText, inline: false },
                         { name: `🔵 Team A (${match.scoreA})`, value: match.teamA.map(id => `<@${id}>`).join(', ') || 'Yok', inline: false },
                         { name: `🔴 Team B (${match.scoreB})`, value: match.teamB.map(id => `<@${id}>`).join(', ') || 'Yok', inline: false }
                     )
@@ -602,9 +624,10 @@ module.exports = {
 
                 await logsChannel.send({ embeds: [logEmbed] });
             }
-        } catch (logErr) {
-            console.error('Match Finish Log Error:', logErr);
+        } catch (e) {
+            console.error("Log error:", e);
         }
+
         // -------------------------------------------
 
         match.status = 'FINISHED';

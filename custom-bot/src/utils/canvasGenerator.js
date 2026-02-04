@@ -106,27 +106,27 @@ module.exports = {
         ctx.fillStyle = '#ffffff';
         ctx.fillText(currentEloText, textStartX, 340);
 
+        let totalEloWidth = ctx.measureText(currentEloText).width;
+
         if (maxEloText) {
             const currentEloWidth = ctx.measureText(currentEloText).width;
             ctx.fillStyle = '#666666';
             ctx.fillText(maxEloText, textStartX + currentEloWidth, 340);
+            totalEloWidth += ctx.measureText(maxEloText).width;
         }
 
         // --- WIN RATE EKLEME ---
-        // ELO'nun sağ tarafına ekleyelim
         const total = stats.totalMatches || 0;
         const wins = stats.totalWins || 0;
         const wr = total > 0 ? Math.round((wins / total) * 100) : 0;
 
-        ctx.font = 'bold 40px "Segoe UI", sans-serif';
+        ctx.font = 'bold 45px "Segoe UI", sans-serif'; // Fontu biraz daha büyüttüm (40->45)
         ctx.fillStyle = wr >= 50 ? '#00ff00' : '#ff4400';
-        ctx.textAlign = 'right'; // Sağa yasla
+        ctx.textAlign = 'left'; // Sola yasla ki başlangıç noktasından sağa doğru yazsın
 
-        // Başlık hizasına (Y=120) alalım
-        ctx.fillText(`%${wr} WIN RATE`, textStartX + 800, 120);
-
-        // Tekrar sola yasla ki diğer çizimler bozulmasın
-        ctx.textAlign = 'left';
+        // ELO yazısının bittiği yer + 40px boşluk
+        // Y konumunu biraz yukarı aldım (340 -> 335) görsel denge için
+        ctx.fillText(`%${wr} WIN RATE`, textStartX + totalEloWidth + 40, 340);
 
         // ================= ALT BAR (GLOW EFEKTLİ) =================
         const barY = 400;
