@@ -61,6 +61,7 @@ module.exports = {
         }
 
         const currentTurnCaptain = match.pickTurn === 'A' ? match.captainA : match.captainB;
+        console.log(`[Draft Debug] Match ${match.matchId} - Turn: Team ${match.pickTurn} (Captain: ${currentTurnCaptain})`);
         const turnColor = match.pickTurn === 'A' ? 0x3498DB : 0xE74C3C; // Mavi veya Kırmızı
         const turnEmoji = match.pickTurn === 'A' ? '🔵' : '🔴';
 
