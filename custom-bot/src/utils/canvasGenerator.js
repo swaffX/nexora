@@ -42,9 +42,10 @@ module.exports = {
         // --- İLERLEME HESABI ---
         let progress = 0;
         if (currentLevel < 10) {
-            const range = levelData.max - levelData.min;
-            const current = elo - levelData.min;
-            progress = Math.max(0, Math.min(1, current / range));
+            // MUTLAK İLERLEME: Barın başı 0 ELO, sonu Target Level Max ELO.
+            // Böylece 100 ELO'daki biri barın %20'sini dolu görür (100/500).
+            progress = elo / levelData.max;
+            progress = Math.min(1, Math.max(0, progress));
         } else {
             progress = 1;
         }
@@ -113,13 +114,15 @@ module.exports = {
 
         // Doluluk (GLOW)
         if (progress > 0) {
+            ctx.save();
             ctx.fillStyle = '#ff5500'; // Turuncu
+
+            // GLOW
             ctx.shadowColor = '#ff5500';
-            ctx.shadowBlur = 20; // GLOW EKLENDİ
+            ctx.shadowBlur = 30; // Güçlü Glow
             ctx.fillRect(textStartX, barY, barWidth * progress, barHeight);
 
-            // Glow'u kapat
-            ctx.shadowBlur = 0;
+            ctx.restore();
         }
 
         // ================= SONRAKİ LEVEL İKONU =================
