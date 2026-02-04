@@ -189,8 +189,12 @@ module.exports = {
         const captainA = await channel.guild.members.fetch(match.captainA).catch(() => ({ displayName: 'PLAYER A' }));
         const captainB = await channel.guild.members.fetch(match.captainB).catch(() => ({ displayName: 'PLAYER B' }));
 
-        const nameA = `TEAM ${captainA.displayName.toUpperCase()}`;
-        const nameB = `TEAM ${captainB.displayName.toUpperCase()}`;
+        // İsimleri Kısalt (Layout bozulmaması için)
+        const shortNameA = captainA.displayName ? captainA.displayName.toUpperCase().substring(0, 12) : 'PLAYER A';
+        const shortNameB = captainB.displayName ? captainB.displayName.toUpperCase().substring(0, 12) : 'PLAYER B';
+
+        const nameA = `TEAM ${shortNameA}`;
+        const nameB = `TEAM ${shortNameB}`;
 
         const divider = '<a:ayrma:1468003499072688309>'.repeat(5);
 
@@ -206,17 +210,22 @@ module.exports = {
             return lines.length > 0 ? lines.join('\n') : 'Oyuncu yok';
         };
 
-        const listA = `${divider}\n${await buildPlayerList(match.teamA)}`;
-        const listB = `${divider}\n${await buildPlayerList(match.teamB)}`;
+        const sideAIcon = match.teamASide === 'ATTACK' ? '🗡️ ATTACK' : '🛡️ DEFEND';
+        const sideBIcon = match.teamBSide === 'ATTACK' ? '🗡️ ATTACK' : '🛡️ DEFEND';
+
+        // Taraf bilgisi artik listenin basinda
+        const listA = `**${sideAIcon}**\n${divider}\n${await buildPlayerList(match.teamA)}`;
+        const listB = `**${sideBIcon}**\n${divider}\n${await buildPlayerList(match.teamB)}`;
 
         const embed = new EmbedBuilder()
             .setColor(0xE74C3C) // Live Red
             .setTitle(`🔴 MAÇ BAŞLADI! (LIVE)`)
-            .setDescription(`## 🗺️ Harita: **${match.selectedMap.toUpperCase()}** ${divider}`)
+            // Harita adından sonra yeni satıra geçildi
+            .setDescription(`## 🗺️ Harita: **${match.selectedMap.toUpperCase()}**\n${divider}`)
             .addFields(
                 { name: '🎮 VALORANT Lobi Kodu', value: `\`\`\`${match.lobbyCode || 'BEKLENİYOR'}\`\`\``, inline: false },
-                { name: `🔹 ${nameA} (${match.teamASide === 'ATTACK' ? '🗡️ ATTACK' : '🛡️ DEFEND'})`, value: listA, inline: true },
-                { name: `🔸 ${nameB} (${match.teamBSide === 'ATTACK' ? '🗡️ ATTACK' : '🛡️ DEFEND'})`, value: listB, inline: true }
+                { name: `🔹 ${nameA}`, value: listA, inline: true },
+                { name: `🔸 ${nameB}`, value: listB, inline: true }
             )
             .setFooter({ text: 'Maç devam ediyor... İyi şanslar! • Made by Swaff' })
             .setTimestamp();
