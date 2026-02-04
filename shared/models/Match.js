@@ -9,7 +9,7 @@ const matchSchema = new mongoose.Schema({
     matchNumber: { type: Number, index: true }, // Sıralı Maç ID (Örn: #1, #2...)
 
     // Durum
-    status: { type: String, enum: ['SETUP', 'DRAFT', 'DRAFT_COINFLIP', 'DRAFT_CHOICE', 'VOTING', 'VETO', 'RPS_GAME', 'COIN_FLIP', 'SIDE_SELECTION', 'LIVE', 'PLAYING', 'FINISHING', 'FINISHED', 'CANCELLED'], default: 'SETUP' },
+    status: { type: String, default: 'SETUP' },
 
     // Takımlar
     captainA: { type: String },
