@@ -153,6 +153,98 @@ module.exports = {
         await interaction.showModal(modal);
     },
 
+    // TAŞ KAĞIT MAKAS BAŞLATIC (Side Pick İçin)
+    async prepareMatchStart(channel, match) {
+        match.status = 'RPS_GAME'; // Rock Paper Scissors
+        match.rpsMoveA = null;
+        match.rpsMoveB = null;
+        await match.save();
+
+        const { EmbedBuilder } = require('discord.js');
+        const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+
+        const embed = new EmbedBuilder()
+            .setColor(0x3498DB)
+            .setTitle('✂️ TAŞ - KAĞIT - MAKAS')
+            .setDescription(`**Harita:** ${match.selectedMap}\n\nTakım taraflarını (Saldırı/Savunma) belirlemek için kaptanlar kapışıyor!\n\n🔵 **Team A:** <@${match.captainA}>\n🔴 **Team B:** <@${match.captainB}>\n\n**Hamlenizi yapın! (Gizli Seçim)**`)
+            .setThumbnail('https://cdn-icons-png.flaticon.com/512/439/439498.png');
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId(`match_rps_ROCK_${match.matchId}`).setLabel('TAŞ').setStyle(ButtonStyle.Secondary).setEmoji('🪨'),
+            new ButtonBuilder().setCustomId(`match_rps_PAPER_${match.matchId}`).setLabel('KAĞIT').setStyle(ButtonStyle.Secondary).setEmoji('📄'),
+            new ButtonBuilder().setCustomId(`match_rps_SCISSORS_${match.matchId}`).setLabel('MAKAS').setStyle(ButtonStyle.Secondary).setEmoji('✂️')
+        );
+
+        await channel.send({ content: `<@${match.captainA}> <@${match.captainB}>`, embeds: [embed], components: [row] });
+    },
+
+    async handleRPSMove(interaction) {
+        const parts = interaction.customId.split('_');
+        const move = parts[2]; // ROCK, PAPER, SCISSORS
+        const matchId = parts[3];
+        const { MessageFlags, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+
+        const match = await Match.findOne({ matchId });
+        if (!match) return;
+
+        let isCaptainA = interaction.user.id === match.captainA;
+        let isCaptainB = interaction.user.id === match.captainB;
+
+        if (!isCaptainA && !isCaptainB) {
+            return interaction.reply({ content: 'Sadece kaptanlar oynayabilir!', flags: MessageFlags.Ephemeral });
+        }
+
+        if (isCaptainA) match.rpsMoveA = move;
+        if (isCaptainB) match.rpsMoveB = move;
+        await match.save();
+
+        await interaction.reply({ content: `✅ Hamleniz kaydedildi: **${move}** (Rakip görmüyor)`, flags: MessageFlags.Ephemeral });
+
+        // İkisi de seçti mi?
+        if (match.rpsMoveA && match.rpsMoveB) {
+            const moveA = match.rpsMoveA;
+            const moveB = match.rpsMoveB;
+            let winnerId = null;
+            let resultText = '';
+
+            // Beraberlik
+            if (moveA === moveB) {
+                match.rpsMoveA = null;
+                match.rpsMoveB = null;
+                await match.save();
+                return interaction.channel.send(`⚖️ **BERABERE!** İki kaptan da **${moveA}** seçti. Tekrar oynayın!`);
+            }
+
+            // Kurallar: Taş(Rock) > Makas(Scissors) > Kağıt(Paper) > Taş
+            if (
+                (moveA === 'ROCK' && moveB === 'SCISSORS') ||
+                (moveA === 'SCISSORS' && moveB === 'PAPER') ||
+                (moveA === 'PAPER' && moveB === 'ROCK')
+            ) {
+                winnerId = match.captainA; // A Kazandı
+            } else {
+                winnerId = match.captainB; // B Kazandı (Aksi durumlar)
+            }
+
+            match.pickTurn = winnerId === match.captainA ? 'A' : 'B';
+            match.status = 'SIDE_SELECTION';
+            await match.save();
+
+            const winEmbed = new EmbedBuilder()
+                .setColor(0x2ECC71)
+                .setTitle('🏆 KAZANAN BELİRLENDİ!')
+                .setDescription(`🔵 **Team A:** ${moveA}\n🔴 **Team B:** ${moveB}\n\n**Kazanan:** <@${winnerId}>\n\nŞimdi taraf seçme sırası sende!`)
+                .setFooter({ text: 'Kazanan tarafı seçer!' });
+
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId(`match_sidepick_attacker_${match.matchId}`).setLabel('Saldırı (Attack)').setStyle(ButtonStyle.Danger).setEmoji('🗡️'),
+                new ButtonBuilder().setCustomId(`match_sidepick_defender_${match.matchId}`).setLabel('Savunma (Defend)').setStyle(ButtonStyle.Primary).setEmoji('🛡️')
+            );
+
+            await interaction.channel.send({ embeds: [winEmbed], components: [row] });
+        }
+    },
+
     // Legacy backup
     async showScoreModal(interaction) {
         const matchId = interaction.customId.split('_')[2];

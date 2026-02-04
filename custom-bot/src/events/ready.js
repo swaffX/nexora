@@ -49,7 +49,7 @@ module.exports = {
 
             setInterval(() => {
                 leaderboard.updateLeaderboard(client);
-            }, 10 * 60 * 1000); // Her 10 dakikada bir güncelle
+            }, 5000); // Her 5 saniyede bir güncelle (Live)
             logger.info('📊 Leaderboard servisi başlatıldı.');
         } catch (err) {
             logger.error('Leaderboard servisi hatası:', err);

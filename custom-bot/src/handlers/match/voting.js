@@ -81,11 +81,22 @@ module.exports = {
 
         // GÖRSEL GÜNCELLE
         const totalPlayers = match.teamA.length + match.teamB.length;
+        const votedIds = match.votes.map(v => v.userId);
+        const notVotedIds = allPlayers.filter(id => !votedIds.includes(id));
+
+        const votedList = votedIds.length > 0 ? votedIds.map(id => `<@${id}>`).join(', ') : 'Kimse yok';
+        const notVotedList = notVotedIds.length > 0 ? notVotedIds.map(id => `<@${id}>`).join(', ') : 'Herkes oy verdi!';
 
         try {
             const votingMsg = await interaction.channel.messages.fetch(match.votingMessageId);
             if (votingMsg && votingMsg.embeds && votingMsg.embeds.length > 0) {
                 const embed = EmbedBuilder.from(votingMsg.embeds[0]);
+                embed.setFields(
+                    { name: `✅ Oy Verenler (${match.votes.length})`, value: votedList, inline: false },
+                    { name: `⏳ Bekleyenler (${notVotedIds.length})`, value: notVotedList, inline: false },
+                    { name: '🎮 VALORANT Lobi Kodu', value: match.lobbyCode ? `\`\`\`${match.lobbyCode}\`\`\`` : 'Bekleniyor...', inline: false },
+                    { name: '🚫 Oynanmış Haritalar', value: match.playedMaps && match.playedMaps.length > 0 ? match.playedMaps.join(', ') : 'Yok', inline: false }
+                );
                 embed.setFooter({ text: `🗳️ Oy Durumu: ${match.votes.length}/${totalPlayers} • Made by Swaff` });
                 await votingMsg.edit({ embeds: [embed] });
             }
@@ -169,8 +180,8 @@ module.exports = {
 
             await match.save();
 
-            // Game Handler'a geç
-            gameHandler.startSideSelection(channel, match);
+            // Game Handler'a geç (Yazı Tura)
+            await gameHandler.prepareMatchStart(channel, match);
         } catch (error) {
             // Hata olursa (Kanal yoksa vb.) sessiz kal
             // console.error('EndVoting Error:', error);

@@ -78,8 +78,16 @@ module.exports = {
                 case 'randomcap':
                     await lobby.assignRandomCaptains(interaction);
                     break;
+                case 'rps':
+                    await game.handleRPSMove(interaction);
+                    break;
                 case 'coin':
+                    // Bu artık kullanılmıyor olabilir ama dursun.
+                    // RPS sistemi geldiği için bu legacy kalabilir.
                     await game.handleCoinFlip(interaction);
+                    break;
+                case 'draftcoin':
+                    await lobby.handleDraftCoinFlip(interaction);
                     break;
 
                 // --- DRAFT ---

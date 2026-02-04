@@ -64,7 +64,10 @@ const matchSchema = new mongoose.Schema({
     playedMaps: { type: [String], default: [] }, // Bu lobide oynanan haritalar
     lobbyCode: { type: String }, // Valorant Lobi Kodu
     evidenceUrl: { type: String }, // Maç Sonu SS Linki
-    mvpPlayerId: { type: String } // Maçın MVP'si
+    mvpPlayerId: { type: String }, // Maçın MVP'si
+    // RPS (Taş Kağıt Makas)
+    rpsMoveA: { type: String, default: null }, // ROCK, PAPER, SCISSORS
+    rpsMoveB: { type: String, default: null }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Match', matchSchema);

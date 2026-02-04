@@ -204,10 +204,12 @@ module.exports = {
         );
 
         if (match.captainA && match.captainB) {
-            match.status = 'DRAFT';
+            match.status = 'DRAFT_COINFLIP';
             await match.save();
             await interaction.message.delete().catch(() => { });
-            await draftHandler.startDraftMode(interaction, match);
+
+            // Draft yerine önce Kaptanlar Arası Yazı Tura (Pick Order)
+            await this.startDraftCoinFlip(interaction.channel, match);
         } else {
             const voiceChannel = interaction.guild.channels.cache.get(match.lobbyVoiceId);
             const voiceMembers = voiceChannel ? voiceChannel.members.filter(m => !m.user.bot) : new Map();
@@ -250,6 +252,51 @@ module.exports = {
                 console.warn('Captain UI Update Error:', e.message);
             }
         }
+    },
+
+    async startDraftCoinFlip(channel, match) {
+        // Kanalı kontrol et (guild üzerindeyse fetch gerekebilir, ama object ise sorun yok)
+        const embed = new EmbedBuilder()
+            .setColor(0xF1C40F)
+            .setTitle('🪙 DRAFT ÖNCESİ YAZI TURA')
+            .setDescription(`**Kaptanlar belirlendi!**\n\nİlk oyuncuyu kimin seçeceğini belirlemek için __Yazı Tura__ atılacak.\n\n🔵 **Team A:** <@${match.captainA}>\n🔴 **Team B:** <@${match.captainB}>\n\n**Herhangi** bir kaptan butona basabilir!`)
+            .setThumbnail('https://cdn-icons-png.flaticon.com/512/12369/12369138.png'); // Coin Icon
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId(`match_draftcoin_${match.matchId}`).setLabel('🎲 Parayı Havaya At').setStyle(ButtonStyle.Primary).setEmoji('🪙')
+        );
+
+        await channel.send({ content: `<@${match.captainA}> <@${match.captainB}>`, embeds: [embed], components: [row] });
+    },
+
+    async handleDraftCoinFlip(interaction) {
+        const { MessageFlags } = require('discord.js');
+        const matchId = interaction.customId.split('_')[2];
+        const match = await Match.findOne({ matchId });
+
+        if (!match) return;
+        if (interaction.user.id !== match.captainA && interaction.user.id !== match.captainB) {
+            return interaction.reply({ content: 'Sadece kaptanlar parayı atabilir!', flags: MessageFlags.Ephemeral });
+        }
+
+        const winner = Math.random() < 0.5 ? 'A' : 'B';
+        const winnerId = winner === 'A' ? match.captainA : match.captainB;
+
+        match.pickTurn = winner; // Kazanan başlar
+        match.status = 'DRAFT';
+        await match.save();
+
+        await interaction.update({
+            content: `🪙 **Yazı Tura Sonucu:** Kazanan **Team ${winner}** (<@${winnerId}>)\nİlk seçimi o yapacak!`,
+            components: [],
+            embeds: []
+        });
+
+        setTimeout(() => interaction.message.delete().catch(() => { }), 3000);
+
+        // Draftı Başlat
+        const draftHandler = require('./draft');
+        await draftHandler.startDraftMode(interaction, match);
     },
 
     async resetLobby(interaction) {
