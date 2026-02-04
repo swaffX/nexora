@@ -1,6 +1,6 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ChannelType, PermissionFlagsBits } = require('discord.js');
 const path = require('path');
-const { Match, User } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
+const { Match, User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 
 module.exports = {
 

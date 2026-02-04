@@ -171,7 +171,7 @@ module.exports = {
         ctx.font = '40px sans-serif';
         ctx.fillStyle = '#888';
         ctx.textAlign = 'right'; // EN SAĞA YASLA
-        ctx.fillText(`Update: ${new Date().toLocaleTimeString('tr-TR')}`, 1950, 120);
+        ctx.fillText(`Update: ${new Date().toLocaleTimeString('tr-TR', { timeZone: 'Europe/Istanbul' })}`, 1950, 120);
 
         // Çizgi
         ctx.strokeStyle = '#333';
