@@ -543,6 +543,49 @@ module.exports = {
         }
         // ----------------------------------------
 
+        // --- LOGLAMA (Maç Sonucu Log Kanalına) ---
+        try {
+            const logsChannelId = '1468002079632134369';
+            const logsChannel = interaction.guild.channels.cache.get(logsChannelId);
+
+            if (logsChannel) {
+                const winnerTeamName = winnerTeam === 'A' ? 'Team A' : 'Team B';
+                const mvpWinnerMention = match.mvpPlayerId ? `<@${match.mvpPlayerId}>` : 'Seçilmedi';
+                const mvpLoserMention = match.mvpLoserId ? `<@${match.mvpLoserId}>` : 'Seçilmedi';
+
+                // Lobi Bilgisi (ID'den bulmaya çalış)
+                const { LOBBY_CONFIG } = require('./constants');
+                const lobbyInfo = Object.values(LOBBY_CONFIG).find(l => l.voiceId === match.lobbyVoiceId);
+                const lobbyName = lobbyInfo ? lobbyInfo.name : 'Unknown Lobby';
+
+                // Süre
+                const durationMs = new Date() - match.createdAt;
+                const durationMinutes = Math.floor(durationMs / 60000);
+
+                const logEmbed = new EmbedBuilder()
+                    .setColor(0x2B2D31)
+                    .setAuthor({ name: `Maç Sonucu • #${match.matchNumber || match.matchId}`, iconURL: interaction.guild.iconURL() })
+                    .setDescription(`**Skor:** ${match.scoreA} - ${match.scoreB}\n**Kazanan:** ${winnerTeam === 'DRAW' ? 'BERABERE' : winnerTeamName}`)
+                    .addFields(
+                        { name: '📍 Lobi', value: lobbyName, inline: true },
+                        { name: '🗺️ Harita', value: match.selectedMap || '?', inline: true },
+                        { name: '⏱️ Süre', value: `${durationMinutes} dk`, inline: true },
+                        { name: '⭐ Kazanan MVP', value: mvpWinnerMention, inline: true },
+                        { name: '💔 Kaybeden MVP', value: mvpLoserMention, inline: true },
+                        { name: '📊 Ortalamalar', value: `A: ${avgEloA} | B: ${avgEloB}`, inline: true },
+                        { name: `🔵 Team A (${match.scoreA})`, value: match.teamA.map(id => `<@${id}>`).join(', ') || 'Yok', inline: false },
+                        { name: `🔴 Team B (${match.scoreB})`, value: match.teamB.map(id => `<@${id}>`).join(', ') || 'Yok', inline: false }
+                    )
+                    .setFooter({ text: `Match ID: ${match.matchId}` })
+                    .setTimestamp();
+
+                await logsChannel.send({ embeds: [logEmbed] });
+            }
+        } catch (logErr) {
+            console.error('Match Finish Log Error:', logErr);
+        }
+        // -------------------------------------------
+
         match.status = 'FINISHED';
         await match.save();
 
