@@ -29,7 +29,19 @@ module.exports = {
                 avatar: targetUser.displayAvatarURL({ extension: 'png' })
             };
 
-            const stats = userDoc ? userDoc.matchStats : { elo: 1000, matchLevel: 3 };
+            let stats = userDoc ? userDoc.matchStats : { elo: 100, matchLevel: 1 };
+
+            // LEGACY FIX: Eğer maç sayısı 0 ise ve ELO 1000 ise (Eski sistem), bunu 100'e çek.
+            if (stats.totalMatches === 0 && stats.elo === 1000) {
+                stats.elo = 100;
+                stats.matchLevel = 1;
+                // Veritabanını güncelle
+                if (userDoc) {
+                    userDoc.matchStats.elo = 100;
+                    userDoc.matchStats.matchLevel = 1;
+                    await userDoc.save();
+                }
+            }
 
             // Resmi Üret
             const buffer = await canvasGenerator.createEloCard(userForCard, stats);
