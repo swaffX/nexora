@@ -5,108 +5,32 @@ const { Match, User } = require(path.join(__dirname, '..', '..', '..', '..', 'sh
 module.exports = {
 
     async prepareMatchStart(channel, match) {
-        match.status = 'RPS_GAME'; // Rock Paper Scissors
-        match.rpsMoveA = null;
-        match.rpsMoveB = null;
+        // RPS İPTAL EDİLDİ - DİREKT TARAF SEÇİMİ
+        // Draft başında belirlenen sideSelector'a göre işlem yapıyoruz.
+
+        if (!match.sideSelector) {
+            // Eğer sideSelector belirlenmemişse (eski maç vs.) Team A seçsin
+            match.sideSelector = match.captainA;
+            await match.save();
+        }
+
+        match.status = 'SIDE_SELECTION';
         await match.save();
 
         const embed = new EmbedBuilder()
-            .setColor(0x3498DB)
-            .setTitle('✂️ TAŞ - KAĞIT - MAKAS')
-            .setDescription(`**Harita:** ${match.selectedMap}\n\nTakım taraflarını (Saldırı/Savunma) belirlemek için kaptanlar kapışıyor!\n\n🔵 **Team A:** <@${match.captainA}>\n🔴 **Team B:** <@${match.captainB}>\n\n**Hamlenizi yapın! (Gizli Seçim)**`)
-            .setThumbnail('https://cdn-icons-png.flaticon.com/512/439/439498.png');
+            .setColor(0x2ECC71)
+            .setTitle('🛡️ TARAF SEÇİMİ')
+            .setDescription(`**Harita:** ${match.selectedMap}\n\n**Team A:** <@${match.captainA}>\n**Team B:** <@${match.captainB}>\n\n**Seçim Sırası:** <@${match.sideSelector}>\nTarafınızı seçin!`)
 
         const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId(`match_rps_ROCK_${match.matchId}`).setLabel('TAŞ').setStyle(ButtonStyle.Secondary).setEmoji('🪨'),
-            new ButtonBuilder().setCustomId(`match_rps_PAPER_${match.matchId}`).setLabel('KAĞIT').setStyle(ButtonStyle.Secondary).setEmoji('📄'),
-            new ButtonBuilder().setCustomId(`match_rps_SCISSORS_${match.matchId}`).setLabel('MAKAS').setStyle(ButtonStyle.Secondary).setEmoji('✂️')
+            new ButtonBuilder().setCustomId(`match_side_ATTACK_${match.matchId}`).setLabel('SALDIRI (Attack)').setStyle(ButtonStyle.Danger).setEmoji('🗡️'),
+            new ButtonBuilder().setCustomId(`match_side_DEFEND_${match.matchId}`).setLabel('SAVUNMA (Defend)').setStyle(ButtonStyle.Success).setEmoji('🛡️')
         );
 
-        await channel.send({ content: `<@${match.captainA}> <@${match.captainB}>`, embeds: [embed], components: [row] });
+        await channel.send({ content: `<@${match.sideSelector}>`, embeds: [embed], components: [row] });
     },
 
-    async handleRPSMove(interaction, match, move) {
-        const userId = interaction.user.id;
-
-        if (userId === match.captainA) {
-            if (match.rpsMoveA) return interaction.reply({ content: 'Zaten seçim yaptınız!', ephemeral: true });
-            match.rpsMoveA = move;
-        } else if (userId === match.captainB) {
-            if (match.rpsMoveB) return interaction.reply({ content: 'Zaten seçim yaptınız!', ephemeral: true });
-            match.rpsMoveB = move;
-        } else {
-            return interaction.reply({ content: 'Sadece kaptanlar oynayabilir!', ephemeral: true });
-        }
-
-        await match.save();
-
-        if (match.rpsMoveA && match.rpsMoveB) {
-            await interaction.deferUpdate();
-            await this.resolveRPSGame(interaction.channel, match);
-        } else {
-            await interaction.reply({ content: `Seçiminiz kaydedildi (${move}). Rakibi bekliyoruz...`, ephemeral: true });
-        }
-    },
-
-    async resolveRPSGame(channel, match) {
-        const moveA = match.rpsMoveA;
-        const moveB = match.rpsMoveB;
-        let winner = null; // 'A' or 'B' or null (draw)
-
-        if (moveA === moveB) {
-            winner = null;
-        } else if (
-            (moveA === 'ROCK' && moveB === 'SCISSORS') ||
-            (moveA === 'PAPER' && moveB === 'ROCK') ||
-            (moveA === 'SCISSORS' && moveB === 'PAPER')
-        ) {
-            winner = 'A';
-        } else {
-            winner = 'B';
-        }
-
-        const moveEmoji = { 'ROCK': '🪨', 'PAPER': '📄', 'SCISSORS': '✂️' };
-
-        if (winner) {
-            // Kazanan Side Seçer
-            match.status = 'SIDE_SELECTION';
-            match.sideSelector = winner === 'A' ? match.captainA : match.captainB;
-            await match.save();
-
-            const embed = new EmbedBuilder()
-                .setColor(0x2ECC71)
-                .setTitle('🏆 Kazanan Belirlendi!')
-                .setDescription(`**Team A:** ${moveEmoji[moveA]}\n**Team B:** ${moveEmoji[moveB]}\n\n🎉 **Kazanan:** <@${match.sideSelector}>\n\nŞimdi taraf seçme sırası onda!`)
-
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId(`match_side_ATTACK_${match.matchId}`).setLabel('SALDIRI (Attack)').setStyle(ButtonStyle.Danger).setEmoji('🗡️'),
-                new ButtonBuilder().setCustomId(`match_side_DEFEND_${match.matchId}`).setLabel('SAVUNMA (Defend)').setStyle(ButtonStyle.Success).setEmoji('🛡️')
-            );
-
-            await channel.send({ content: `<@${match.sideSelector}>`, embeds: [embed], components: [row] });
-
-        } else {
-            // Berabere - Tekrar
-            match.rpsMoveA = null;
-            match.rpsMoveB = null;
-            await match.save();
-
-            const embed = new EmbedBuilder()
-                .setColor(0xF1C40F)
-                .setTitle('🤝 Beraberlik!')
-                .setDescription(`**Team A:** ${moveEmoji[moveA]}\n**Team B:** ${moveEmoji[moveB]}\n\nTekrar oynanıyor...`);
-
-            await channel.send({ embeds: [embed] });
-
-            // Yeni butonları at
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId(`match_rps_ROCK_${match.matchId}`).setLabel('TAŞ').setStyle(ButtonStyle.Secondary).setEmoji('🪨'),
-                new ButtonBuilder().setCustomId(`match_rps_PAPER_${match.matchId}`).setLabel('KAĞIT').setStyle(ButtonStyle.Secondary).setEmoji('📄'),
-                new ButtonBuilder().setCustomId(`match_rps_SCISSORS_${match.matchId}`).setLabel('MAKAS').setStyle(ButtonStyle.Secondary).setEmoji('✂️')
-            );
-            await channel.send({ content: `<@${match.captainA}> <@${match.captainB}>`, components: [row] });
-        }
-    },
+    // handleRPSMove ve resolveRPSGame SİLİNDİ
 
     async handleSideSelection(interaction, match, side) {
         if (interaction.user.id !== match.sideSelector) return interaction.reply({ content: 'Sıra sizde değil!', ephemeral: true });
@@ -231,14 +155,12 @@ module.exports = {
     },
 
     async handleMVPSelect(interaction, match) {
-        // DÜZELTME: Değişken ismindeki boşluk silindi
         const selectedMVPId = interaction.values[0];
         match.mvpPlayerId = selectedMVPId;
         match.status = 'FINISHED';
         match.endTime = new Date();
         await match.save();
 
-        // DÜZELTME: Değişken ismi düzeltildi
         await interaction.update({ content: `✅ MVP Seçildi: <@${selectedMVPId}>\nSkorlar işleniyor ve ELO hesaplanıyor...`, components: [] });
         await this.finishMatch(interaction, match);
     },
@@ -327,14 +249,13 @@ module.exports = {
                         // Kazanma: Baz + Raund Bonusu + Adalet + MVP
                         finalEloChange = BASE_WIN + roundBonus + fairnessAdjustment;
 
-                        if (match.mvpPlayerId === pid) finalEloChange += 5; // MVP Bonusu: +5 (Düşürüldü)
+                        if (match.mvpPlayerId === pid) finalEloChange += 5;
                     } else {
                         user.matchStats.totalLosses++;
                         // Kaybetme: Baz + Adalet
                         let lossAmount = BASE_LOSS + fairnessAdjustment;
 
-                        // MVP Koruması (AZALTILDI: +15 yerine +5)
-                        // Örn: -20 + 5 = -15 Kayıp
+                        // MVP Koruması (AZALTILDI: +5)
                         if (match.mvpPlayerId === pid) lossAmount += 5;
 
                         // Limit: Kayıp asla 0'dan büyük olamaz (Pozitif olamaz)

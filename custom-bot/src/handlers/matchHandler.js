@@ -89,6 +89,9 @@ module.exports = {
                 case 'draftcoin':
                     await lobby.handleDraftCoinFlip(interaction);
                     break;
+                case 'priority':
+                    await lobby.handleDraftPriorityChoice(interaction);
+                    break;
 
                 // --- DRAFT ---
                 case 'pick':

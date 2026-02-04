@@ -9,7 +9,7 @@ const matchSchema = new mongoose.Schema({
     matchNumber: { type: Number, index: true }, // Sıralı Maç ID (Örn: #1, #2...)
 
     // Durum
-    status: { type: String, enum: ['SETUP', 'DRAFT', 'VOTING', 'VETO', 'COIN_FLIP', 'SIDE_SELECTION', 'LIVE', 'FINISHING', 'FINISHED', 'CANCELLED'], default: 'SETUP' },
+    status: { type: String, enum: ['SETUP', 'DRAFT', 'DRAFT_COINFLIP', 'VOTING', 'VETO', 'RPS_GAME', 'COIN_FLIP', 'SIDE_SELECTION', 'LIVE', 'PLAYING', 'FINISHING', 'FINISHED', 'CANCELLED'], default: 'SETUP' },
 
     // Takımlar
     captainA: { type: String },
@@ -35,6 +35,11 @@ const matchSchema = new mongoose.Schema({
     vetoTurn: { type: String, enum: ['A', 'B'], default: 'A' },
     bannedMaps: [{ type: String }],
     selectedMap: { type: String },
+
+    // Taraf Seçimi (Yeni Sistem)
+    sideSelector: { type: String }, // Tarafı seçecek olan kaptanın ID'si
+    teamASide: { type: String, enum: ['ATTACK', 'DEFEND'] },
+    teamBSide: { type: String, enum: ['ATTACK', 'DEFEND'] },
 
     // Lobby Code (Yeni)
     lobbyCode: { type: String },

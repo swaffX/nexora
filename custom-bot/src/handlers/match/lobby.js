@@ -279,20 +279,66 @@ module.exports = {
             return interaction.reply({ content: 'Sadece kaptanlar parayı atabilir!', flags: MessageFlags.Ephemeral });
         }
 
-        const winner = Math.random() < 0.5 ? 'A' : 'B';
-        const winnerId = winner === 'A' ? match.captainA : match.captainB;
+        const winnerTeam = Math.random() < 0.5 ? 'A' : 'B';
+        const winnerId = winnerTeam === 'A' ? match.captainA : match.captainB;
 
-        match.pickTurn = winner; // Kazanan başlar
+        // Kazananı Kaydet (Geçici olarak priorityPicker olarak kullanabiliriz veya direkt buton ID'sinde tutarız)
+        // Ama veritabanında tutmak daha güvenli (Hacklenmemesi için)
+        // Match modeline priorityWinner eklemek yerine status'u değiştirelim.
+        match.status = 'DRAFT_CHOICE';
+        await match.save();
+
+        const embed = new EmbedBuilder()
+            .setColor(0x2ECC71)
+            .setTitle('🎉 YAZI TURA KAZANILDI!')
+            .setDescription(`**Kazanan:** <@${winnerId}> (Team ${winnerTeam})\n\n**Seçim Hakkı Sizde!** Hangisini istersiniz?\n\n👤 **Player Priority:** İlk oyuncuyu sen seçersin, tarafı rakip seçer.\n🛡️ **Side Priority:** Tarafı (Saldırı/Savunma) sen seçersin, ilk oyuncuyu rakip seçer.`);
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId(`match_priority_PLAYER_${match.matchId}_${winnerTeam}`).setLabel('İlk Oyuncuyu Seç').setStyle(ButtonStyle.Primary).setEmoji('👤'),
+            new ButtonBuilder().setCustomId(`match_priority_SIDE_${match.matchId}_${winnerTeam}`).setLabel('Taraf Seçme Hakkı').setStyle(ButtonStyle.Success).setEmoji('🛡️')
+        );
+
+        await interaction.update({ content: null, embeds: [embed], components: [row] });
+    },
+
+    async handleDraftPriorityChoice(interaction) {
+        const parts = interaction.customId.split('_');
+        const choice = parts[2]; // PLAYER or SIDE
+        const matchId = parts[3];
+        const winnerTeam = parts[4]; // A or B
+
+        const match = await Match.findOne({ matchId });
+        if (!match) return;
+
+        const winnerId = winnerTeam === 'A' ? match.captainA : match.captainB;
+        if (interaction.user.id !== winnerId) {
+            return interaction.reply({ content: 'Bu seçimi sadece Yazı Turayı kazanan kaptan yapabilir!', flags: require('discord.js').MessageFlags.Ephemeral });
+        }
+
+        const loserTeam = winnerTeam === 'A' ? 'B' : 'A';
+        const loserId = loserTeam === 'A' ? match.captainA : match.captainB;
+
+        let description = "";
+
+        if (choice === 'PLAYER') {
+            // Kazanan -> İlk Pick
+            // Kaybeden -> Taraf Seçimi (Oyun başlayınca)
+            match.pickTurn = winnerTeam;
+            match.sideSelector = loserId;
+            description = `✅ **Karar:** <@${winnerId}> **İlk Oyuncu Seçimini** aldı.\n🛡️ **<@${loserId}>** ise oyun başlayınca **Taraf Seçimi** yapacak.`;
+        } else {
+            // Kazanan -> Taraf Seçimi
+            // Kaybeden -> İlk Pick
+            match.pickTurn = loserTeam;
+            match.sideSelector = winnerId;
+            description = `✅ **Karar:** <@${winnerId}> **Taraf Seçim Hakkını** aldı.\n👤 **<@${loserId}>** ise **İlk Oyuncuyu** seçecek.`;
+        }
+
         match.status = 'DRAFT';
         await match.save();
 
-        await interaction.update({
-            content: `🪙 **Yazı Tura Sonucu:** Kazanan **Team ${winner}** (<@${winnerId}>)\nİlk seçimi o yapacak!`,
-            components: [],
-            embeds: []
-        });
-
-        setTimeout(() => interaction.message.delete().catch(() => { }), 3000);
+        await interaction.update({ content: description, components: [], embeds: [] });
+        setTimeout(() => interaction.message.delete().catch(() => { }), 5000);
 
         // Draftı Başlat
         const draftHandler = require('./draft');
