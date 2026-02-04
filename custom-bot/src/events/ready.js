@@ -54,5 +54,50 @@ module.exports = {
         } catch (err) {
             logger.error('Leaderboard servisi hatası:', err);
         }
+
+        // --- ROL SENKRONİZASYONU ---
+        // Bot kapalıyken rol alan/verenleri senkronize et
+        const REQUIRED_ROLE_ID = '1466189076347486268';
+        const GUILD_ID = process.env.GUILD_ID;
+
+        (async () => {
+            try {
+                const guild = client.guilds.cache.get(GUILD_ID);
+                if (!guild) return;
+
+                logger.info('🔄 ELO Rol senkronizasyonu başlatılıyor...');
+                await guild.members.fetch(); // Tüm üyeleri çek
+
+                const { User } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
+                const eloService = require('../services/eloService');
+
+                // 1. Role sahip olup DB'de olmayanları ekle
+                const roleMembers = guild.roles.cache.get(REQUIRED_ROLE_ID)?.members;
+                if (roleMembers) {
+                    for (const [id, member] of roleMembers) {
+                        const userDoc = await User.findOne({ odasi: id, odaId: GUILD_ID });
+                        if (!userDoc) {
+                            await User.create({
+                                odasi: id,
+                                odaId: GUILD_ID,
+                                matchStats: eloService.createDefaultStats()
+                            });
+                        } else if (!userDoc.matchStats || !userDoc.matchStats.elo) {
+                            userDoc.matchStats = eloService.createDefaultStats();
+                            await userDoc.save();
+                        }
+                    }
+                }
+
+                // 2. Role sahip olmayıp DB'de stats'i olanları temizle
+                // (Bu işlem biraz ağır olabilir, dikkatli olunmalı)
+                // Şimdilik sadece yeni eklemeleri yapalım, silme işlemini eventlere bırakalım.
+                // Çünkü "matchStats:exists" sorgusu pahalı olabilir.
+
+                logger.success('✅ ELO Rol senkronizasyonu tamamlandı.');
+            } catch (e) {
+                logger.error('Rol Sync Hatası:', e);
+            }
+        })();
     },
 };

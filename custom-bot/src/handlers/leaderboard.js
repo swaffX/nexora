@@ -117,7 +117,7 @@ module.exports = {
                 await channel.send({ files: [attachment] });
             }
 
-            console.log('Leaderboard image updated successfully (Role Filtered).');
+            // Başarı logu kaldırıldı - her 5 saniyede spam yapıyordu
 
         } catch (error) {
             console.error('Leaderboard Update Error:', error);

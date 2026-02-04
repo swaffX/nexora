@@ -10,9 +10,9 @@
  */
 
 const ELO_CONFIG = {
-    MIN_ELO: 100,
+    MIN_ELO: 0,
     MAX_ELO: 3000,
-    DEFAULT_ELO: 100,
+    DEFAULT_ELO: 200,
     DEFAULT_LEVEL: 1,
     BASE_WIN: 20,
     BASE_LOSS: -20,

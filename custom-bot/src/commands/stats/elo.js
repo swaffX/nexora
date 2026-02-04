@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder, MessageFlags } = require('discord.js');
 const path = require('path');
 const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const canvasGenerator = require('../../utils/canvasGenerator');
@@ -25,14 +25,14 @@ module.exports = {
             } catch (e) {
                 return interaction.reply({
                     content: `❌ **Hata:** Kullanıcı sunucuda bulunamadı.`,
-                    ephemeral: true
+                    flags: MessageFlags.Ephemeral
                 });
             }
 
             if (!member || !member.roles.cache.has(REQUIRED_ROLE_ID)) {
                 return interaction.reply({
                     content: `❌ **Erişim Reddedildi:** Bu kullanıcının ELO sistemine dahil olması için <@&${REQUIRED_ROLE_ID}> rolüne sahip olması gerekir.`,
-                    ephemeral: true
+                    flags: MessageFlags.Ephemeral
                 });
             }
 
@@ -60,7 +60,7 @@ module.exports = {
 
         } catch (error) {
             console.error(error);
-            await interaction.reply({ content: 'Bir hata oluştu.', ephemeral: true });
+            await interaction.reply({ content: 'Bir hata oluştu.', flags: MessageFlags.Ephemeral });
         }
     }
 };

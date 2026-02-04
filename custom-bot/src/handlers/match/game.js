@@ -35,7 +35,7 @@ module.exports = {
     // handleRPSMove ve resolveRPSGame SİLİNDİ
 
     async handleSideSelection(interaction, match, side) {
-        if (interaction.user.id !== match.sideSelector) return interaction.reply({ content: 'Sıra sizde değil!', ephemeral: true });
+        if (interaction.user.id !== match.sideSelector) return interaction.reply({ content: 'Sıra sizde değil!', flags: MessageFlags.Ephemeral });
 
         const selectorTeam = match.sideSelector === match.captainA ? 'A' : 'B';
         match.teamASide = selectorTeam === 'A' ? side : (side === 'ATTACK' ? 'DEFEND' : 'ATTACK');
@@ -288,7 +288,7 @@ module.exports = {
             const matchId = interaction.customId.split('_')[2];
             match = await Match.findOne({ matchId });
             if (!match) {
-                return interaction.reply({ content: '❌ Maç bulunamadı!', ephemeral: true });
+                return interaction.reply({ content: '❌ Maç bulunamadı!', flags: MessageFlags.Ephemeral });
             }
         }
 
@@ -296,7 +296,7 @@ module.exports = {
         const sB = parseInt(interaction.fields.getTextInputValue('scoreB'));
 
         if (isNaN(sA) || isNaN(sB)) {
-            return interaction.reply({ content: 'Lütfen geçerli sayılar girin!', ephemeral: true });
+            return interaction.reply({ content: 'Lütfen geçerli sayılar girin!', flags: MessageFlags.Ephemeral });
         }
 
         match.scoreA = sA;
@@ -371,6 +371,11 @@ module.exports = {
         else if (match.winner === 'B') targetTeamIds = match.teamA;
         else return this.finishMatch(interaction, match); // Berabere ise 2. MVP yok, bitir.
 
+        // Eğer kaybeden takım boşsa direkt bitir
+        if (!targetTeamIds || targetTeamIds.length === 0) {
+            return this.finishMatch(interaction, match);
+        }
+
         const options = [];
         for (const id of targetTeamIds) {
             let username = 'Unknown Player';
@@ -390,6 +395,12 @@ module.exports = {
                 description: 'Kaybeden Takım Oyuncusu',
                 emoji: levelEmojiId
             });
+        }
+
+        // Options boşsa (hata durumu) direkt bitir
+        if (options.length === 0) {
+            console.warn('[MVP] Loser team options empty, finishing match directly.');
+            return this.finishMatch(interaction, match);
         }
 
         const selectMenu = new StringSelectMenuBuilder()
