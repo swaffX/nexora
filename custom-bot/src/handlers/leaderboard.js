@@ -12,14 +12,28 @@ module.exports = {
             if (!channel) return console.error('Leaderboard channel not found!');
 
             // En yüksek ELO'ya sahip 10 kullanıcıyı çek
+            // matchStats.elo alanı var olanları ve ELO'ya göre sıralayarak al
             const topUsers = await User.find({ 'matchStats.elo': { $exists: true } })
                 .sort({ 'matchStats.elo': -1 })
                 .limit(10);
 
-            if (topUsers.length === 0) return;
+            if (!topUsers || topUsers.length === 0) {
+                // Veri yoksa bile kanala bilgi ver
+                const messages = await channel.messages.fetch({ limit: 1 });
+                const lastMessage = messages.first();
+                const text = '⚠️ **Leaderboard:** Henüz sıralama verisi yok. İlk maçı oynadığınızda burada görüneceksiniz!';
 
-            // Kullanıcı Adlarını (Discord API'den çekmeye çalışalım, veritabanında yoksa)
-            // Performans için veritabanına username kaydetmek daha iyi olurdu ama şimdilik ID yeterli veya cache'den bak.
+                if (lastMessage && lastMessage.author.id === client.user.id) {
+                    if (lastMessage.content !== text) await lastMessage.edit({ content: text, embeds: [], files: [] });
+                } else {
+                    // Temizle ve at
+                    await channel.bulkDelete(5).catch(() => { });
+                    await channel.send(text);
+                }
+                return;
+            }
+
+            // Kullanıcı Adlarını (Discord API'den çek)
             const usersWithNames = [];
             for (const doc of topUsers) {
                 let username = `Player ${doc.odasi.substring(0, 4)}`;
@@ -29,7 +43,7 @@ module.exports = {
                 } catch (e) { }
 
                 usersWithNames.push({
-                    username: username,
+                    username: username || 'Unknown',
                     odasi: doc.odasi,
                     matchStats: doc.matchStats
                 });
@@ -51,7 +65,7 @@ module.exports = {
                 await channel.send({ files: [attachment] });
             }
 
-            // console.log('Leaderboard image updated.');
+            console.log('Leaderboard image updated successfully.');
 
         } catch (error) {
             console.error('Leaderboard Update Error:', error);
