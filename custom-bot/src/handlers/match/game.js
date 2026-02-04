@@ -47,8 +47,31 @@ module.exports = {
     },
 
     async startMatch(channel, match) {
+        const { AttachmentBuilder, PermissionFlagsBits } = require('discord.js');
+        const fs = require('fs');
+        const path = require('path');
+        const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
+
         const teamAString = match.teamA.map(id => `<@${id}>`).join(', ');
         const teamBString = match.teamB.map(id => `<@${id}>`).join(', ');
+
+        // --- VERİTABANI DÜZELTME (FIX LEGACY DATA) ---
+        try {
+            const allPlayers = [...match.teamA, ...match.teamB];
+            for (const pid of allPlayers) {
+                const user = await User.findOne({ odasi: pid, odaId: channel.guild.id });
+                if (user && user.matchStats) {
+                    if (user.matchStats.elo === 1000 || (user.matchStats.elo > 150 && user.matchStats.totalMatches === 0)) {
+                        console.log(`[ELO FIX] Resetting ${user.username} (ID: ${pid}) to 100.`);
+                        user.matchStats.elo = 100;
+                        user.matchStats.matchLevel = 1;
+                        user.matchStats.totalMatches = 0;
+                        await user.save();
+                    }
+                }
+            }
+        } catch (e) { console.error("ELO Fix Error:", e); }
+        // ---------------------------------------------
 
         // --- SES KANALLARINI OLUŞTUR VE OYUNCULARI TAŞI ---
         try {

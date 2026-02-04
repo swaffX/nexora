@@ -119,8 +119,8 @@ const userSchema = new mongoose.Schema({
         totalMatches: { type: Number, default: 0 },
         totalWins: { type: Number, default: 0 },
         totalLosses: { type: Number, default: 0 },
-        elo: { type: Number, default: 1000 }, // Başlangıç 1000
-        matchLevel: { type: Number, default: 3 } // Başlangıç Level 3
+        elo: { type: Number, default: 100 }, // Başlangıç 100 (Min Floor)
+        matchLevel: { type: Number, default: 1 } // Başlangıç Level 1
     }
 
 }, { timestamps: true });
