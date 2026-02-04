@@ -1,9 +1,9 @@
 const { createCanvas, loadImage } = require('canvas');
 const path = require('path');
 
-// ELO ARALIKLARI (GÜNCEL)
+// ELO ARALIKLARI
 // Level 1: 100 - 500
-// Level 2: 501 - 750 (Aralık: 250)
+// Level 2: 501 - 750 
 // ...
 const getLevelInfo = (elo) => {
     if (elo <= 500) return { lv: 1, min: 100, max: 500, color: '#00ff00' }; // Yeşil
@@ -29,10 +29,10 @@ module.exports = {
         // YUMUŞATMA AYARLARI
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        ctx.antialias = 'subpixel'; // Metin netliği için
+        ctx.antialias = 'subpixel';
 
         // 1. ARKAPLAN (FaceIT Dark)
-        ctx.fillStyle = '#181818'; // Daha koyu, neredeyse siyah
+        ctx.fillStyle = '#181818';
         ctx.fillRect(0, 0, width, height);
 
         // Verileri Al
@@ -47,55 +47,49 @@ module.exports = {
             const current = elo - levelData.min;
             progress = Math.max(0, Math.min(1, current / range));
         } else {
-            progress = 1; // Max level
+            progress = 1;
         }
 
         // ================= SOL TARA (DAİRESEL GRAFİK) =================
         const centerX = 300;
         const centerY = 250;
-        const radius = 160;   // Daire Büyüklüğü
-        const lineWidth = 30; // Çizgi Kalınlığı
+        const radius = 160;
+        const lineWidth = 30;
 
-        // 2. BOŞ HALKA (Arka Plandaki Sönük Daire)
+        // 2. BOŞ HALKA
         ctx.beginPath();
         ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = '#282828'; // Koyu gri
+        ctx.strokeStyle = '#282828';
         ctx.lineWidth = lineWidth;
         ctx.stroke();
 
         // 3. DOLU HALKA (Progress)
-        // FaceIT stili: Üstten başlar (-90 derece)
-        // Kapsül ucu için lineCap = 'round' değil 'butt' kullanacağız ama şık dursun diye round yapıyorum
         const startAngle = -Math.PI / 2;
         const endAngle = startAngle + (Math.PI * 2 * progress);
 
         if (progress > 0) {
             ctx.beginPath();
             ctx.arc(centerX, centerY, radius, startAngle, endAngle);
-            ctx.strokeStyle = levelData.color; // Level Rengi
+            ctx.strokeStyle = levelData.color;
             ctx.lineWidth = lineWidth;
-            ctx.lineCap = 'round'; // Uçları yuvarlak
+            ctx.lineCap = 'round';
 
-            // Neon Efekti (Hafif Glow)
             ctx.shadowColor = levelData.color;
             ctx.shadowBlur = 15;
             ctx.stroke();
-
-            // Gölgeyi sıfırla (Diğer cisimlere bulaşmasın)
             ctx.shadowBlur = 0;
         }
 
         // 4. ORTA LEVE İKONU
-        // İkonu dairenin tam ortasına yerleştiriyoruz.
         try {
-            const iconPath = path.join(__dirname, '..', '..', 'levels', `${currentLevel}.png`);
+            // KLASÖR: faceitsekli
+            const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${currentLevel}.png`);
             const icon = await loadImage(iconPath);
 
-            // İkon Boyutu: Dairenin içine sığacak kadar (radius * 1.2)
             const iconSize = 200;
             ctx.drawImage(icon, centerX - (iconSize / 2), centerY - (iconSize / 2), iconSize, iconSize);
         } catch (e) {
-            // İkon yoksa Yazı
+            console.error('Icon Load Error:', e);
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 120px sans-serif';
             ctx.textAlign = 'center';
@@ -106,22 +100,27 @@ module.exports = {
         // ================= SAĞ TARAF (METİNLER) =================
         const textStartX = 600;
 
-        // 5. ÜST BAŞLIK (LEVEL X - NEXORA)
-        ctx.font = '500 36px "Segoe UI", Roboto, sans-serif'; // Daha ince
-        ctx.fillStyle = '#888888'; // Gri
+        // 5. ÜST BAŞLIK 
+        ctx.font = '500 36px "Segoe UI", Roboto, sans-serif';
+        ctx.fillStyle = '#888888';
         ctx.textAlign = 'left';
         ctx.fillText(`LEVEL ${currentLevel} • NEXORA COMPETITIVE`, textStartX, 120);
 
-        // 6. KULLANICI ADI
-        ctx.font = 'bold 90px "Segoe UI", Roboto, sans-serif';
-        ctx.fillStyle = '#ffffff';
+        // 6. KULLANICI ADI (Dinamik Font)
         let displayName = user.username.toUpperCase();
-        if (displayName.length > 12) displayName = displayName.substring(0, 12) + '...';
+        ctx.fillStyle = '#ffffff';
+
+        if (displayName.length > 15) {
+            ctx.font = 'bold 60px "Segoe UI", Roboto, sans-serif';
+        } else {
+            ctx.font = 'bold 90px "Segoe UI", Roboto, sans-serif';
+        }
+
+        if (displayName.length > 18) displayName = displayName.substring(0, 18) + '...';
         ctx.fillText(displayName, textStartX, 220);
 
-        // 7. ELO SAYILARI (600 / 750)
-        // ELO kısmı beyaz, Slash ve Max kısmı gri olabilir veya hepsi beyaz
-        ctx.font = 'bold 100px "DIN Alternate", "Segoe UI", sans-serif'; // Sayılar için monospaced tarzı
+        // 7. ELO (600 / 750)
+        ctx.font = 'bold 100px "DIN Alternate", "Segoe UI", sans-serif';
 
         const currentEloText = `${elo}`;
         const maxEloText = currentLevel < 10 ? ` / ${levelData.max}` : '';
@@ -129,38 +128,35 @@ module.exports = {
         ctx.fillStyle = '#ffffff';
         ctx.fillText(currentEloText, textStartX, 340);
 
-        // Slash ve Max kısmı biraz daha silik
         if (maxEloText) {
             const currentEloWidth = ctx.measureText(currentEloText).width;
-            ctx.fillStyle = '#666666'; // Koyu Gri
+            ctx.fillStyle = '#666666';
             ctx.fillText(maxEloText, textStartX + currentEloWidth, 340);
         }
 
-        // ================= ALT BAR (TURUNCU ÇİZGİ) =================
-        // Referans görselde altta ince bir XP barı var.
+        // ================= ALT BAR =================
         const barY = 400;
-        const barHeight = 25; // İnceliği artırdım
-        const barWidth = 800; // Uzunluk
+        const barHeight = 25;
+        const barWidth = 800;
 
         // Arkaplan
         ctx.fillStyle = '#333333';
         ctx.fillRect(textStartX, barY, barWidth, barHeight);
 
         // Doluluk
-        ctx.fillStyle = '#ff5500'; // FaceIT Turuncusu
+        ctx.fillStyle = '#ff5500';
         ctx.fillRect(textStartX, barY, barWidth * progress, barHeight);
 
-        // ================= SONRAKİ LEVEL İKONU (KÜÇÜK) =================
-        // Barın sağ ucuna bir sonraki levelin ikonu
+        // ================= SONRAKİ LEVEL İKONU =================
         if (currentLevel < 10) {
             const nextLevel = currentLevel + 1;
             try {
-                const nextIconPath = path.join(__dirname, '..', '..', 'levels', `${nextLevel}.png`);
+                // KLASÖR: faceitsekli
+                const nextIconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${nextLevel}.png`);
                 const nextIcon = await loadImage(nextIconPath);
 
-                // İkonu barın sonuna, biraz şefaf çiz
                 const nextIconSize = 80;
-                ctx.globalAlpha = 0.7; // Hafif silik
+                ctx.globalAlpha = 0.7;
                 ctx.drawImage(nextIcon, textStartX + barWidth + 30, barY - 30, nextIconSize, nextIconSize);
                 ctx.globalAlpha = 1.0;
             } catch (e) { }
@@ -171,10 +167,9 @@ module.exports = {
 
     async createLeaderboardImage(users) {
         // LEIDEBOARD DA RETINA KALİTESİ
-        const rowHeight = 150; // Satır yüksekliği arttı
+        const rowHeight = 150;
         const width = 2000;
-        const scale = 2; // Her şeyi büyüterek çiziyoruz
-        const height = (users.length * rowHeight) + 200; // Header payı
+        const height = (users.length * rowHeight) + 200;
 
         const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
@@ -186,7 +181,7 @@ module.exports = {
         ctx.fillRect(0, 0, width, height);
 
         // Header
-        ctx.fillStyle = '#ff5500'; // Turuncu Header Çizgisi
+        ctx.fillStyle = '#ff5500';
         ctx.fillRect(0, 0, 20, height);
 
         // Başlık
@@ -199,7 +194,7 @@ module.exports = {
         ctx.fillStyle = '#888';
         ctx.fillText(`Last Update: ${new Date().toLocaleTimeString('tr-TR')}`, 1300, 120);
 
-        // Ayırıcı Çizgi
+        // Çizgi
         ctx.strokeStyle = '#333';
         ctx.lineWidth = 4;
         ctx.beginPath();
@@ -214,23 +209,24 @@ module.exports = {
             const stats = user.matchStats || { elo: 100 };
             const lvlInfo = getLevelInfo(stats.elo);
 
-            // Sıra No (#1, #2)
+            // Sıra No
             ctx.font = 'bold 60px sans-serif';
             ctx.textAlign = 'center';
 
             let rankColor = '#ffffff';
-            if (i === 0) rankColor = '#ffcc00'; // Gold
-            if (i === 1) rankColor = '#c0c0c0'; // Silver
-            if (i === 2) rankColor = '#cd7f32'; // Bronze
+            if (i === 0) rankColor = '#ffcc00';
+            if (i === 1) rankColor = '#c0c0c0';
+            if (i === 2) rankColor = '#cd7f32';
 
             ctx.fillStyle = rankColor;
             ctx.fillText(`#${i + 1}`, 150, y);
 
             // Level Icon
             try {
-                const iconPath = path.join(__dirname, '..', '..', 'levels', `${lvlInfo.lv}.png`);
+                // KLASÖR: faceitsekli
+                const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
                 const icon = await loadImage(iconPath);
-                ctx.drawImage(icon, 250, y - 60, 100, 100); // 100x100 ikon
+                ctx.drawImage(icon, 250, y - 60, 100, 100);
             } catch (e) { }
 
             // İsim
@@ -246,7 +242,7 @@ module.exports = {
             ctx.font = 'bold 60px sans-serif';
             ctx.fillText(`${stats.elo} ELO`, 1500, y + 15);
 
-            // WR (Win Rate)
+            // WR
             const total = stats.totalMatches || 0;
             const wins = stats.totalWins || 0;
             const wr = total > 0 ? Math.round((wins / total) * 100) : 0;
