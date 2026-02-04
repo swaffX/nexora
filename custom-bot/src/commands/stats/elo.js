@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const path = require('path');
-const { User } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
+const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const canvasGenerator = require('../../utils/canvasGenerator');
 
 module.exports = {
