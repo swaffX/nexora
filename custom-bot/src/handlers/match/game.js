@@ -302,10 +302,14 @@ module.exports = {
         match.scoreA = sA;
         match.scoreB = sB;
 
+        // Beraberlik Kontrolü (Beraberlik YOK)
+        if (sA === sB) {
+            return interaction.reply({ content: '❌ **Beraberlik Olamaz!**\nLütfen uzatmalar dahil **FİNAL** skorunu girin (Örn: 14-12, 16-14).', flags: MessageFlags.Ephemeral });
+        }
+
         // Kazananı Belirle
         if (sA > sB) match.winner = 'A';
-        else if (sB > sA) match.winner = 'B';
-        else match.winner = 'DRAW'; // Berabere ise yine de MVP seçilebilir
+        else match.winner = 'B';
 
         await match.save();
 
@@ -376,14 +380,23 @@ module.exports = {
     },
 
     async openLoserMVPMenu(interaction, match) {
+        console.log(`[DEBUG] openLoserMVPMenu called. Winner: ${match.winner}, Team A: ${match.teamA.length}, Team B: ${match.teamB.length}`);
+
         // Kaybeden Takım
         let targetTeamIds = [];
         if (match.winner === 'A') targetTeamIds = match.teamB; // A kazandıysa B kaybetti
         else if (match.winner === 'B') targetTeamIds = match.teamA;
-        else return this.finishMatch(interaction, match); // Berabere ise 2. MVP yok, bitir.
+        else {
+            console.log('[DEBUG] Match is DRAW or Invalid Winner, finishing.');
+            return this.finishMatch(interaction, match);
+        }
+
+        console.log(`[DEBUG] Loser Team IDs: ${targetTeamIds.join(', ')}`);
 
         // Eğer kaybeden takım boşsa direkt bitir
         if (!targetTeamIds || targetTeamIds.length === 0) {
+            console.log('[DEBUG] Loser team is empty, finishing.');
+            // Bu durumda yapacak bir şey yok, bitiriyoruz.
             return this.finishMatch(interaction, match);
         }
 
@@ -392,13 +405,15 @@ module.exports = {
             let username = 'Unknown Player';
             let levelEmojiId = null;
             try {
-                const member = interaction.guild.members.cache.get(id) || await interaction.guild.members.fetch(id);
+                const member = interaction.guild.members.cache.get(id) || await interaction.guild.members.fetch(id).catch(() => null);
                 if (member) username = member.user.username;
                 const userDoc = await User.findOne({ odasi: id, odaId: interaction.guild.id });
                 const level = userDoc?.matchStats?.matchLevel || 1;
                 const levelEmoji = eloService.LEVEL_EMOJIS[level] || eloService.LEVEL_EMOJIS[1];
                 levelEmojiId = levelEmoji.match(/:([0-9]+)>/)?.[1];
-            } catch (e) { }
+            } catch (e) {
+                console.error(`[DEBUG] Error fetching user ${id}:`, e);
+            }
 
             options.push({
                 label: username,
@@ -408,10 +423,10 @@ module.exports = {
             });
         }
 
-        // Options boşsa (hata durumu) direkt bitir
+        // Options boşsa (hata durumu)
         if (options.length === 0) {
-            console.warn('[MVP] Loser team options empty, finishing match directly.');
-            return this.finishMatch(interaction, match);
+            console.error('[MVP] Loser team options empty even though teamIds exist.');
+            return interaction.channel.send({ content: '⚠️ **HATA:** Kaybeden takım oyuncuları listelenemedi. Lütfen yetkiliye bildirin.' });
         }
 
         const selectMenu = new StringSelectMenuBuilder()
