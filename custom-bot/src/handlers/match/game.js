@@ -50,18 +50,140 @@ module.exports = {
         const teamAString = match.teamA.map(id => `<@${id}>`).join(', ');
         const teamBString = match.teamB.map(id => `<@${id}>`).join(', ');
 
+        // --- SES KANALLARINI OLUŞTUR VE OYUNCULARI TAŞI ---
+        try {
+            const guild = channel.guild;
+            // 1. Kategori Bul (Match Channel'ın parent'ı)
+            const parentCategory = channel.parent;
+
+            if (parentCategory) {
+                // Team A Kanalı
+                const channelA = await guild.channels.create({
+                    name: `🔷 Team A`,
+                    type: ChannelType.GuildVoice,
+                    parent: parentCategory.id,
+                    userLimit: 5,
+                    permissionOverwrites: [
+                        { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
+                        ...match.teamA.map(id => ({ id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect] }))
+                    ]
+                });
+
+                // Team B Kanalı
+                const channelB = await guild.channels.create({
+                    name: `🟥 Team B`,
+                    type: ChannelType.GuildVoice,
+                    parent: parentCategory.id,
+                    userLimit: 5,
+                    permissionOverwrites: [
+                        { id: guild.roles.everyone.id, deny: [PermissionFlagsBits.ViewChannel] },
+                        ...match.teamB.map(id => ({ id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect] }))
+                    ]
+                });
+
+                // Kanalları Kaydet (Silmek İçin)
+                match.createdChannelIds.push(channelA.id);
+                match.createdChannelIds.push(channelB.id);
+                await match.save();
+
+                // 2. Oyuncuları Taşı
+                const allMembers = await guild.members.fetch();
+
+                // Team A Taşı
+                for (const id of match.teamA) {
+                    const member = allMembers.get(id);
+                    if (member && member.voice.channel) {
+                        await member.voice.setChannel(channelA).catch(e => console.log(`Move error A: ${e.message}`));
+                    }
+                }
+
+                // Team B Taşı
+                for (const id of match.teamB) {
+                    const member = allMembers.get(id);
+                    if (member && member.voice.channel) {
+                        await member.voice.setChannel(channelB).catch(e => console.log(`Move error B: ${e.message}`));
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Voice Channel Error:", e);
+            channel.send("⚠️ Ses kanalları oluşturulurken veya taşınırken bir hata oluştu.");
+        }
+        // -----------------------------------------------------
+
+        // --- HARİTA GÖRSELİ (LOCAL ASSETS) ---
+        const { AttachmentBuilder } = require('discord.js');
+        const fs = require('fs');
+        const path = require('path');
+
+        let mapName = match.selectedMap || 'Unknown';
+        // Dosya yolu: src/handlers/match/game.js -> ../../../assets/maps/MapName.png
+        // Ancak map isimleri "Bind", "Ascent" gibi. Dosya uzantısı .png varsayıyoruz.
+
+        // assets klasörünü doğru bulmak için path.join kullan
+        // game.js -> match -> handlers -> src -> custom-bot -> (bir üstte assets olabilir mi? kontrol edelim)
+        // Kullanıcının attığı dosya yapısına göre: c:\Users\zeyne\OneDrive\Masaüstü\nexora\custom-bot\assets\maps
+
+        const assetsPath = path.join(__dirname, '..', '..', '..', 'assets', 'maps');
+        const mapFilePath = path.join(assetsPath, `${mapName}.png`);
+
+        let mapAttachment = null;
+        let mapImageName = 'default.png';
+
+        // Debug için
+        // console.log("Map Path Looking at:", mapFilePath);
+
+        if (fs.existsSync(mapFilePath)) {
+            mapAttachment = new AttachmentBuilder(mapFilePath, { name: `${mapName}.png` });
+            mapImageName = `${mapName}.png`;
+        } else {
+            // Belki küçük harfle?
+            const lowerPath = path.join(assetsPath, `${mapName.toLowerCase()}.png`);
+            if (fs.existsSync(lowerPath)) {
+                mapAttachment = new AttachmentBuilder(lowerPath, { name: `${mapName}.png` });
+                mapImageName = `${mapName}.png`;
+            }
+        }
+
+        const formatTeamList = (ids) => ids.map(id => `> <@${id}>`).join('\n');
+
         const embed = new EmbedBuilder()
-            .setColor(0xe74c3c)
-            .setTitle('🔥 MAÇ BAŞLADI!') // Başlık basitleştirildi
-            .setDescription(`**Harita:** ${match.selectedMap}\n\n**🔵 Team A (${match.teamASide === 'ATTACK' ? 'Saldırı' : 'Savunma'}):**\n${teamAString}\n\n**🔴 Team B (${match.teamBSide === 'ATTACK' ? 'Saldırı' : 'Savunma'}):**\n${teamBString}\n\nMaç sonucunu bildirmek için aşağıdaki butonları kullanın.`)
-            .setImage('https://media1.tenor.com/m/xR0y16wVbQcAAAAC/valorant-clutch.gif')
+            .setColor(0xFF4654)
+            .setTitle(`⚔️ MAÇ BAŞLADI! (#${match.matchNumber})`)
+            .setDescription(`Savaş başladı! İyi olan kazansın.\n\n🗺️ **Harita:** \`${match.selectedMap}\``)
+            .addFields(
+                {
+                    name: `🔵 TEAM A (${match.teamASide === 'ATTACK' ? '🗡️ Saldırı' : '🛡️ Savunma'})`,
+                    value: formatTeamList(match.teamA),
+                    inline: true
+                },
+                {
+                    name: `🔴 TEAM B (${match.teamBSide === 'ATTACK' ? '🗡️ Saldırı' : '🛡️ Savunma'})`,
+                    value: formatTeamList(match.teamB),
+                    inline: true
+                },
+                {
+                    name: 'Kaptanlar',
+                    value: `🔵 <@${match.captainA}> vs 🔴 <@${match.captainB}>`,
+                    inline: false
+                }
+            )
+            .setThumbnail('https://cdn-icons-png.flaticon.com/512/12369/12369138.png')
+            .setFooter({ text: `Nexora Competitive • Match ID: ${match.matchId} • İyi Oyunlar!` })
             .setTimestamp();
+
+        if (mapAttachment) {
+            embed.setImage(`attachment://${mapImageName}`);
+        } else {
+            // İnternetten bulmaya çalış veya gif koy
+            embed.setImage('https://media1.tenor.com/m/xR0y16wVbQcAAAAC/valorant-clutch.gif');
+        }
 
         const row = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
                     .setCustomId(`match_score_${match.matchId}`)
-                    .setLabel('Skor Gir')
+                    .setLabel('Skor Bildir')
                     .setStyle(ButtonStyle.Primary)
                     .setEmoji('📝'),
                 new ButtonBuilder()
@@ -70,7 +192,17 @@ module.exports = {
                     .setStyle(ButtonStyle.Danger)
             );
 
-        await channel.send({ content: `@here Maç Başladı!`, embeds: [embed], components: [row] });
+        const payload = {
+            content: `<@&${match.guildId === '123' ? 'ROLE_ID' : ''}> @here **Maç Başladı!** Ses kanallarına geçiş yapıldı.`,
+            embeds: [embed],
+            components: [row]
+        };
+
+        if (mapAttachment) {
+            payload.files = [mapAttachment];
+        }
+
+        await channel.send(payload);
     },
 
     async openScoreModal(interaction, match) {
@@ -276,6 +408,35 @@ module.exports = {
 
             } catch (e) { console.error("ELO Process Error:", e); }
         }
+
+        // --- SES KANALI TEMİZLİĞİ VE TAŞIMA ---
+        try {
+            const guild = interaction.guild;
+            if (match.lobbyVoiceId) {
+                // Herkesi ana lobiye taşı
+                const allMembers = await guild.members.fetch();
+                for (const pid of allPlayerIds) {
+                    const member = allMembers.get(pid);
+                    if (member && member.voice.channel) {
+                        await member.voice.setChannel(match.lobbyVoiceId).catch(() => { });
+                    }
+                }
+            }
+
+            // Oluşturulan Kanalları Sil
+            if (match.createdChannelIds && match.createdChannelIds.length > 0) {
+                for (const cid of match.createdChannelIds) {
+                    const ch = guild.channels.cache.get(cid) || await guild.channels.fetch(cid).catch(() => null);
+                    if (ch) await ch.delete().catch(() => { });
+                }
+            }
+        } catch (e) {
+            console.error("Voice cleanup error:", e);
+        }
+        // ----------------------------------------
+
+        match.status = 'FINISHED';
+        await match.save();
 
         // Kanalı Sil
         if (interaction.channel) {
