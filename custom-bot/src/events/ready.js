@@ -49,7 +49,7 @@ module.exports = {
 
             setInterval(() => {
                 leaderboard.updateLeaderboard(client);
-            }, 5000); // Her 5 saniyede bir güncelle (Live)
+            }, 30000); // Her 30 saniyede bir güncelle (Live)
             logger.info('📊 Leaderboard servisi başlatıldı.');
         } catch (err) {
             logger.error('Leaderboard servisi hatası:', err);
@@ -93,6 +93,17 @@ module.exports = {
                 // (Bu işlem biraz ağır olabilir, dikkatli olunmalı)
                 // Şimdilik sadece yeni eklemeleri yapalım, silme işlemini eventlere bırakalım.
                 // Çünkü "matchStats:exists" sorgusu pahalı olabilir.
+
+                try {
+                    // MIGRATION: 100 ELO olanları 200 yap
+                    const result = await User.updateMany(
+                        { 'matchStats.elo': 100 },
+                        { $set: { 'matchStats.elo': 200 } }
+                    );
+                    if (result.modifiedCount > 0) {
+                        logger.success(`♻️ MIGRATION: ${result.modifiedCount} kullanıcının ELO'su 100 -> 200 olarak güncellendi.`);
+                    }
+                } catch (migErr) { logger.error('Migration Error:', migErr); }
 
                 logger.success('✅ ELO Rol senkronizasyonu tamamlandı.');
             } catch (e) {

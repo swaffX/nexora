@@ -669,6 +669,12 @@ module.exports = {
             setTimeout(() => {
                 interaction.channel.delete().catch(() => { });
             }, 5000);
+            // Leaderboard'u anında güncelle
+            try {
+                const leaderboard = require('../leaderboard');
+                // Client'a erişim için interaction veya match üzerinden gitmeliyiz
+                leaderboard.updateLeaderboard(interaction.client);
+            } catch (err) { console.error('Leaderboard update trigger error:', err); }
         }
     }
 };

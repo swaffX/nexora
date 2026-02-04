@@ -19,7 +19,11 @@ module.exports = {
             const finalTopUsers = [];
 
             // 1. ELO verisi olanları çek (Limit 50, rol kontrolü yapılacak)
-            const rankedCandidates = await User.find({ 'matchStats.elo': { $exists: true } })
+            // odaId filtresi eklendi (Sadece bu sunucu)
+            const rankedCandidates = await User.find({
+                'matchStats.elo': { $exists: true },
+                odaId: guild.id
+            })
                 .sort({ 'matchStats.elo': -1 })
                 .limit(50);
 
@@ -42,7 +46,8 @@ module.exports = {
                 // DB'den henüz ELO'su olmayanları çek
                 const unrankedCandidates = await User.find({
                     'matchStats.elo': { $exists: false },
-                    odasi: { $exists: true, $ne: '' }
+                    odasi: { $exists: true, $ne: '' },
+                    odaId: guild.id
                 }).sort({ createdAt: -1 }).limit(100);
 
                 for (const doc of unrankedCandidates) {
