@@ -152,13 +152,32 @@ module.exports = {
                 // winner case is removed
 
                 // --- SCORE & MVP ---
+                case 'score':
+                    const mScore = await Match.findOne({ matchId: parts[2] });
+                    if (mScore) await game.openScoreModal(interaction, mScore);
+                    break;
+
                 case 'openscore': // Legacy/Backup
                 case 'enterscore': // Legacy
                 case 'selectmvp':
-                    await game.openMVPSelectMenu(interaction);
+                    // Bu butonlar artık kullanılmıyor olabilir ama eski mesajlar için winner MVP aç
+                    const mScoreLegacy = await Match.findOne({ matchId: parts[2] });
+                    if (mScoreLegacy) await game.openScoreModal(interaction, mScoreLegacy); // Direkt modal aç
                     break;
-                case 'mvp': // User Select Menu
-                    await game.handleMVPSelect(interaction);
+
+                case 'mvp':
+                    // match_mvp_winner_MATCHID -> parts: ['match', 'mvp', 'winner', 'ID']
+                    // match_mvp_loser_MATCHID
+                    const mvpAction = parts[2];
+                    const matchMvpId = parts[3];
+
+                    const matchMvp = await Match.findOne({ matchId: matchMvpId });
+
+                    if (matchMvp) {
+                        if (mvpAction === 'winner') await game.handleWinnerMVP(interaction, matchMvp);
+                        else if (mvpAction === 'loser') await game.handleLoserMVP(interaction, matchMvp);
+                        else await game.handleMVPSelect(interaction, matchMvp); // Fallback
+                    }
                     break;
 
                 case 'rematch':

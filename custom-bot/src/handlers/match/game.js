@@ -149,17 +149,8 @@ module.exports = {
         // -----------------------------------------------------
 
         // --- HARİTA GÖRSELİ (LOCAL ASSETS) ---
-        const { AttachmentBuilder } = require('discord.js');
-        const fs = require('fs');
-        const path = require('path');
-
         let mapName = match.selectedMap || 'Unknown';
         // Dosya yolu: src/handlers/match/game.js -> ../../../assets/maps/MapName.png
-        // Ancak map isimleri "Bind", "Ascent" gibi. Dosya uzantısı .png varsayıyoruz.
-
-        // assets klasörünü doğru bulmak için path.join kullan
-        // game.js -> match -> handlers -> src -> custom-bot -> (bir üstte assets olabilir mi? kontrol edelim)
-        // Kullanıcının attığı dosya yapısına göre: c:\Users\zeyne\OneDrive\Masaüstü\nexora\custom-bot\assets\maps
 
         const assetsPath = path.join(__dirname, '..', '..', '..', 'assets', 'maps');
         const mapFilePath = path.join(assetsPath, `${mapName}.png`);
@@ -276,23 +267,29 @@ module.exports = {
 
         match.scoreA = sA;
         match.scoreB = sB;
+
+        // Kazananı Belirle
+        if (sA > sB) match.winner = 'A';
+        else if (sB > sA) match.winner = 'B';
+        else match.winner = 'DRAW'; // Berabere ise yine de MVP seçilebilir
+
         await match.save();
 
-        await this.openMVPSelectMenu(interaction, match);
+        await this.openWinnerMVPMenu(interaction, match);
     },
 
-    async openMVPSelectMenu(interaction, match) {
-        // Maçı yapan userları bul
-        const allPlayerIds = [...match.teamA, ...match.teamB];
+    async openWinnerMVPMenu(interaction, match) {
+        // Kazanan Takım (Berabere ise Team A başlasın veya hepsi)
+        let targetTeamIds = [];
+        if (match.winner === 'A') targetTeamIds = match.teamA;
+        else if (match.winner === 'B') targetTeamIds = match.teamB;
+        else targetTeamIds = [...match.teamA, ...match.teamB]; // Draw ise hepsi
 
-        // Interaction'dan userları çekmek yerine veritabanı ID'lerini kullanacağız.
-        // Ancak SelectMenu için Username lazım.
+        // Seçenekleri Hazırla
         const options = [];
-
-        for (const id of allPlayerIds) {
+        for (const id of targetTeamIds) {
             let username = 'Unknown Player';
             try {
-                // Cache'den veya fetch'ten al
                 const user = interaction.guild.members.cache.get(id) || await interaction.guild.members.fetch(id);
                 if (user) username = user.user.username;
             } catch (e) { }
@@ -300,32 +297,82 @@ module.exports = {
             options.push({
                 label: username,
                 value: id,
-                description: match.teamA.includes(id) ? 'Team A' : 'Team B'
+                description: 'Kazanan Takım Oyuncusu'
             });
         }
 
         const selectMenu = new StringSelectMenuBuilder()
-            .setCustomId(`match_mvp_select_${match.matchId}`)
-            .setPlaceholder('Maçın MVP\'sini Seçin')
+            .setCustomId(`match_mvp_winner_${match.matchId}`)
+            .setPlaceholder('KAZANAN Takımın MVP\'sini Seçin')
             .addOptions(options);
 
         const row = new ActionRowBuilder().addComponents(selectMenu);
 
         await interaction.reply({
-            content: `📊 **Maç Skoru:** ${match.scoreA} - ${match.scoreB}\nLütfen maçın **MVP** oyuncusunu seçin.`,
+            content: `📊 **Maç Skoru:** ${match.scoreA} - ${match.scoreB}\n🏆 **Kazanan Takım:** ${match.winner === 'DRAW' ? 'BERABERE' : (match.winner === 'A' ? 'Blue Team' : 'Red Team')}\n\nLütfen **KAZANAN** takımın MVP oyuncusunu seçin.`,
             components: [row],
-            ephemeral: false // Herkes görsün
+            ephemeral: false
         });
     },
 
-    async handleMVPSelect(interaction, match) {
+    async handleWinnerMVP(interaction, match) {
         const selectedMVPId = interaction.values[0];
-        match.mvpPlayerId = selectedMVPId;
+        match.mvpPlayerId = selectedMVPId; // Winner MVP
+        await match.save();
+
+        // Şimdi Kaybeden Takım MVP
+        await interaction.update({ content: `✅ Kazanan MVP Seçildi: <@${selectedMVPId}>\nŞimdi **KAYBEDEN** takımın MVP'sini seçin...`, components: [] });
+        await this.openLoserMVPMenu(interaction, match);
+    },
+
+    async openLoserMVPMenu(interaction, match) {
+        // Kaybeden Takım
+        let targetTeamIds = [];
+        if (match.winner === 'A') targetTeamIds = match.teamB; // A kazandıysa B kaybetti
+        else if (match.winner === 'B') targetTeamIds = match.teamA;
+        else return this.finishMatch(interaction, match); // Berabere ise 2. MVP yok, bitir.
+
+        const options = [];
+        for (const id of targetTeamIds) {
+            let username = 'Unknown Player';
+            try {
+                const user = interaction.guild.members.cache.get(id) || await interaction.guild.members.fetch(id);
+                if (user) username = user.user.username;
+            } catch (e) { }
+
+            options.push({
+                label: username,
+                value: id,
+                description: 'Kaybeden Takım Oyuncusu'
+            });
+        }
+
+        const selectMenu = new StringSelectMenuBuilder()
+            .setCustomId(`match_mvp_loser_${match.matchId}`)
+            .setPlaceholder('KAYBEDEN Takımın MVP\'sini Seçin')
+            .addOptions(options);
+
+        const row = new ActionRowBuilder().addComponents(selectMenu);
+
+        // Yeni mesaj göndermek yerine (veya editlemek):
+        // handleWinnerMVP içinde update kullanmıştık. Buradan yeni bir followUp veya channel.send yapabiliriz.
+        // Veya interaction.channel.send
+
+        await interaction.channel.send({
+            content: `💔 **Kaybeden Takımın MVP\'sini Seçin.**`,
+            components: [row]
+        });
+    },
+
+    async handleLoserMVP(interaction, match) {
+        const selectedLoserMVPId = interaction.values[0];
+        match.mvpLoserId = selectedLoserMVPId;
+
         match.status = 'FINISHED';
         match.endTime = new Date();
         await match.save();
 
-        await interaction.update({ content: `✅ MVP Seçildi: <@${selectedMVPId}>\nSkorlar işleniyor ve ELO hesaplanıyor...`, components: [] });
+        await interaction.update({ content: `✅ Kaybeden MVP Seçildi: <@${selectedLoserMVPId}>\nSkorlar işleniyor ve ELO hesaplanıyor...`, components: [] });
         await this.finishMatch(interaction, match);
     },
 
@@ -420,7 +467,8 @@ module.exports = {
                         let lossAmount = BASE_LOSS + fairnessAdjustment;
 
                         // MVP Koruması (AZALTILDI: +5)
-                        if (match.mvpPlayerId === pid) lossAmount += 5;
+                        // MVP Koruması (Kaybeden Takımın MVP'si)
+                        if (match.mvpLoserId === pid) lossAmount += 5;
 
                         // Limit: Kayıp asla 0'dan büyük olamaz (Pozitif olamaz)
                         if (lossAmount > 0) lossAmount = 0;
