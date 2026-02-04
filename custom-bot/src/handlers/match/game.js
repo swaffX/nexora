@@ -71,10 +71,20 @@ module.exports = {
             // 1. Kategori Bul (Match Channel'ın parent'ı)
             const parentCategory = channel.parent;
 
+            // Kaptan isimlerini al
+            const captainAMember = await guild.members.fetch(match.captainA).catch(() => null);
+            const captainBMember = await guild.members.fetch(match.captainB).catch(() => null);
+            const captainAName = captainAMember?.displayName?.substring(0, 15) || 'Team A';
+            const captainBName = captainBMember?.displayName?.substring(0, 15) || 'Team B';
+
+            // Taraf kısaltmaları
+            const sideA = match.teamASide === 'ATTACK' ? 'ATK' : 'DEF';
+            const sideB = match.teamBSide === 'ATTACK' ? 'ATK' : 'DEF';
+
             if (parentCategory) {
                 // Team A Kanalı
                 const channelA = await guild.channels.create({
-                    name: `🔷 Team A`,
+                    name: `🔷 Team ${captainAName} (${sideA})`,
                     type: ChannelType.GuildVoice,
                     parent: parentCategory.id,
                     userLimit: 5,
@@ -93,7 +103,7 @@ module.exports = {
 
                 // Team B Kanalı
                 const channelB = await guild.channels.create({
-                    name: `🟥 Team B`,
+                    name: `🟥 Team ${captainBName} (${sideB})`,
                     type: ChannelType.GuildVoice,
                     parent: parentCategory.id,
                     userLimit: 5,
@@ -115,12 +125,10 @@ module.exports = {
                 match.createdChannelIds.push(channelB.id);
                 await match.save();
 
-                // 2. Oyuncuları Taşı
-                const allMembers = await guild.members.fetch();
-
+                // 2. Oyuncuları Taşı (Memory-safe: tek tek fetch)
                 // Team A Taşı
                 for (const id of match.teamA) {
-                    const member = allMembers.get(id);
+                    const member = await guild.members.fetch(id).catch(() => null);
                     if (member && member.voice.channel) {
                         await member.voice.setChannel(channelA).catch(e => console.log(`Move error A: ${e.message}`));
                     }
@@ -128,7 +136,7 @@ module.exports = {
 
                 // Team B Taşı
                 for (const id of match.teamB) {
-                    const member = allMembers.get(id);
+                    const member = await guild.members.fetch(id).catch(() => null);
                     if (member && member.voice.channel) {
                         await member.voice.setChannel(channelB).catch(e => console.log(`Move error B: ${e.message}`));
                     }
@@ -165,6 +173,18 @@ module.exports = {
             }
         }
 
+        // --- ÖNCEKİ MESAJLARI TEMİZLE (Draft, Voting, Side Selection vb.) ---
+        try {
+            const messages = await channel.messages.fetch({ limit: 50 });
+            const botMessages = messages.filter(m => m.author.id === channel.client.user.id);
+            if (botMessages.size > 0) {
+                await channel.bulkDelete(botMessages).catch(() => { });
+            }
+        } catch (e) {
+            console.log('[Cleanup] Previous messages cleanup error:', e.message);
+        }
+        // ---------------------------------------------------------------------
+
         const captainA = await channel.guild.members.fetch(match.captainA).catch(() => ({ displayName: 'PLAYER A' }));
         const captainB = await channel.guild.members.fetch(match.captainB).catch(() => ({ displayName: 'PLAYER B' }));
 
@@ -173,8 +193,20 @@ module.exports = {
 
         const divider = '<a:ayrma:1468003499072688309>'.repeat(5);
 
-        const listA = `${divider}\n${match.teamA.map(id => `<@${id}>`).join('\n') || 'Oyuncu yok'}`;
-        const listB = `${divider}\n${match.teamB.map(id => `<@${id}>`).join('\n') || 'Oyuncu yok'}`;
+        // Level emojileriyle oyuncu listesi oluştur
+        const buildPlayerList = async (playerIds) => {
+            const lines = [];
+            for (const id of playerIds) {
+                const userDoc = await User.findOne({ odasi: id, odaId: channel.guild.id });
+                const level = userDoc?.matchStats?.matchLevel || 1;
+                const levelEmoji = eloService.getLevelEmoji(level);
+                lines.push(`${levelEmoji} <@${id}>`);
+            }
+            return lines.length > 0 ? lines.join('\n') : 'Oyuncu yok';
+        };
+
+        const listA = `${divider}\n${await buildPlayerList(match.teamA)}`;
+        const listB = `${divider}\n${await buildPlayerList(match.teamB)}`;
 
         const embed = new EmbedBuilder()
             .setColor(0xE74C3C) // Live Red
@@ -277,19 +309,24 @@ module.exports = {
         else if (match.winner === 'B') targetTeamIds = match.teamB;
         else targetTeamIds = [...match.teamA, ...match.teamB]; // Draw ise hepsi
 
-        // Seçenekleri Hazırla
+        // Seçenekleri Hazırla (Level emojileriyle)
         const options = [];
         for (const id of targetTeamIds) {
             let username = 'Unknown Player';
+            let levelEmoji = eloService.LEVEL_EMOJIS[1];
             try {
-                const user = interaction.guild.members.cache.get(id) || await interaction.guild.members.fetch(id);
-                if (user) username = user.user.username;
+                const member = interaction.guild.members.cache.get(id) || await interaction.guild.members.fetch(id);
+                if (member) username = member.user.username;
+                const userDoc = await User.findOne({ odasi: id, odaId: interaction.guild.id });
+                const level = userDoc?.matchStats?.matchLevel || 1;
+                levelEmoji = eloService.LEVEL_EMOJIS[level] || eloService.LEVEL_EMOJIS[1];
             } catch (e) { }
 
             options.push({
                 label: username,
                 value: id,
-                description: 'Kazanan Takım Oyuncusu'
+                description: 'Kazanan Takım Oyuncusu',
+                emoji: levelEmoji.match(/:([0-9]+)>/)?.[1] // Emoji ID'sini çıkar
             });
         }
 
@@ -327,15 +364,21 @@ module.exports = {
         const options = [];
         for (const id of targetTeamIds) {
             let username = 'Unknown Player';
+            let levelEmojiId = null;
             try {
-                const user = interaction.guild.members.cache.get(id) || await interaction.guild.members.fetch(id);
-                if (user) username = user.user.username;
+                const member = interaction.guild.members.cache.get(id) || await interaction.guild.members.fetch(id);
+                if (member) username = member.user.username;
+                const userDoc = await User.findOne({ odasi: id, odaId: interaction.guild.id });
+                const level = userDoc?.matchStats?.matchLevel || 1;
+                const levelEmoji = eloService.LEVEL_EMOJIS[level] || eloService.LEVEL_EMOJIS[1];
+                levelEmojiId = levelEmoji.match(/:([0-9]+)>/)?.[1];
             } catch (e) { }
 
             options.push({
                 label: username,
                 value: id,
-                description: 'Kaybeden Takım Oyuncusu'
+                description: 'Kaybeden Takım Oyuncusu',
+                emoji: levelEmojiId
             });
         }
 
@@ -468,22 +511,31 @@ module.exports = {
         // --- SES KANALI TEMİZLİĞİ VE TAŞIMA ---
         try {
             const guild = interaction.guild;
+
+            // 1. Önce herkesi lobiye taşı (Memory-safe: tek tek fetch)
             if (match.lobbyVoiceId) {
-                // Herkesi ana lobiye taşı
-                const allMembers = await guild.members.fetch();
                 for (const pid of allPlayerIds) {
-                    const member = allMembers.get(pid);
+                    const member = await guild.members.fetch(pid).catch(() => null);
                     if (member && member.voice.channel) {
                         await member.voice.setChannel(match.lobbyVoiceId).catch(() => { });
                     }
                 }
             }
 
-            // Oluşturulan Kanalları Sil
+            // 2. Kısa bekle (oyuncuların taşınması için)
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // 3. Ses kanallarının boş olduğunu kontrol et ve sil
             if (match.createdChannelIds && match.createdChannelIds.length > 0) {
                 for (const cid of match.createdChannelIds) {
                     const ch = guild.channels.cache.get(cid) || await guild.channels.fetch(cid).catch(() => null);
-                    if (ch) await ch.delete().catch(() => { });
+                    if (ch) {
+                        // Eğer hala birileri varsa 2 saniye daha bekle
+                        if (ch.members && ch.members.size > 0) {
+                            await new Promise(resolve => setTimeout(resolve, 2000));
+                        }
+                        await ch.delete().catch(() => { });
+                    }
                 }
             }
         } catch (e) {
@@ -494,12 +546,31 @@ module.exports = {
         match.status = 'FINISHED';
         await match.save();
 
-        // Kanalı Sil
+        // Özet Mesajı ve Kanal Silme
         if (interaction.channel) {
-            interaction.channel.send(`✅ **Maç Bitti! Puanlar Hesaplandı (Balanced System).**\n📊 **Ortalamalar:** Team A (${avgEloA}) vs Team B (${avgEloB})\nKanal siliniyor...`);
+            const winnerTeamName = winnerTeam === 'A' ? 'Team A' : 'Team B';
+            const mvpWinnerMention = match.mvpPlayerId ? `<@${match.mvpPlayerId}>` : 'Seçilmedi';
+            const mvpLoserMention = match.mvpLoserId ? `<@${match.mvpLoserId}>` : 'Seçilmedi';
+
+            const summaryEmbed = new EmbedBuilder()
+                .setColor(0x2ECC71)
+                .setTitle('✅ Maç Tamamlandı!')
+                .setDescription(`**Skor:** ${match.scoreA} - ${match.scoreB}`)
+                .addFields(
+                    { name: '🏆 Kazanan', value: winnerTeam === 'DRAW' ? 'Berabere' : winnerTeamName, inline: true },
+                    { name: '📊 Team Ortalamaları', value: `A: ${avgEloA} | B: ${avgEloB}`, inline: true },
+                    { name: '⭐ Kazanan MVP', value: mvpWinnerMention, inline: true },
+                    { name: '💔 Kaybeden MVP', value: mvpLoserMention, inline: true }
+                )
+                .setFooter({ text: 'Kanal 5 saniye sonra silinecek...' })
+                .setTimestamp();
+
+            await interaction.channel.send({ embeds: [summaryEmbed] });
+
+            // Text kanalını en son sil
             setTimeout(() => {
                 interaction.channel.delete().catch(() => { });
-            }, 3000);
+            }, 5000);
         }
     }
 };

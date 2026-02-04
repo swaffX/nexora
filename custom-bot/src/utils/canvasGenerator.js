@@ -1,21 +1,30 @@
 const { createCanvas, loadImage } = require('canvas');
 const path = require('path');
+const eloService = require('../services/eloService');
 
-// ELO ARALIKLARI
-// Level 1: 100 - 500
-// Level 2: 501 - 750
-// ...
+// ELO Level Info (Canvas için min/max/color bilgisi - eloService ile senkron)
 const getLevelInfo = (elo) => {
-    if (elo <= 500) return { lv: 1, min: 100, max: 500, color: '#00ff00' };
-    if (elo <= 750) return { lv: 2, min: 501, max: 750, color: '#00ff00' };
-    if (elo <= 900) return { lv: 3, min: 751, max: 900, color: '#00ff00' };
-    if (elo <= 1050) return { lv: 4, min: 901, max: 1050, color: '#ffcc00' };
-    if (elo <= 1200) return { lv: 5, min: 1051, max: 1200, color: '#ffcc00' };
-    if (elo <= 1350) return { lv: 6, min: 1201, max: 1350, color: '#ffcc00' };
-    if (elo <= 1530) return { lv: 7, min: 1351, max: 1530, color: '#ffcc00' };
-    if (elo <= 1750) return { lv: 8, min: 1531, max: 1750, color: '#ff4400' };
-    if (elo <= 2000) return { lv: 9, min: 1751, max: 2000, color: '#ff4400' };
-    return { lv: 10, min: 2001, max: 99999, color: '#ff0000' };
+    const level = eloService.getLevelFromElo(elo);
+    const thresholds = eloService.ELO_CONFIG.LEVEL_THRESHOLDS;
+
+    // Renk Haritası
+    const colors = {
+        1: '#00ff00', 2: '#00ff00', 3: '#00ff00',
+        4: '#ffcc00', 5: '#ffcc00', 6: '#ffcc00', 7: '#ffcc00',
+        8: '#ff4400', 9: '#ff4400', 10: '#ff0000'
+    };
+
+    // Min/Max hesapla
+    let min = 100, max = 500;
+    for (let i = 0; i < thresholds.length; i++) {
+        if (thresholds[i].level === level) {
+            min = i > 0 ? thresholds[i - 1].max + 1 : 100;
+            max = thresholds[i].max === Infinity ? 3000 : thresholds[i].max;
+            break;
+        }
+    }
+
+    return { lv: level, min, max, color: colors[level] || '#ffffff' };
 };
 
 module.exports = {

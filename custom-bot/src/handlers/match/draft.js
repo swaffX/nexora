@@ -87,23 +87,14 @@ module.exports = {
                     }
                 } catch (err) { }
 
-                const LEVEL_EMOJIS = {
-                    1: '1468451643355041815',
-                    2: '1468451665265819749',
-                    3: '1468451677295345829',
-                    4: '1468451696693743729',
-                    5: '1468451709754933389',
-                    6: '1468451723071717426',
-                    7: '1468451735478472923',
-                    8: '1468451750813110312',
-                    9: '1468451768009621525',
-                    10: '1468451780777214185'
-                };
+                // eloService'den emoji ID'sini al
+                const levelEmojiStr = eloService.LEVEL_EMOJIS[userLevel] || eloService.LEVEL_EMOJIS[1];
+                const emojiId = levelEmojiStr.match(/:([0-9]+)>/)?.[1] || '1468451643355041815';
 
                 poolOptions.push({
                     label: `${p.displayName.substring(0, 25)}`,
                     value: p.id,
-                    emoji: LEVEL_EMOJIS[userLevel] || '1468451643355041815', // Varsayılan Level 1
+                    emoji: emojiId,
                     description: `Level: ${userLevel} • ELO: ${userElo}`
                 });
             } catch (e) { }

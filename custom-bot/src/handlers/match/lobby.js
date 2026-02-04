@@ -1,8 +1,9 @@
 const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelectMenuBuilder, ChannelType } = require('discord.js');
 const path = require('path');
-const { Match } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
+const { Match, User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const draftHandler = require('./draft');
 const { getLobbyConfig, BLOCKED_ROLE_ID } = require('./constants');
+const eloService = require('../../services/eloService');
 
 module.exports = {
     async createLobby(interaction, targetLobbyId, initialLobbyCode = null) {
@@ -264,7 +265,8 @@ module.exports = {
             .setThumbnail('https://cdn-icons-png.flaticon.com/512/12369/12369138.png'); // Coin Icon
 
         const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId(`match_draftcoin_${match.matchId}`).setLabel('🎲 Parayı Havaya At').setStyle(ButtonStyle.Primary).setEmoji('🪙')
+            new ButtonBuilder().setCustomId(`match_draftcoin_${match.matchId}`).setLabel('🎲 Parayı Havaya At').setStyle(ButtonStyle.Primary).setEmoji('🪙'),
+            new ButtonBuilder().setCustomId(`match_autobalance_${match.matchId}`).setLabel('⚖️ Takımları Dengele').setStyle(ButtonStyle.Secondary)
         );
 
         await channel.send({ content: `<@${match.captainA}> <@${match.captainB}>`, embeds: [embed], components: [row] });
@@ -397,5 +399,92 @@ module.exports = {
         ];
 
         await interaction.editReply({ content: null, embeds: [embed], components: rows });
+    },
+
+    /**
+     * Takımları ELO'ya göre otomatik dengele
+     */
+    async handleAutoBalance(interaction) {
+        const { MessageFlags } = require('discord.js');
+        const matchId = interaction.customId.split('_')[2];
+        const match = await Match.findOne({ matchId });
+
+        if (!match) {
+            return interaction.reply({ content: '❌ Maç bulunamadı.', flags: MessageFlags.Ephemeral });
+        }
+
+        // Yetki kontrolü (sadece kaptanlar veya admin)
+        if (interaction.user.id !== match.captainA && interaction.user.id !== match.captainB) {
+            return interaction.reply({ content: '❌ Sadece kaptanlar bu işlemi yapabilir!', flags: MessageFlags.Ephemeral });
+        }
+
+        // Ses kanalındaki oyuncuları al
+        const voiceChannel = interaction.guild.channels.cache.get(match.lobbyVoiceId);
+        if (!voiceChannel) {
+            return interaction.reply({ content: '❌ Lobi ses kanalı bulunamadı!', flags: MessageFlags.Ephemeral });
+        }
+
+        const voiceMembers = voiceChannel.members.filter(m => !m.user.bot);
+        const playerIds = voiceMembers.map(m => m.id);
+
+        if (playerIds.length < 4) {
+            return interaction.reply({ content: '❌ Dengeleme için en az 4 oyuncu gerekli.', flags: MessageFlags.Ephemeral });
+        }
+
+        // Tüm oyuncuların ELO bilgilerini çek
+        const playersWithElo = [];
+        for (const pid of playerIds) {
+            const userDoc = await User.findOne({ odasi: pid, odaId: interaction.guild.id });
+            const elo = userDoc?.matchStats?.elo || eloService.ELO_CONFIG.DEFAULT_ELO;
+            playersWithElo.push({ odasi: pid, elo });
+        }
+
+        // ELO'ya göre dengele
+        const balanced = eloService.balanceTeams(playersWithElo);
+
+        // Kaptanları koru (Team A'nın ilk elemanı captainA, Team B'nin ilk elemanı captainB olmalı)
+        // Eğer kaptan doğru takımda değilse swap yap
+        if (!balanced.teamA.includes(match.captainA) && balanced.teamB.includes(match.captainA)) {
+            // CaptainA Team B'de, swap et
+            const temp = balanced.teamA;
+            balanced.teamA = balanced.teamB;
+            balanced.teamB = temp;
+        }
+
+        // Kaptanları listenin başına koy
+        balanced.teamA = [match.captainA, ...balanced.teamA.filter(id => id !== match.captainA)];
+        balanced.teamB = [match.captainB, ...balanced.teamB.filter(id => id !== match.captainB)];
+
+        // Match'i güncelle
+        match.teamA = balanced.teamA;
+        match.teamB = balanced.teamB;
+        await match.save();
+
+        // Takım ortalamalarını hesapla
+        let avgA = 0, avgB = 0;
+        for (const p of playersWithElo) {
+            if (balanced.teamA.includes(p.odasi)) avgA += p.elo;
+            if (balanced.teamB.includes(p.odasi)) avgB += p.elo;
+        }
+        avgA = Math.round(avgA / balanced.teamA.length);
+        avgB = Math.round(avgB / balanced.teamB.length);
+
+        const embed = new EmbedBuilder()
+            .setColor(0x2ECC71)
+            .setTitle('⚖️ Takımlar Dengelendi!')
+            .setDescription(`Oyuncular ELO'ya göre adil şekilde dağıtıldı.`)
+            .addFields(
+                { name: `🔵 Team A (Avg: ${avgA})`, value: balanced.teamA.map(id => `<@${id}>`).join('\n'), inline: true },
+                { name: `🔴 Team B (Avg: ${avgB})`, value: balanced.teamB.map(id => `<@${id}>`).join('\n'), inline: true }
+            )
+            .setFooter({ text: 'Yazı tura ile devam edebilirsiniz.' });
+
+        // Yazı tura butonunu güncelle
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId(`match_draftcoin_${match.matchId}`).setLabel('🎲 Parayı Havaya At').setStyle(ButtonStyle.Primary).setEmoji('🪙'),
+            new ButtonBuilder().setCustomId(`match_autobalance_${match.matchId}`).setLabel('⚖️ Tekrar Dengele').setStyle(ButtonStyle.Secondary)
+        );
+
+        await interaction.update({ embeds: [embed], components: [row] });
     }
 };

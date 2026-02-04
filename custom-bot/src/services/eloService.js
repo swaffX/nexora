@@ -34,6 +34,20 @@ const ELO_CONFIG = {
     ]
 };
 
+// Level Emojileri (Discord Custom Emoji IDs)
+const LEVEL_EMOJIS = {
+    1: '<:level1:1468451643355041815>',
+    2: '<:level2:1468451665265819749>',
+    3: '<:level3:1468451677295345829>',
+    4: '<:level4:1468451696693743729>',
+    5: '<:level5:1468451709754933389>',
+    6: '<:level6:1468451723071717426>',
+    7: '<:level7:1468451735478472923>',
+    8: '<:level8:1468451750813110312>',
+    9: '<:level9:1468451768009621525>',
+    10: '<:level10:1468451780777214185>'
+};
+
 /**
  * ELO değerinden Level hesapla
  * @param {number} elo 
@@ -177,12 +191,58 @@ function createDefaultStats() {
     };
 }
 
+/**
+ * Level için emoji döndür
+ * @param {number} level 1-10
+ * @returns {string} Discord emoji string
+ */
+function getLevelEmoji(level) {
+    if (typeof level !== 'number' || level < 1) level = 1;
+    if (level > 10) level = 10;
+    return LEVEL_EMOJIS[level] || LEVEL_EMOJIS[1];
+}
+
+/**
+ * Oyuncuları ELO'ya göre dengeli iki takıma ayır
+ * Algoritma: Snake Draft (1-2-2-2-1 pattern)
+ * @param {Array} players [{ odasi: string, elo: number }]
+ * @returns {Object} { teamA: string[], teamB: string[] }
+ */
+function balanceTeams(players) {
+    if (!players || players.length < 2) {
+        return { teamA: [], teamB: [] };
+    }
+
+    // ELO'ya göre büyükten küçüğe sırala
+    const sorted = [...players].sort((a, b) => (b.elo || 100) - (a.elo || 100));
+
+    const teamA = [];
+    const teamB = [];
+
+    // Snake draft: Tek indexler A, çift indexler B (alternatif döngülerle ters)
+    sorted.forEach((player, index) => {
+        const round = Math.floor(index / 2);
+        if (round % 2 === 0) {
+            // Rounds 0, 2, 4... → A-B-A-B pattern
+            (index % 2 === 0 ? teamA : teamB).push(player.odasi);
+        } else {
+            // Rounds 1, 3, 5... → B-A-B-A pattern
+            (index % 2 === 0 ? teamB : teamA).push(player.odasi);
+        }
+    });
+
+    return { teamA, teamB };
+}
+
 module.exports = {
     ELO_CONFIG,
+    LEVEL_EMOJIS,
     getLevelFromElo,
+    getLevelEmoji,
     clampElo,
     ensureValidStats,
     applyEloChange,
     calculateMatchEloChange,
-    createDefaultStats
+    createDefaultStats,
+    balanceTeams
 };
