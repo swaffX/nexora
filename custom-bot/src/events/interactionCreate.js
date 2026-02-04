@@ -55,22 +55,29 @@ module.exports = {
                 await lobby.createLobby(interaction, lobbyId, code);
             }
 
-            // Tournament System
+            // Tournament System (Opsiyonel - Modül yoksa atla)
             if (customId.startsWith('tour_') || customId.startsWith('modal_tour')) {
-                const tournamentHandler = require('../handlers/tournamentHandler');
+                try {
+                    const tournamentHandler = require('../handlers/tournamentHandler');
 
-                if (interaction.isModalSubmit() && customId === 'modal_tournament_create') {
-                    await tournamentHandler.handleSetup(interaction);
-                } else if (interaction.isButton()) {
-                    // tour_join_ID -> split
-                    const parts = customId.split('_');
-                    const action = parts[1]; // join, leave, start
-                    const tourId = parts[2];
+                    if (interaction.isModalSubmit() && customId === 'modal_tournament_create') {
+                        await tournamentHandler.handleSetup(interaction);
+                    } else if (interaction.isButton()) {
+                        // tour_join_ID -> split
+                        const parts = customId.split('_');
+                        const action = parts[1]; // join, leave, start
+                        const tourId = parts[2];
 
-                    if (action === 'join') await tournamentHandler.handleJoin(interaction, tourId);
-                    else if (action === 'leave') await tournamentHandler.handleLeave(interaction, tourId);
-                    else if (action === 'start') await tournamentHandler.handleStart(interaction, tourId);
-                    else if (action === 'finish') await tournamentHandler.handleFinish(interaction, tourId);
+                        if (action === 'join') await tournamentHandler.handleJoin(interaction, tourId);
+                        else if (action === 'leave') await tournamentHandler.handleLeave(interaction, tourId);
+                        else if (action === 'start') await tournamentHandler.handleStart(interaction, tourId);
+                        else if (action === 'finish') await tournamentHandler.handleFinish(interaction, tourId);
+                    }
+                } catch (e) {
+                    // Tournament modülü mevcut değilse sessizce geç
+                    if (e.code !== 'MODULE_NOT_FOUND') {
+                        console.error('Tournament Handler Error:', e);
+                    }
                 }
             }
 

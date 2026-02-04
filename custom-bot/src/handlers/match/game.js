@@ -281,7 +281,17 @@ module.exports = {
         await interaction.showModal(modal);
     },
 
-    async handleScoreSubmit(interaction, match) {
+    async handleScoreSubmit(interaction, matchParam) {
+        // Match parametresi verilmediyse customId'den al
+        let match = matchParam;
+        if (!match) {
+            const matchId = interaction.customId.split('_')[2];
+            match = await Match.findOne({ matchId });
+            if (!match) {
+                return interaction.reply({ content: '❌ Maç bulunamadı!', ephemeral: true });
+            }
+        }
+
         const sA = parseInt(interaction.fields.getTextInputValue('scoreA'));
         const sB = parseInt(interaction.fields.getTextInputValue('scoreB'));
 

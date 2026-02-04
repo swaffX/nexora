@@ -4,7 +4,7 @@ const {
 } = require('discord.js');
 const path = require('path');
 const { Match } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
-const { MAPS, getCategoryId } = require('./constants');
+const { MAPS } = require('./constants');
 const gameHandler = require('./game');
 
 const { AttachmentBuilder } = require('discord.js');
@@ -42,7 +42,7 @@ module.exports = {
         const options = mapsToVote.map(m => ({ label: m.name, value: m.name, emoji: '🗺️' }));
         // Eğer tüm haritalar oynandıysa sıfırla veya hepsi açık
         const finalOptions = options.length > 0 ? options : MAPS.map(m => ({ label: m.name, value: m.name, emoji: '🗺️' }));
-        const row = new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId(`match_vote_${match.matchId}`).setPlaceholder('Haritanı Seç!').addOptions(options));
+        const row = new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId(`match_vote_${match.matchId}`).setPlaceholder('Haritanı Seç!').addOptions(finalOptions));
         const row2 = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('Maçı İptal Et').setEmoji('🛑').setStyle(ButtonStyle.Danger));
 
         const msg = await channel.send({ embeds: [embed], components: [row, row2] });

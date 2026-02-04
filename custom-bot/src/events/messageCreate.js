@@ -27,8 +27,11 @@ module.exports = {
 
             if (!isAuthorized) return;
 
-            // İşlemi Başlat
-            await gameHandler.completeMatchWithEvidence(message, match);
+            // SS/Evidence sistemi şu an aktif değil
+            // TODO: completeMatchWithEvidence fonksiyonu implemente edilmeli
+            // await gameHandler.completeMatchWithEvidence(message, match);
+
+            await message.react('✅'); // SS alındı onayı
 
         } catch (error) {
             console.error('SS Handler Error:', error);

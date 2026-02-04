@@ -79,12 +79,10 @@ module.exports = {
                     await lobby.assignRandomCaptains(interaction);
                     break;
                 case 'rps':
-                    await game.handleRPSMove(interaction);
+                    // RPS sistemi kaldırıldı - artık kullanılmıyor
                     break;
                 case 'coin':
-                    // Bu artık kullanılmıyor olabilir ama dursun.
-                    // RPS sistemi geldiği için bu legacy kalabilir.
-                    await game.handleCoinFlip(interaction);
+                    // Coin sistem kaldırıldı - artık kullanılmıyor
                     break;
                 case 'draftcoin':
                     await lobby.handleDraftCoinFlip(interaction);
@@ -179,7 +177,7 @@ module.exports = {
                     if (matchMvp) {
                         if (mvpAction === 'winner') await game.handleWinnerMVP(interaction, matchMvp);
                         else if (mvpAction === 'loser') await game.handleLoserMVP(interaction, matchMvp);
-                        else await game.handleMVPSelect(interaction, matchMvp); // Fallback
+                        else console.warn('Unknown MVP action:', mvpAction); // Legacy/bilinmeyen action
                     }
                     break;
 
