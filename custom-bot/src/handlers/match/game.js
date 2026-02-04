@@ -355,6 +355,12 @@ module.exports = {
     },
 
     async handleWinnerMVP(interaction, match) {
+        // ROL KONTROLÜ
+        const MVP_SELECTOR_ROLE_ID = '1463875325019557920';
+        if (!interaction.member.roles.cache.has(MVP_SELECTOR_ROLE_ID)) {
+            return interaction.reply({ content: `❌ MVP seçimi yapmak için <@&${MVP_SELECTOR_ROLE_ID}> rolüne sahip olmalısınız!`, flags: MessageFlags.Ephemeral });
+        }
+
         // Zaten seçildiyse yoksay (race condition önlemi)
         if (match.mvpPlayerId) {
             return interaction.reply({ content: '🏆 Zaten Kazanan MVP seçildi!', flags: MessageFlags.Ephemeral });
@@ -426,6 +432,12 @@ module.exports = {
     },
 
     async handleLoserMVP(interaction, match) {
+        // ROL KONTROLÜ
+        const MVP_SELECTOR_ROLE_ID = '1463875325019557920';
+        if (!interaction.member.roles.cache.has(MVP_SELECTOR_ROLE_ID)) {
+            return interaction.reply({ content: `❌ MVP seçimi yapmak için <@&${MVP_SELECTOR_ROLE_ID}> rolüne sahip olmalısınız!`, flags: MessageFlags.Ephemeral });
+        }
+
         // Zaten seçildiyse yoksay
         if (match.mvpLoserId || match.status === 'FINISHED') {
             return interaction.reply({ content: '💔 Zaten Kaybeden MVP seçildi!', flags: MessageFlags.Ephemeral });
@@ -458,6 +470,7 @@ module.exports = {
 
         // ELO Hesaplama (eloService kullanarak)
         const allPlayerIds = [...match.teamA, ...match.teamB];
+        const eloChanges = []; // ELO değişimlerini loglamak için dizi
 
         // 1. Tüm Kullanıcıları Çek
         const allUserDocs = await User.find({ odasi: { $in: allPlayerIds }, odaId: interaction.guild.id });
@@ -503,6 +516,9 @@ module.exports = {
                 const user = userMap.get(pid);
                 eloService.ensureValidStats(user);
 
+                // Eski ELO'yu al
+                const oldElo = user.matchStats.elo;
+
                 user.matchStats.totalMatches++;
 
                 const isTeamA = match.teamA.includes(pid);
@@ -531,6 +547,15 @@ module.exports = {
                     // ELO'yu uygula (Audit log ile)
                     const reason = isWin ? `Win vs Avg:${enemyTeamAvg}` : `Loss vs Avg:${enemyTeamAvg}`;
                     await eloService.applyEloChange(user, eloChange, `Match #${match.matchNumber} | ${reason}`);
+
+                    // Log dizisine ekle
+                    eloChanges.push({
+                        userId: pid,
+                        oldElo: oldElo,
+                        newElo: user.matchStats.elo,
+                        change: eloChange,
+                        reason: isWin ? 'Win' : 'Loss'
+                    });
                 } else {
                     // Beraberlik - sadece save
                     await user.save();
@@ -577,7 +602,7 @@ module.exports = {
         // --- LOGLAMA (Maç Sonucu Log Kanalına) ---
         try {
             const logsChannelId = '1468664219997175984';
-            const logsChannel = interaction.guild.channels.cache.get(logsChannelId);
+            const logsChannel = interaction.guild.channels.cache.get(logsChannelId) || await interaction.guild.channels.fetch(logsChannelId).catch(() => null);
 
             if (logsChannel) {
                 const winnerTeamName = winnerTeam === 'A' ? 'Blue Team' : 'Red Team';
