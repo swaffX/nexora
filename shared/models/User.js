@@ -116,11 +116,21 @@ const userSchema = new mongoose.Schema({
 
     // Maç İstatistikleri (FaceIT ELO Sistemi)
     matchStats: {
-        totalMatches: { type: Number, default: 0 },
-        totalWins: { type: Number, default: 0 },
-        totalLosses: { type: Number, default: 0 },
-        elo: { type: Number, default: 100 }, // Başlangıç 100 (Min Floor)
-        matchLevel: { type: Number, default: 1 } // Başlangıç Level 1
+        totalMatches: { type: Number, default: 0, min: 0 },
+        totalWins: { type: Number, default: 0, min: 0 },
+        totalLosses: { type: Number, default: 0, min: 0 },
+        elo: {
+            type: Number,
+            default: 100,
+            min: [100, 'ELO cannot be below 100'],
+            max: [3000, 'ELO cannot exceed 3000']
+        },
+        matchLevel: {
+            type: Number,
+            default: 1,
+            min: [1, 'Level cannot be below 1'],
+            max: [10, 'Level cannot exceed 10']
+        }
     }
 
 }, { timestamps: true });

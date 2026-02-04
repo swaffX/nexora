@@ -2,6 +2,7 @@ const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, StringSelect
 const path = require('path');
 const { Match, User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const votingHandler = require('./voting');
+const eloService = require('../../services/eloService');
 
 // Her maç için aktif timer'ı tutar
 const draftTimers = new Map();
@@ -73,15 +74,16 @@ module.exports = {
             try {
                 const p = await interaction.guild.members.fetch(pid);
 
-                // Level ve ELO bilgisini çek
-                let userLevel = 1; // Default
-                let userElo = 100; // Default (1000 değil, 100 Floor)
+                // Level ve ELO bilgisini çek (eloService kullanarak)
+                let userLevel = eloService.ELO_CONFIG.DEFAULT_LEVEL;
+                let userElo = eloService.ELO_CONFIG.DEFAULT_ELO;
 
                 try {
                     const userDoc = await User.findOne({ odasi: pid, odaId: interaction.guild.id });
-                    if (userDoc && userDoc.matchStats) {
-                        userLevel = userDoc.matchStats.matchLevel || 1;
-                        userElo = userDoc.matchStats.elo !== undefined ? userDoc.matchStats.elo : 100;
+                    if (userDoc) {
+                        eloService.ensureValidStats(userDoc);
+                        userLevel = userDoc.matchStats.matchLevel;
+                        userElo = userDoc.matchStats.elo;
                     }
                 } catch (err) { }
 

@@ -1,6 +1,8 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ChannelType, PermissionFlagsBits } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ChannelType, PermissionFlagsBits, AttachmentBuilder } = require('discord.js');
 const path = require('path');
+const fs = require('fs');
 const { Match, User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
+const eloService = require('../../services/eloService');
 
 module.exports = {
 
@@ -47,31 +49,21 @@ module.exports = {
     },
 
     async startMatch(channel, match) {
-        const { AttachmentBuilder, PermissionFlagsBits } = require('discord.js');
-        const fs = require('fs');
-        const path = require('path');
-        const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
-
         const teamAString = match.teamA.map(id => `<@${id}>`).join(', ');
         const teamBString = match.teamB.map(id => `<@${id}>`).join(', ');
 
-        // --- VERİTABANI DÜZELTME (FIX LEGACY DATA) ---
+        // --- VERİTABANI DÜZELTME (Yeni: eloService kullanarak) ---
         try {
             const allPlayers = [...match.teamA, ...match.teamB];
             for (const pid of allPlayers) {
                 const user = await User.findOne({ odasi: pid, odaId: channel.guild.id });
-                if (user && user.matchStats) {
-                    if (user.matchStats.elo === 1000 || (user.matchStats.elo > 150 && user.matchStats.totalMatches === 0)) {
-                        console.log(`[ELO FIX] Resetting ${user.username} (ID: ${pid}) to 100.`);
-                        user.matchStats.elo = 100;
-                        user.matchStats.matchLevel = 1;
-                        user.matchStats.totalMatches = 0;
-                        await user.save();
-                    }
+                if (user) {
+                    eloService.ensureValidStats(user);
+                    await user.save();
                 }
             }
-        } catch (e) { console.error("ELO Fix Error:", e); }
-        // ---------------------------------------------
+        } catch (e) { console.error("[ELO Service] Validation Error:", e); }
+        // ---------------------------------------------------------
 
         // --- SES KANALLARINI OLUŞTUR VE OYUNCULARI TAŞI ---
         try {
@@ -381,7 +373,7 @@ module.exports = {
         const scoreB = match.scoreB;
         const roundDiff = Math.abs(scoreA - scoreB);
         // Maksimum +10 round bonusu
-        const roundBonus = Math.min(roundDiff, 10);
+        const roundBonus = Math.min(roundDiff, eloService.ELO_CONFIG.MAX_ROUND_BONUS);
 
         let winnerTeam = 'DRAW';
         if (scoreA > scoreB) winnerTeam = 'A';
@@ -390,13 +382,7 @@ module.exports = {
         match.winner = winnerTeam;
         await match.save();
 
-        // ELO - Level Hesaplama (YENİ SİSTEM: 100-500 Level 1)
-        const getLevelData = (elo) => {
-            if (elo <= 500) return 1; if (elo <= 750) return 2; if (elo <= 900) return 3;
-            if (elo <= 1050) return 4; if (elo <= 1200) return 5; if (elo <= 1350) return 6;
-            if (elo <= 1530) return 7; if (elo <= 1750) return 8; if (elo <= 2000) return 9; return 10;
-        };
-
+        // ELO Hesaplama (eloService kullanarak)
         const allPlayerIds = [...match.teamA, ...match.teamB];
 
         // 1. Tüm Kullanıcıları Çek
@@ -404,11 +390,14 @@ module.exports = {
         const userMap = new Map();
         allUserDocs.forEach(u => userMap.set(u.odasi, u));
 
-        // Eksik user varsa oluştur
+        // Eksik user varsa oluştur (eloService.createDefaultStats ile)
         for (const pid of allPlayerIds) {
             if (!userMap.has(pid)) {
-                // VARSAYILAN ELO: 100, LEVEL: 1
-                const newUser = new User({ odasi: pid, odaId: interaction.guild.id, matchStats: { elo: 100, matchLevel: 1 } });
+                const newUser = new User({
+                    odasi: pid,
+                    odaId: interaction.guild.id,
+                    matchStats: eloService.createDefaultStats()
+                });
                 await newUser.save();
                 userMap.set(pid, newUser);
             }
@@ -418,21 +407,27 @@ module.exports = {
         let totalEloA = 0;
         let totalEloB = 0;
 
-        match.teamA.forEach(pid => totalEloA += (userMap.get(pid).matchStats.elo || 100));
-        match.teamB.forEach(pid => totalEloB += (userMap.get(pid).matchStats.elo || 100));
+        match.teamA.forEach(pid => {
+            const user = userMap.get(pid);
+            eloService.ensureValidStats(user);
+            totalEloA += user.matchStats.elo;
+        });
+        match.teamB.forEach(pid => {
+            const user = userMap.get(pid);
+            eloService.ensureValidStats(user);
+            totalEloB += user.matchStats.elo;
+        });
 
         const avgEloA = Math.round(totalEloA / match.teamA.length);
         const avgEloB = Math.round(totalEloB / match.teamB.length);
 
-        console.log(`ELO Calculation: Team A Avg: ${avgEloA} vs Team B Avg: ${avgEloB}`);
+        console.log(`[ELO] Match #${match.matchNumber} | Team A Avg: ${avgEloA} vs Team B Avg: ${avgEloB}`);
 
         // 3. Puan Dağıtımı
         for (const pid of allPlayerIds) {
             try {
                 const user = userMap.get(pid);
-                if (!user.matchStats || !user.matchStats.elo) {
-                    user.matchStats = { totalMatches: 0, totalWins: 0, totalLosses: 0, elo: 100, matchLevel: 1 };
-                }
+                eloService.ensureValidStats(user);
 
                 user.matchStats.totalMatches++;
 
@@ -440,53 +435,34 @@ module.exports = {
                 const myTeamAvg = isTeamA ? avgEloA : avgEloB;
                 const enemyTeamAvg = isTeamA ? avgEloB : avgEloA;
 
-                // ADALET FAKTÖRÜ (Dengeli)
-                // Her 40 ELO farkı ±1 Puan. Max ±10.
-                let eloDiff = enemyTeamAvg - myTeamAvg;
-                let fairnessAdjustment = Math.round(eloDiff / 40);
-
-                if (fairnessAdjustment > 10) fairnessAdjustment = 10;
-                if (fairnessAdjustment < -10) fairnessAdjustment = -10;
-
-                const BASE_WIN = 20;
-                const BASE_LOSS = -20;
-                let finalEloChange = 0;
-
                 if (winnerTeam !== 'DRAW') {
                     const isWin = (winnerTeam === 'A' && isTeamA) || (winnerTeam === 'B' && !isTeamA);
 
                     if (isWin) {
                         user.matchStats.totalWins++;
-                        // Kazanma: Baz + Raund Bonusu + Adalet + MVP
-                        finalEloChange = BASE_WIN + roundBonus + fairnessAdjustment;
-
-                        if (match.mvpPlayerId === pid) finalEloChange += 5;
                     } else {
                         user.matchStats.totalLosses++;
-                        // Kaybetme: Baz + Adalet
-                        let lossAmount = BASE_LOSS + fairnessAdjustment;
-
-                        // MVP Koruması (AZALTILDI: +5)
-                        // MVP Koruması (Kaybeden Takımın MVP'si)
-                        if (match.mvpLoserId === pid) lossAmount += 5;
-
-                        // Limit: Kayıp asla 0'dan büyük olamaz (Pozitif olamaz)
-                        if (lossAmount > 0) lossAmount = 0;
-
-                        finalEloChange = lossAmount;
                     }
+
+                    // ELO değişikliğini hesapla
+                    const eloChange = eloService.calculateMatchEloChange({
+                        isWin,
+                        roundDiff,
+                        myTeamAvg,
+                        enemyTeamAvg,
+                        isMvpWinner: match.mvpPlayerId === pid,
+                        isMvpLoser: match.mvpLoserId === pid
+                    });
+
+                    // ELO'yu uygula (Audit log ile)
+                    const reason = isWin ? `Win vs Avg:${enemyTeamAvg}` : `Loss vs Avg:${enemyTeamAvg}`;
+                    await eloService.applyEloChange(user, eloChange, `Match #${match.matchNumber} | ${reason}`);
+                } else {
+                    // Beraberlik - sadece save
+                    await user.save();
                 }
 
-                user.matchStats.elo += finalEloChange;
-
-                // ALT SINIR: 100 ELO (BUNUN ALTINA DÜŞMEZ)
-                if (user.matchStats.elo < 100) user.matchStats.elo = 100;
-
-                user.matchStats.matchLevel = getLevelData(user.matchStats.elo);
-
-                await user.save();
-
-            } catch (e) { console.error("ELO Process Error:", e); }
+            } catch (e) { console.error("[ELO Service] Process Error:", e); }
         }
 
         // --- SES KANALI TEMİZLİĞİ VE TAŞIMA ---

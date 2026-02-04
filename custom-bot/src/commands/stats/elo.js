@@ -2,6 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder } = require('discor
 const path = require('path');
 const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const canvasGenerator = require('../../utils/canvasGenerator');
+const eloService = require('../../services/eloService');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -42,25 +43,13 @@ module.exports = {
                 avatar: targetUser.displayAvatarURL({ extension: 'png' })
             };
 
-            // Varsayılan Statlar (Rolü varsa ama DB kayıtlı değilse -> 100 ELO)
-            let stats = { elo: 100, matchLevel: 1, totalMatches: 0, totalWins: 0 };
+            // Varsayılan Statlar (eloService kullanarak)
+            let stats = eloService.createDefaultStats();
 
-            if (userDoc && userDoc.matchStats) {
+            if (userDoc) {
+                eloService.ensureValidStats(userDoc);
                 stats = userDoc.matchStats;
-
-                // Legacy Fix: Eğer eski veri (1000 ELO / 0 Maç) varsa veya ELO yoksa 100'e çek
-                if (
-                    (stats.totalMatches === 0 && stats.elo === 1000) ||
-                    stats.elo === undefined
-                ) {
-                    stats.elo = 100;
-                    stats.matchLevel = 1;
-
-                    // DB Güncelle
-                    userDoc.matchStats.elo = 100;
-                    userDoc.matchStats.matchLevel = 1;
-                    await userDoc.save();
-                }
+                await userDoc.save(); // Düzeltmeleri kaydet
             }
 
             // Resmi Üret

@@ -2,6 +2,7 @@ const { AttachmentBuilder } = require('discord.js');
 const path = require('path');
 const { User } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
 const canvasGenerator = require('../utils/canvasGenerator');
+const eloService = require('../services/eloService');
 
 const LEADERBOARD_CHANNEL_ID = '1468414391300132894';
 const REQUIRED_ROLE_ID = '1466189076347486268';
@@ -51,12 +52,9 @@ module.exports = {
                     try {
                         const member = await guild.members.fetch(doc.odasi).catch(() => null);
                         if (member && member.roles.cache.has(REQUIRED_ROLE_ID)) {
-                            // Sanal Stat Ekle (Görsel için)
-                            // Bu objeyi veritabanına kaydetmiyoruz, sadece görüntü için modifiye ediyoruz
-                            // Mongoose dökümanı üzerinde değişiklik yapmak için .toObject() gerekebilir ama
-                            // direkt field set etmek JS objesi olduğu için bellekte çalışır.
                             if (!doc.matchStats) doc.matchStats = {};
-                            doc.matchStats.elo = 100; // Varsayılan Başlangıç
+                            doc.matchStats.elo = eloService.ELO_CONFIG.DEFAULT_ELO;
+                            doc.matchStats.matchLevel = eloService.ELO_CONFIG.DEFAULT_LEVEL;
                             doc.matchStats.totalMatches = 0;
                             doc.matchStats.totalWins = 0;
 
@@ -65,8 +63,12 @@ module.exports = {
                     } catch (e) { }
                 }
 
-                // Tekrar sırala (Puanı 100 olanlar en alta gitsin diye değil, karışık olabilir)
-                finalTopUsers.sort((a, b) => (b.matchStats.elo || 100) - (a.matchStats.elo || 100));
+                // Tekrar sırala (ELO'ğa göre)
+                finalTopUsers.sort((a, b) => {
+                    const eloA = a.matchStats?.elo || eloService.ELO_CONFIG.DEFAULT_ELO;
+                    const eloB = b.matchStats?.elo || eloService.ELO_CONFIG.DEFAULT_ELO;
+                    return eloB - eloA;
+                });
             }
 
             if (finalTopUsers.length === 0) {
