@@ -1,6 +1,6 @@
-require('dotenv').config();
-const mongoose = require('mongoose');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+const mongoose = require('mongoose');
 const { User } = require('../shared/models');
 
 async function fixElo() {
