@@ -313,48 +313,84 @@ module.exports = {
 
         await match.save();
 
-        await this.openWinnerMVPMenu(interaction, match);
+        await this.openMVPMenus(interaction, match);
     },
 
-    async openWinnerMVPMenu(interaction, match) {
-        // Kazanan Takım (Berabere ise Team A başlasın veya hepsi)
-        let targetTeamIds = [];
-        if (match.winner === 'A') targetTeamIds = match.teamA;
-        else if (match.winner === 'B') targetTeamIds = match.teamB;
-        else targetTeamIds = [...match.teamA, ...match.teamB]; // Draw ise hepsi
+    async openMVPMenus(interaction, match) {
+        // Takımları Belirle
+        let winnerTeamIds = [];
+        let loserTeamIds = [];
 
-        // Seçenekleri Hazırla (Level emojileriyle)
-        const options = [];
-        for (const id of targetTeamIds) {
-            let username = 'Unknown Player';
-            let levelEmoji = eloService.LEVEL_EMOJIS[1];
-            try {
-                const member = interaction.guild.members.cache.get(id) || await interaction.guild.members.fetch(id);
-                if (member) username = member.user.username;
-                const userDoc = await User.findOne({ odasi: id, odaId: interaction.guild.id });
-                const level = userDoc?.matchStats?.matchLevel || 1;
-                levelEmoji = eloService.LEVEL_EMOJIS[level] || eloService.LEVEL_EMOJIS[1];
-            } catch (e) { }
-
-            options.push({
-                label: username,
-                value: id,
-                description: 'Kazanan Takım Oyuncusu',
-                emoji: levelEmoji.match(/:([0-9]+)>/)?.[1] // Emoji ID'sini çıkar
-            });
+        if (match.winner === 'A') {
+            winnerTeamIds = match.teamA;
+            loserTeamIds = match.teamB;
+        } else {
+            winnerTeamIds = match.teamB;
+            loserTeamIds = match.teamA;
         }
 
-        const selectMenu = new StringSelectMenuBuilder()
-            .setCustomId(`match_mvp_winner_${match.matchId}`)
-            .setPlaceholder('KAZANAN Takımın MVP\'sini Seçin')
-            .addOptions(options);
+        // --- KAZANAN TAKIM OPSİYONLARI ---
+        const winnerOptions = [];
+        for (const id of winnerTeamIds) {
+            let username = 'Unknown Player';
+            let levelEmojiId = null;
+            try {
+                const member = interaction.guild.members.cache.get(id) || await interaction.guild.members.fetch(id).catch(() => null);
+                if (member) username = member.user.username;
+                const userDoc = await User.findOne({ odasi: id, odaId: interaction.guild.id });
+                if (userDoc?.matchStats?.matchLevel) {
+                    const emoji = eloService.LEVEL_EMOJIS[userDoc.matchStats.matchLevel] || eloService.LEVEL_EMOJIS[1];
+                    levelEmojiId = emoji.match(/:([0-9]+)>/)?.[1];
+                }
+            } catch (e) { }
+            winnerOptions.push({ label: username, value: id, description: 'Kazanan Takım', emoji: levelEmojiId });
+        }
 
-        const row = new ActionRowBuilder().addComponents(selectMenu);
+        // --- KAYBEDEN TAKIM OPSİYONLARI ---
+        const loserOptions = [];
+        for (const id of loserTeamIds) {
+            let username = 'Unknown Player';
+            let levelEmojiId = null;
+            try {
+                const member = interaction.guild.members.cache.get(id) || await interaction.guild.members.fetch(id).catch(() => null);
+                if (member) username = member.user.username;
+                const userDoc = await User.findOne({ odasi: id, odaId: interaction.guild.id });
+                if (userDoc?.matchStats?.matchLevel) {
+                    const emoji = eloService.LEVEL_EMOJIS[userDoc.matchStats.matchLevel] || eloService.LEVEL_EMOJIS[1];
+                    levelEmojiId = emoji.match(/:([0-9]+)>/)?.[1];
+                }
+            } catch (e) { }
+            loserOptions.push({ label: username, value: id, description: 'Kaybeden Takım', emoji: levelEmojiId });
+        }
+
+        // Menüleri Oluştur
+        const rows = [];
+
+        // 1. Kazanan MVP Menüsü
+        if (winnerOptions.length > 0) {
+            const winnerSelect = new StringSelectMenuBuilder()
+                .setCustomId(`match_mvp_winner_${match.matchId}`)
+                .setPlaceholder('🏆 KAZANAN Takımın MVP\'sini Seçin')
+                .addOptions(winnerOptions);
+            rows.push(new ActionRowBuilder().addComponents(winnerSelect));
+        }
+
+        // 2. Kaybeden MVP Menüsü
+        if (loserOptions.length > 0) {
+            const loserSelect = new StringSelectMenuBuilder()
+                .setCustomId(`match_mvp_loser_${match.matchId}`)
+                .setPlaceholder('💔 KAYBEDEN Takımın MVP\'sini Seçin')
+                .addOptions(loserOptions);
+            rows.push(new ActionRowBuilder().addComponents(loserSelect));
+        } else {
+            // Kaybeden takım boşsa (test vs) otomatik bypass gerekebilir ama şimdilik boş bırakalım, finishMatch manuel çağrılmalı veya tek menü.
+            // Ama kullanıcı "Kaybeden takımda 1 kişi bile olsa" dediği için sorun yok.
+        }
 
         await interaction.reply({
-            content: `📊 **Maç Skoru:** ${match.scoreA} - ${match.scoreB}\n🏆 **Kazanan Takım:** ${match.winner === 'DRAW' ? 'BERABERE' : (match.winner === 'A' ? 'Blue Team' : 'Red Team')}\n\nLütfen **KAZANAN** takımın MVP oyuncusunu seçin.`,
-            components: [row],
-            ephemeral: false
+            content: `📊 **Maç Skoru:** ${match.scoreA} - ${match.scoreB}\n🏆 **Kazanan:** ${match.winner === 'A' ? 'Blue Team' : 'Red Team'}\n\nLütfen **HER İKİ** takımın da MVP oyuncusunu seçin. Maç, ikisi de seçilince bitecektir.`,
+            components: rows,
+            flags: MessageFlags.Ephemeral // Belki public yapmak istersin? İsteğine göre değiştirebiliriz.
         });
     },
 
@@ -362,111 +398,45 @@ module.exports = {
         // ROL KONTROLÜ
         const MVP_SELECTOR_ROLE_ID = '1463875325019557920';
         if (!interaction.member.roles.cache.has(MVP_SELECTOR_ROLE_ID)) {
-            return interaction.reply({ content: `❌ MVP seçimi yapmak için <@&${MVP_SELECTOR_ROLE_ID}> rolüne sahip olmalısınız!`, flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: `❌ Yetkiniz yok! (<@&${MVP_SELECTOR_ROLE_ID}> gerekli)`, flags: MessageFlags.Ephemeral });
         }
 
-        // Zaten seçildiyse yoksay (race condition önlemi)
-        if (match.mvpPlayerId) {
-            return interaction.reply({ content: '🏆 Zaten Kazanan MVP seçildi!', flags: MessageFlags.Ephemeral });
-        }
-
-        const selectedMVPId = interaction.values[0];
-        match.mvpPlayerId = selectedMVPId; // Winner MVP
+        const selectedId = interaction.values[0];
+        match.mvpPlayerId = selectedId;
         await match.save();
 
-        // Şimdi Kaybeden Takım MVP
-        await interaction.update({ content: `✅ Kazanan MVP Seçildi: <@${selectedMVPId}>\nŞimdi **KAYBEDEN** takımın MVP'sini seçin...`, components: [] });
-        await this.openLoserMVPMenu(interaction, match);
-    },
-
-    async openLoserMVPMenu(interaction, match) {
-        console.log(`[DEBUG] openLoserMVPMenu called. Winner: ${match.winner}, Team A: ${match.teamA.length}, Team B: ${match.teamB.length}`);
-
-        // Kaybeden Takım
-        let targetTeamIds = [];
-        if (match.winner === 'A') targetTeamIds = match.teamB; // A kazandıysa B kaybetti
-        else if (match.winner === 'B') targetTeamIds = match.teamA;
-        else {
-            console.log('[DEBUG] Match is DRAW or Invalid Winner, finishing.');
-            return this.finishMatch(interaction, match);
+        // Diğeri de seçilmiş mi?
+        if (match.mvpLoserId) {
+            await interaction.update({ content: `✅ **Kazanan MVP:** <@${selectedId}>\n✅ **Kaybeden MVP:** <@${match.mvpLoserId}>\n\n🔄 **Maç Bitiriliyor...**`, components: [] });
+            await this.finishMatch(interaction, match);
+        } else {
+            await interaction.reply({ content: `✅ **Kazanan MVP Seçildi:** <@${selectedId}>\nLütfen Kaybeden MVP'yi de seçin.`, flags: MessageFlags.Ephemeral });
         }
-
-        console.log(`[DEBUG] Loser Team IDs: ${targetTeamIds.join(', ')}`);
-
-        // Eğer kaybeden takım boşsa direkt bitir
-        if (!targetTeamIds || targetTeamIds.length === 0) {
-            console.log('[DEBUG] Loser team is empty, finishing.');
-            // Bu durumda yapacak bir şey yok, bitiriyoruz.
-            return this.finishMatch(interaction, match);
-        }
-
-        const options = [];
-        for (const id of targetTeamIds) {
-            let username = 'Unknown Player';
-            let levelEmojiId = null;
-            try {
-                const member = interaction.guild.members.cache.get(id) || await interaction.guild.members.fetch(id).catch(() => null);
-                if (member) username = member.user.username;
-                const userDoc = await User.findOne({ odasi: id, odaId: interaction.guild.id });
-                const level = userDoc?.matchStats?.matchLevel || 1;
-                const levelEmoji = eloService.LEVEL_EMOJIS[level] || eloService.LEVEL_EMOJIS[1];
-                levelEmojiId = levelEmoji.match(/:([0-9]+)>/)?.[1];
-            } catch (e) {
-                console.error(`[DEBUG] Error fetching user ${id}:`, e);
-            }
-
-            options.push({
-                label: username,
-                value: id,
-                description: 'Kaybeden Takım Oyuncusu',
-                emoji: levelEmojiId
-            });
-        }
-
-        // Options boşsa (hata durumu)
-        if (options.length === 0) {
-            console.error('[MVP] Loser team options empty even though teamIds exist.');
-            return interaction.channel.send({ content: '⚠️ **HATA:** Kaybeden takım oyuncuları listelenemedi. Lütfen yetkiliye bildirin.' });
-        }
-
-        const selectMenu = new StringSelectMenuBuilder()
-            .setCustomId(`match_mvp_loser_${match.matchId}`)
-            .setPlaceholder('KAYBEDEN Takımın MVP\'sini Seçin')
-            .addOptions(options);
-
-        const row = new ActionRowBuilder().addComponents(selectMenu);
-
-        // Yeni mesaj göndermek yerine (veya editlemek):
-        // handleWinnerMVP içinde update kullanmıştık. Buradan yeni bir followUp veya channel.send yapabiliriz.
-        // Veya interaction.channel.send
-
-        await interaction.channel.send({
-            content: `💔 **Kaybeden Takımın MVP\'sini Seçin.**`,
-            components: [row]
-        });
     },
 
     async handleLoserMVP(interaction, match) {
         // ROL KONTROLÜ
         const MVP_SELECTOR_ROLE_ID = '1463875325019557920';
         if (!interaction.member.roles.cache.has(MVP_SELECTOR_ROLE_ID)) {
-            return interaction.reply({ content: `❌ MVP seçimi yapmak için <@&${MVP_SELECTOR_ROLE_ID}> rolüne sahip olmalısınız!`, flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: `❌ Yetkiniz yok! (<@&${MVP_SELECTOR_ROLE_ID}> gerekli)`, flags: MessageFlags.Ephemeral });
         }
 
-        // Zaten seçildiyse yoksay
-        if (match.mvpLoserId || match.status === 'FINISHED') {
-            return interaction.reply({ content: '💔 Zaten Kaybeden MVP seçildi!', flags: MessageFlags.Ephemeral });
-        }
-
-        const selectedLoserMVPId = interaction.values[0];
-        match.mvpLoserId = selectedLoserMVPId;
-
-        match.status = 'FINISHED';
-        match.endTime = new Date();
+        const selectedId = interaction.values[0];
+        match.mvpLoserId = selectedId;
         await match.save();
 
-        await interaction.update({ content: `✅ Kaybeden MVP Seçildi: <@${selectedLoserMVPId}>\nSkorlar işleniyor ve ELO hesaplanıyor...`, components: [] });
-        await this.finishMatch(interaction, match);
+        // Diğeri de seçilmiş mi?
+        if (match.mvpPlayerId) {
+            await interaction.update({ content: `✅ **Kazanan MVP:** <@${match.mvpPlayerId}>\n✅ **Kaybeden MVP:** <@${selectedId}>\n\n🔄 **Maç Bitiriliyor...**`, components: [] });
+            await this.finishMatch(interaction, match);
+        } else {
+            await interaction.reply({ content: `✅ **Kaybeden MVP Seçildi:** <@${selectedId}>\nLütfen Kazanan MVP'yi de seçin.`, flags: MessageFlags.Ephemeral });
+        }
+    },
+
+    // Eski openLoserMVPMenu artık kullanılmıyor, silebiliriz veya placeholder olarak bırakabiliriz.
+    async openLoserMVPMenu(interaction, match) {
+        // Deprecated
     },
 
     async finishMatch(interaction, match) {
