@@ -10,18 +10,26 @@ module.exports = async (client) => {
     // Klasör yoksa oluştur
     if (!fs.existsSync(commandsPath)) fs.mkdirSync(commandsPath, { recursive: true });
 
-    const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-
-    for (const file of commandFiles) {
-        const filePath = path.join(commandsPath, file);
-        const command = require(filePath);
-        if ('data' in command && 'execute' in command) {
-            client.commands.set(command.data.name, command);
-            commands.push(command.data.toJSON());
-        } else {
-            logger.warn(`[Moderation] ${file} dosyasında data veya execute eksik.`);
+    const readCommands = (dir) => {
+        const files = fs.readdirSync(dir);
+        for (const file of files) {
+            const filePath = path.join(dir, file);
+            const stat = fs.statSync(filePath);
+            if (stat.isDirectory()) {
+                readCommands(filePath);
+            } else if (file.endsWith('.js')) {
+                const command = require(filePath);
+                if ('data' in command && 'execute' in command) {
+                    client.commands.set(command.data.name, command);
+                    commands.push(command.data.toJSON());
+                } else {
+                    logger.warn(`[Moderation] ${file} dosyasında data veya execute eksik.`);
+                }
+            }
         }
-    }
+    };
+
+    readCommands(commandsPath);
 
     if (process.env.MODERATION_BOT_TOKEN && process.env.MODERATION_CLIENT_ID) {
         const rest = new REST().setToken(process.env.MODERATION_BOT_TOKEN);
