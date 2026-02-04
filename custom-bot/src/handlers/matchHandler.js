@@ -112,8 +112,17 @@ module.exports = {
                     break;
 
                 // --- GAME ---
-                case 'sidepick':
-                    await game.handleSidePick(interaction);
+                case 'side': // match_side_ATTACK_MATCHID
+                    // parts[2] = ATTACK/DEFEND, parts[3] = MATCHID
+                    const matchIdForSide = parts[3];
+                    const matchForSide = await Match.findOne({ matchId: matchIdForSide });
+                    if (matchForSide) {
+                        await game.handleSideSelection(interaction, matchForSide, parts[2]);
+                    }
+                    break;
+
+                case 'sidepick': // Eski kalıntı, belki silinebilir ama dursun
+                    // await game.handleSidePick(interaction); 
                     break;
 
                 // --- LOBBY CODE ---

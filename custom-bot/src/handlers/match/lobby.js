@@ -58,7 +58,8 @@ module.exports = {
             voiceMembers.forEach(member => {
                 permissionOverwrites.push({
                     id: member.id,
-                    allow: [PermissionsBitField.Flags.ViewChannel]
+                    allow: [PermissionsBitField.Flags.ViewChannel],
+                    deny: [PermissionsBitField.Flags.SendMessages]
                 });
             });
 
