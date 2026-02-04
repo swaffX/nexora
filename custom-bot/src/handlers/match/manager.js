@@ -57,7 +57,7 @@ module.exports = {
         try {
             const { EmbedBuilder } = require('discord.js');
             const { LOBBY_CONFIG } = require('./constants');
-            const logsChannelId = '1468002079632134369';
+            const logsChannelId = '1468664219997175984';
             const logsChannel = guild.channels.cache.get(logsChannelId);
 
             if (logsChannel) {
