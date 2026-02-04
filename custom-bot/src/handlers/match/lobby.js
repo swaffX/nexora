@@ -266,7 +266,7 @@ module.exports = {
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`match_draftcoin_${match.matchId}`).setLabel('🎲 Parayı Havaya At').setStyle(ButtonStyle.Primary).setEmoji('🪙'),
-            new ButtonBuilder().setCustomId(`match_autobalance_${match.matchId}`).setLabel('⚖️ Takımları Dengele').setStyle(ButtonStyle.Secondary)
+            new ButtonBuilder().setCustomId(`match_autobalance_${match.matchId}`).setLabel('⚖️ Takımları Dengele').setStyle(ButtonStyle.Secondary).setDisabled(true)
         );
 
         await channel.send({ content: `<@${match.captainA}> <@${match.captainB}>`, embeds: [embed], components: [row] });
@@ -482,7 +482,7 @@ module.exports = {
         // Yazı tura butonunu güncelle
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`match_draftcoin_${match.matchId}`).setLabel('🎲 Parayı Havaya At').setStyle(ButtonStyle.Primary).setEmoji('🪙'),
-            new ButtonBuilder().setCustomId(`match_autobalance_${match.matchId}`).setLabel('⚖️ Tekrar Dengele').setStyle(ButtonStyle.Secondary)
+            new ButtonBuilder().setCustomId(`match_autobalance_${match.matchId}`).setLabel('⚖️ Tekrar Dengele').setStyle(ButtonStyle.Secondary).setDisabled(true)
         );
 
         await interaction.update({ embeds: [embed], components: [row] });
