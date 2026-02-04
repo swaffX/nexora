@@ -70,37 +70,51 @@ module.exports = {
         this.startTurnTimer(interaction, match);
 
         const poolOptions = [];
+
+        // Havuzdaki oyuncuların verilerini toplu çek (Performans için)
+        const poolUserDocs = await User.find({ odasi: { $in: match.availablePlayerIds }, odaId: interaction.guild.id });
+        const poolUserMap = new Map();
+        poolUserDocs.forEach(u => poolUserMap.set(u.odasi, u));
+
         for (const pid of match.availablePlayerIds) {
             try {
                 const p = await interaction.guild.members.fetch(pid);
-
-                // Level ve ELO bilgisini çek (eloService kullanarak)
-                let userLevel = eloService.ELO_CONFIG.DEFAULT_LEVEL;
+                let userLevel = 1;
                 let userElo = eloService.ELO_CONFIG.DEFAULT_ELO;
+                const userDoc = poolUserMap.get(pid);
 
-                try {
-                    const userDoc = await User.findOne({ odasi: pid, odaId: interaction.guild.id });
-                    if (userDoc) {
-                        eloService.ensureValidStats(userDoc);
-                        userLevel = userDoc.matchStats.matchLevel;
-                        userElo = userDoc.matchStats.elo;
-                    }
-                } catch (err) { }
+                if (userDoc?.matchStats) {
+                    userLevel = userDoc.matchStats.matchLevel || 1;
+                    userElo = userDoc.matchStats.elo || eloService.ELO_CONFIG.DEFAULT_ELO;
+                }
 
-                // eloService'den emoji ID'sini al
                 const levelEmojiStr = eloService.LEVEL_EMOJIS[userLevel] || eloService.LEVEL_EMOJIS[1];
+                // SelectMenu için ID lazım
                 const emojiId = levelEmojiStr.match(/:([0-9]+)>/)?.[1] || '1468451643355041815';
 
                 poolOptions.push({
                     label: `${p.displayName.substring(0, 25)}`,
                     value: p.id,
-                    emoji: emojiId,
+                    emoji: emojiId, // SelectMenu için
+                    rawEmoji: levelEmojiStr, // Text display için
                     description: `Level: ${userLevel} • ELO: ${userElo}`
                 });
             } catch (e) { }
         }
 
         const nextTime = Math.floor(Date.now() / 1000) + 30;
+
+        // --- TAKIM LİSTELERİ İÇİN LEVEL VERİLERİ ---
+        const allTeamUsers = [...match.teamA, ...match.teamB];
+        const teamUserDocs = await User.find({ odasi: { $in: allTeamUsers }, odaId: interaction.guild.id });
+        const teamUserMap = new Map();
+        teamUserDocs.forEach(u => teamUserMap.set(u.odasi, u));
+
+        const getLevelEmoji = (id) => {
+            const u = teamUserMap.get(id);
+            const level = u?.matchStats?.matchLevel || 1;
+            return eloService.LEVEL_EMOJIS[level] || eloService.LEVEL_EMOJIS[1];
+        };
 
         // --- TAKIM LİSTELERİNİ OLUŞTUR (Slotlu ve Geniş) ---
         const formatTeam = (teamIds) => {
@@ -109,7 +123,10 @@ module.exports = {
             const padding = '\u2000\u2000\u2000\u2000';
 
             for (let i = 0; i < maxSlots; i++) {
-                if (teamIds[i]) lines.push(`\`${i + 1}.\` <@${teamIds[i]}>${padding}`);
+                if (teamIds[i]) {
+                    const emoji = getLevelEmoji(teamIds[i]);
+                    lines.push(`\`${i + 1}.\` ${emoji} <@${teamIds[i]}>${padding}`);
+                }
                 else lines.push(`\`${i + 1}.\` ▫️ _Boş_${padding}`);
             }
             return lines.join('\n');
@@ -121,7 +138,7 @@ module.exports = {
             .addFields(
                 { name: `🔵 Team A`, value: formatTeam(match.teamA), inline: true },
                 { name: `🔴 Team B`, value: formatTeam(match.teamB), inline: true },
-                { name: `📍 Havuzda Bekleyenler (${poolOptions.length})`, value: poolOptions.length > 0 ? poolOptions.map(p => p.label).join(', ') : '⚠️ Kimse kalmadı', inline: false }
+                { name: `📍 Havuzda Bekleyenler (${poolOptions.length})`, value: poolOptions.length > 0 ? poolOptions.map(p => `${p.rawEmoji} ${p.label}`).join('\n') : '⚠️ Kimse kalmadı', inline: false }
             )
             .setFooter({ text: `Nexora Draft System • Match #${match.matchNumber || '?'}` });
 

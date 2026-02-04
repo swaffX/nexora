@@ -1,4 +1,4 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ChannelType, PermissionFlagsBits, AttachmentBuilder } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ChannelType, PermissionFlagsBits, AttachmentBuilder, MessageFlags } = require('discord.js');
 const path = require('path');
 const fs = require('fs');
 const { Match, User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
@@ -26,7 +26,8 @@ module.exports = {
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`match_side_ATTACK_${match.matchId}`).setLabel('SALDIRI (Attack)').setStyle(ButtonStyle.Danger).setEmoji('🗡️'),
-            new ButtonBuilder().setCustomId(`match_side_DEFEND_${match.matchId}`).setLabel('SAVUNMA (Defend)').setStyle(ButtonStyle.Success).setEmoji('🛡️')
+            new ButtonBuilder().setCustomId(`match_side_DEFEND_${match.matchId}`).setLabel('SAVUNMA (Defend)').setStyle(ButtonStyle.Success).setEmoji('🛡️'),
+            new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('İptal').setStyle(ButtonStyle.Secondary).setEmoji('🛑')
         );
 
         await channel.send({ content: `<@${match.sideSelector}>`, embeds: [embed], components: [row] });

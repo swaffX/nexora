@@ -134,11 +134,48 @@ module.exports = {
             return interaction.reply({ content: '❌ Bu işlemi sadece yetkililer yapabilir.', flags: require('discord.js').MessageFlags.Ephemeral });
         }
 
+        await interaction.reply({ content: '🚫 Maç iptal ediliyor, oyuncular taşınıyor...' });
+
         const matchId = interaction.customId.split('_')[2];
         const match = await Match.findOne({ matchId });
 
         try {
             if (match) {
+                const guild = interaction.guild;
+
+                // --- OYUNCULARI GERİ TAŞI ---
+                if (match.lobbyVoiceId) {
+                    // Oluşturulan ses kanallarındaki herkesi bul ve taşı
+                    if (match.createdChannelIds) {
+                        for (const cid of match.createdChannelIds) {
+                            try {
+                                const channel = guild.channels.cache.get(cid) || await guild.channels.fetch(cid).catch(() => null);
+                                if (channel && channel.type === ChannelType.GuildVoice) {
+                                    for (const [memberId, member] of channel.members) {
+                                        await member.voice.setChannel(match.lobbyVoiceId).catch(() => { });
+                                    }
+                                }
+                            } catch (e) { }
+                        }
+                    }
+
+                    // Ayrıca Team A ve Team B listesindekileri de kontrol et (farklı yerdeyse çek)
+                    const allPlayers = [...(match.teamA || []), ...(match.teamB || [])];
+                    for (const pid of allPlayers) {
+                        try {
+                            const member = await guild.members.fetch(pid).catch(() => null);
+                            if (member && member.voice.channelId && member.voice.channelId !== match.lobbyVoiceId) {
+                                // Sadece eğer botun oluşturduğu bir kanaldaysa mı çekelim? 
+                                // "Herkesi taşı" dediği için direkt lobiye çekmek en mantıklısı.
+                                await member.voice.setChannel(match.lobbyVoiceId).catch(() => { });
+                            }
+                        } catch (e) { }
+                    }
+                }
+
+                // Biraz bekle
+                await new Promise(define => setTimeout(define, 2000));
+
                 if (match.createdChannelIds && match.createdChannelIds.length > 0) {
                     for (const cId of match.createdChannelIds) {
                         await interaction.guild.channels.delete(cId).catch(() => console.log('Kanal zaten silinmiş'));
@@ -150,7 +187,7 @@ module.exports = {
             }
         } catch (error) {
             console.error('Cancel Match Error:', error);
-            await interaction.reply({ content: '❌ Silme işlemi sırasında hata.', flags: require('discord.js').MessageFlags.Ephemeral });
+            // Kanal silinmiş olabilir, reply atamayabiliriz
         }
     },
 
