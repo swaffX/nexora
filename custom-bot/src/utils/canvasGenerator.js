@@ -118,13 +118,12 @@ module.exports = {
         const wins = stats.totalWins || 0;
         const wr = total > 0 ? Math.round((wins / total) * 100) : 0;
 
-        ctx.font = 'bold 50px "Segoe UI", sans-serif';
+        ctx.font = 'bold 40px "Segoe UI", sans-serif';
         ctx.fillStyle = wr >= 50 ? '#00ff00' : '#ff4400';
         ctx.textAlign = 'right'; // Sağa yasla
 
-        // ELO metninin bittiği yerin biraz ilerisine veya barın sonuna (textStartX + barWidth = 1400)
-        // Bar genişliği 800, textStartX 600 -> Bitiş 1400.
-        ctx.fillText(`%${wr} WIN RATE`, textStartX + 800, 340);
+        // Başlık hizasına (Y=120) alalım
+        ctx.fillText(`%${wr} WIN RATE`, textStartX + 800, 120);
 
         // Tekrar sola yasla ki diğer çizimler bozulmasın
         ctx.textAlign = 'left';
