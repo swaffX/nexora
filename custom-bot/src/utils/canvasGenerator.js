@@ -174,7 +174,6 @@ module.exports = {
         const g = parseInt(rankColor.slice(3, 5), 16);
         const b = parseInt(rankColor.slice(5, 7), 16);
 
-        // GLOW: Tüm sağ tarafı kapsayan
         const glow = ctx.createRadialGradient(width, height / 2, 0, width, height / 2, 900);
         glow.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.2)`);
         glow.addColorStop(1, 'transparent');
@@ -303,12 +302,10 @@ module.exports = {
         const footerY = 560;
         const footerBgStart = footerY - 20;
         const footerHeight = height - footerBgStart;
-        const footerMid = footerBgStart + (footerHeight / 2); // Center Y coordinate for content
+        const footerMid = footerBgStart + (footerHeight / 2);
 
         ctx.fillStyle = 'rgba(0,0,0,0.5)';
         ctx.fillRect(0, footerBgStart, width, footerHeight);
-
-        // Vertical Alignment: MIDDLE
         ctx.textBaseline = 'middle';
 
         if (user.avatar) {
@@ -318,24 +315,17 @@ module.exports = {
                 ctx.drawImage(avatar, 40, footerMid - 40, 80, 80); ctx.restore();
             } catch (e) { }
         }
-
         ctx.font = 'bold 50px "Segoe UI", sans-serif';
-
         let nameX = 140;
-        // RANK
         if (rank) {
-            ctx.fillStyle = '#666';
-            ctx.fillText(`#${rank}`, nameX, footerMid);
-            const rankWidth = ctx.measureText(`#${rank}`).width;
-            nameX += rankWidth + 15;
+            ctx.fillStyle = '#666'; ctx.fillText(`#${rank}`, nameX, footerMid);
+            const rankWidth = ctx.measureText(`#${rank}`).width; nameX += rankWidth + 15;
         }
-
         ctx.fillStyle = '#fff';
         let mainName = user.username.toUpperCase();
         if (mainName.length > 15) mainName = mainName.substring(0, 15);
         ctx.fillText(mainName, nameX, footerMid);
 
-        // Right side alignment (ELO + Icon)
         ctx.textAlign = 'right';
         ctx.font = 'bold 50px "DIN Alternate", sans-serif';
         const eloText = `${stats.elo !== undefined ? stats.elo : 100} ELO`;
@@ -344,7 +334,6 @@ module.exports = {
         const iconSize = 80;
         const iconX = eloX - eloWidth - iconSize - 30;
 
-        // Glow kaldırıldı (User isteği)
         ctx.shadowBlur = 0;
         ctx.fillStyle = '#fff';
         ctx.fillText(eloText, eloX, footerMid);
@@ -353,28 +342,96 @@ module.exports = {
             const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
             if (fs.existsSync(iconPath)) {
                 const icon = await loadImage(iconPath);
-                // Icon Glow kaldırıldı
                 ctx.drawImage(icon, iconX, footerMid - (iconSize / 2), iconSize, iconSize);
             }
         } catch (e) { }
-
         return canvas.toBuffer();
     },
 
     async createLeaderboardImage(users) {
-        const rowHeight = 140; const width = 2000; const height = 300 + (users.length * 160); const c = createCanvas(width, height); const ctx = c.getContext('2d');
-        const g = ctx.createLinearGradient(0, 0, width, height); g.addColorStop(0, '#18181b'); g.addColorStop(1, '#09090b'); ctx.fillStyle = g; ctx.fillRect(0, 0, width, height);
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 80px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('LEADERBOARD', width / 2, 120);
+        const rowHeight = 140;
+        const width = 2000;
+        const height = 300 + (users.length * (rowHeight + 20));
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+
+        const bgGradient = ctx.createLinearGradient(0, 0, width, height);
+        bgGradient.addColorStop(0, '#18181b'); bgGradient.addColorStop(1, '#09090b');
+        ctx.fillStyle = bgGradient; ctx.fillRect(0, 0, width, height);
+
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 80px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center'; ctx.fillText('LEADERBOARD', width / 2, 120);
+        ctx.font = '30px "Segoe UI", sans-serif'; ctx.fillStyle = '#666';
+        ctx.fillText(`TOP ${users.length} PLAYERS • UPDATED: ${new Date().toLocaleTimeString('tr-TR', { timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit' })}`, width / 2, 170);
+
         let y = 250;
         for (let i = 0; i < users.length; i++) {
-            let u = users[i]; let s = u.matchStats || {}; ctx.fillStyle = '#333'; ctx.fillRect(50, y, width - 100, 140);
-            ctx.fillStyle = '#fff'; ctx.font = '60px sans-serif'; ctx.textAlign = 'left'; ctx.fillText(`${i + 1}. ${u.username}`, 130, y + 95);
-            ctx.textAlign = 'right'; ctx.fillText(`${s.elo} ELO`, 1900, y + 95); y += 160;
+            const user = users[i];
+            const stats = user.matchStats || { elo: 100 };
+            const lvlInfo = getLevelInfo(stats.elo);
+            const rankColor = lvlInfo.color;
+
+            ctx.fillStyle = '#27272a';
+            if (i === 0) { ctx.shadowColor = '#fbbf24'; ctx.shadowBlur = 25; ctx.fillStyle = '#3f2c0e'; }
+            else if (i === 1) { ctx.shadowColor = '#9ca3af'; ctx.shadowBlur = 15; ctx.fillStyle = '#2d3036'; }
+            else if (i === 2) { ctx.shadowColor = '#b45309'; ctx.shadowBlur = 10; ctx.fillStyle = '#2e1f13'; }
+            else { ctx.shadowBlur = 0; }
+            ctx.fillRect(50, y, width - 100, rowHeight);
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = rankColor; ctx.fillRect(50, y, 10, rowHeight);
+
+            ctx.fillStyle = '#ffffff'; ctx.font = 'bold 60px "DIN Alternate", sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText(`#${i + 1}`, 130, y + 95);
+
+            ctx.textAlign = 'left'; ctx.font = 'bold 50px "Segoe UI", sans-serif';
+            let name = user.username ? user.username.toUpperCase() : 'UNKNOWN';
+            if (name.length > 15) name = name.substring(0, 15) + '...';
+
+            const streak = Number(stats.winStreak) || 0;
+            if (streak >= 3) ctx.fillStyle = '#fbbf24';
+            else if (streak <= -3) ctx.fillStyle = '#ef4444';
+            else ctx.fillStyle = '#fff';
+            ctx.fillText(name, 350, y + 90);
+
+            try {
+                const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
+                if (fs.existsSync(iconPath)) {
+                    const icon = await loadImage(iconPath);
+                    ctx.drawImage(icon, 220, y + 20, 100, 100);
+                }
+            } catch (e) { }
+
+            const wins = stats.totalWins || 0; const losses = stats.totalLosses || 0; const total = wins + losses;
+            const wr = total > 0 ? Math.round((wins / total) * 100) : 0;
+            ctx.textAlign = 'center'; ctx.font = 'bold 45px "DIN Alternate", sans-serif';
+            ctx.fillStyle = '#2ecc71'; ctx.fillText(`${wins} W`, 1150, y + 90);
+            ctx.fillStyle = '#ef4444'; ctx.fillText(`${losses} L`, 1350, y + 90);
+            ctx.fillStyle = wr >= 50 ? '#2ecc71' : '#e74c3c'; ctx.fillText(`%${wr}`, 1550, y + 85);
+            ctx.font = 'bold 22px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('WIN RATE', 1550, y + 125);
+
+            ctx.font = 'bold 80px "DIN Alternate", sans-serif'; ctx.fillStyle = '#ffffff'; ctx.fillText(`${stats.elo}`, 1800, y + 90);
+            ctx.font = 'bold 22px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('ELO POINTS', 1800, y + 125);
+            y += rowHeight + 20;
         }
-        return c.toBuffer();
+        return canvas.toBuffer();
     },
-    async createLeaderboardImage_OLD(users) { return createCanvas(100, 100).toBuffer(); },
-    async createVersusImage(tA, tB, m) { return createCanvas(100, 100).toBuffer(); },
-    async createSideSelectionImage(ca, cb, s, m) { return createCanvas(100, 100).toBuffer(); },
-    async createWheelResult(w, l) { return createCanvas(100, 100).toBuffer(); }
+
+    async createLeaderboardImage_OLD(users) {
+        // ... (Keep this as fallback if needed)
+        const rowHeight = 150; const width = 2000; const height = (users.length * rowHeight) + 200;
+        const canvas = createCanvas(width, height); const ctx = canvas.getContext('2d'); ctx.fillStyle = '#181818'; ctx.fillRect(0, 0, width, height);
+        return canvas.toBuffer();
+    },
+
+    // VERSUS & OTHERS (Simplified but visual)
+    async createVersusImage(teamA, teamB, mapName) {
+        const width = 1920; const height = 1080; const canvas = createCanvas(width, height); const ctx = canvas.getContext('2d');
+        const g = ctx.createLinearGradient(0, 0, width, 0); g.addColorStop(0, '#000044'); g.addColorStop(1, '#440000'); ctx.fillStyle = g; ctx.fillRect(0, 0, width, height);
+        ctx.fillStyle = '#fff'; ctx.font = '200px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('VS', width / 2, height / 2);
+        return canvas.toBuffer();
+    },
+    async createSideSelectionImage(ca, cb, s, m) { return createCanvas(800, 400).toBuffer(); },
+    async createWheelResult(w, l) { return createCanvas(600, 400).toBuffer(); }
 };
