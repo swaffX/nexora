@@ -1,10 +1,12 @@
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const path = require('path');
 
-// Font Register
+// Font Register (Eğer font dosyası varsa ve bu yol doğruysa)
 try {
     GlobalFonts.registerFromPath(path.join(__dirname, '..', '..', '..', 'assets', 'fonts', 'Valorant.ttf'), 'VALORANT');
-} catch (e) { console.error('Font yükleme hatası:', e); }
+} catch (e) {
+    // console.error('Font yükleme hatası:', e);
+}
 
 // Yuvarlak Avatar Kırpma
 function applyRoundAvatar(ctx, x, y, size) {
@@ -16,137 +18,183 @@ function applyRoundAvatar(ctx, x, y, size) {
 
 async function createLeaderboardImage(guildName, guildIconUrl, data, client) {
     const width = 1000;
-    const height = 650; // Biraz daha uzun
+    const height = 650;
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext('2d');
 
-    // 1. Arkaplan (Modern Koyu Degrade)
+    // 1. Arkaplan (Derin Koyu - Stats/Elo Tarzı)
     const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
-    bgGradient.addColorStop(0, '#0f172a'); // Çok koyu mavi (Slate 900)
-    bgGradient.addColorStop(1, '#1e1b4b'); // Koyu indigo
+    bgGradient.addColorStop(0, '#09090b'); // Kömür karası (Stats bot ile uyumlu)
+    bgGradient.addColorStop(1, '#020202'); // Simsiyah
     ctx.fillStyle = bgGradient;
     ctx.fillRect(0, 0, width, height);
 
-    // Grid Çizgileri (Tekno havası)
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+    // Hafif Grid (Opaklık çok düşük)
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
     ctx.lineWidth = 1;
-    for (let i = 0; i < width; i += 40) {
+    for (let i = 0; i < width; i += 50) {
         ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, height); ctx.stroke();
     }
-    for (let i = 0; i < height; i += 40) {
+    for (let i = 0; i < height; i += 50) {
         ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(width, i); ctx.stroke();
     }
 
-    // 2. Header (Başlık)
-    // Logo (Varsa)
+    // 2. Header (NEXORA with Glow) --
+    // Logo (Ortada, parlayan)
     if (guildIconUrl) {
         try {
             const logo = await loadImage(guildIconUrl);
+            const logoSize = 90;
+            const logoX = width / 2 - logoSize / 2;
+            const logoY = 30;
+
+            // Logo Glow
+            ctx.filter = 'blur(20px)';
+            ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
+            ctx.filter = 'none';
+
             ctx.save();
-            applyRoundAvatar(ctx, width / 2 - 40, 20, 80);
-            ctx.drawImage(logo, width / 2 - 40, 20, 80, 80);
+            applyRoundAvatar(ctx, logoX, logoY, logoSize);
+            ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
             ctx.restore();
         } catch (e) { }
     }
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = '60px VALORANT';
+    // Font yüklenmediyse sans-serif fallback
+    ctx.font = '60px VALORANT, sans-serif';
     ctx.textAlign = 'center';
+
+    // Kırmızı neon glow (NEXORA teması)
     ctx.shadowColor = '#ff4655';
-    ctx.shadowBlur = 15;
+    ctx.shadowBlur = 25;
     ctx.fillText(guildName.toUpperCase(), width / 2, 160);
     ctx.shadowBlur = 0;
 
-    // KATEGORİLER (VOICE - CHAT)
-    // Sadece 2 sütun kaldı, ortalayalım
-    // width=1000, 260px sütunlar.
-    // x1 = 200, x2 = 540
-    await drawRankList(ctx, 'TOP VOICE', 200, 200, data.voice, client, 'voice', '#3b82f6'); // Blue
-    await drawRankList(ctx, 'TOP CHAT', 540, 200, data.messages, client, 'msg', '#10b981'); // Emerald
+    // 3. İki Sütun (Voice & Chat)
+    // Sütunlar arası boşluk ve düzen
+    // Sol: 50, Sağ: 540 (Width 1000 ise ortada boşluk kalsın)
+    // Voice: Mavi tema, Chat: Yeşil tema
+    await drawRankList(ctx, 'TOP VOICE', 60, 200, data.voice, client, 'voice', '#3b82f6');
+    await drawRankList(ctx, 'TOP CHAT', 540, 200, data.messages, client, 'msg', '#10b981');
 
-    // Footer (Global Stats)
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-    ctx.fillRect(0, 570, width, 80);
+    // 4. Footer (Stats Style)
+    const footerY = 570;
+    const footerHeight = height - footerY;
 
-    // Alt Çizgi
-    ctx.fillStyle = '#ff4655';
-    ctx.fillRect(0, 565, width, 5);
+    // Footer Background with Glow
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.fillRect(0, footerY, width, footerHeight);
 
-    ctx.font = 'bold 24px sans-serif';
+    // Top border glow line
+    const footerLine = ctx.createLinearGradient(0, footerY, width, footerY);
+    footerLine.addColorStop(0, 'transparent');
+    footerLine.addColorStop(0.5, '#ff4655');
+    footerLine.addColorStop(1, 'transparent');
+    ctx.fillStyle = footerLine;
+    ctx.fillRect(0, footerY, width, 2);
+
+    // Text
+    ctx.font = 'bold 24px "Segoe UI", sans-serif';
     ctx.fillStyle = '#e2e8f0';
     ctx.textAlign = 'center';
 
-    // Toplam Ses Saat/Dakika formatı
     const totalHours = Math.floor(data.stats.totalVoice / 60);
     const totalMins = data.stats.totalVoice % 60;
 
-    // Emojiler yerine text separator veya simple chars
-    const statsText = `Üye: ${data.stats.trackedUsers}   •   Mesaj: ${data.stats.totalMessages.toLocaleString()}   •   Toplam Ses: ${totalHours}s ${totalMins}dk`;
-    ctx.fillText(statsText, width / 2, 620);
+    // Değerleri renkli yapalım
+    // Üye
+    ctx.fillStyle = '#aaa';
+    ctx.fillText(`Üye: `, width / 2 - 250, 615);
+    ctx.fillStyle = '#fff'; ctx.shadowColor = '#fff'; ctx.shadowBlur = 10;
+    ctx.fillText(`${data.stats.trackedUsers}`, width / 2 - 210, 615);
+    ctx.shadowBlur = 0;
 
-    // "Son Güncelleme" kısmını buradan kaldırdık (Embed'e eklenecek)
+    // Mesaj
+    ctx.fillStyle = '#aaa';
+    ctx.fillText(`Mesaj: `, width / 2, 615);
+    ctx.fillStyle = '#10b981'; ctx.shadowColor = '#10b981'; ctx.shadowBlur = 10;
+    ctx.fillText(`${data.stats.totalMessages.toLocaleString()}`, width / 2 + 50, 615);
+    ctx.shadowBlur = 0;
+
+    // Ses
+    ctx.fillStyle = '#aaa';
+    ctx.fillText(`Toplam Ses: `, width / 2 + 250, 615);
+    ctx.fillStyle = '#3b82f6'; ctx.shadowColor = '#3b82f6'; ctx.shadowBlur = 10;
+    ctx.fillText(`${totalHours}s ${totalMins}dk`, width / 2 + 340, 615);
+    ctx.shadowBlur = 0;
 
     return canvas.encode('png');
 }
 
 const userAvatarCache = new Map();
 
-async function drawRankList(ctx, title, x, y, list, client, type, color) {
-    // Başlık Kutusu
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-    ctx.fillRect(x, y, 260, 50);
+async function drawRankList(ctx, title, x, y, list, client, type, themeColor) {
+    const colWidth = 400; // Genişletildi
 
-    // Sol Kenar Çizgisi
-    ctx.fillStyle = color;
-    ctx.fillRect(x, y, 5, 50);
+    // Başlık
+    ctx.fillStyle = `rgba(${parseInt(themeColor.slice(1, 3), 16)}, ${parseInt(themeColor.slice(3, 5), 16)}, ${parseInt(themeColor.slice(5, 7), 16)}, 0.1)`;
+    ctx.fillRect(x, y, colWidth, 50);
 
-    ctx.font = '28px VALORANT';
+    // Sol Çizgi (Glowlu)
+    ctx.shadowColor = themeColor;
+    ctx.shadowBlur = 15;
+    ctx.fillStyle = themeColor;
+    ctx.fillRect(x, y, 4, 50);
+    ctx.shadowBlur = 0;
+
+    ctx.font = '32px VALORANT, sans-serif';
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'left';
-    ctx.fillText(title, x + 20, y + 35);
 
-    // Liste Elemanları (Top 5)
+    // Title Glow
+    ctx.shadowColor = themeColor;
+    ctx.shadowBlur = 10;
+    ctx.fillText(title, x + 25, y + 36);
+    ctx.shadowBlur = 0;
+
     let currentY = y + 70;
     const top5 = list.slice(0, 5);
 
-    for (let i = 0; i < 5; i++) { // Her zaman 5 satır çiz
+    for (let i = 0; i < 5; i++) {
         const item = top5[i];
 
-        // Arka Plan Şeridi
-        if (i % 2 === 0) {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
-            ctx.fillRect(x, currentY - 10, 260, 60);
-        }
-
+        // Item Background
         if (!item) {
-            ctx.font = '16px sans-serif';
-            ctx.fillStyle = '#475569';
-            ctx.fillText('-', x + 20, currentY + 25);
-            currentY += 60;
+            // Empty slot
+            currentY += 65;
             continue;
         }
 
-        // Sıra No
-        ctx.font = 'bold 24px sans-serif';
-        if (i === 0) ctx.fillStyle = '#fbbf24';
-        else if (i === 1) ctx.fillStyle = '#94a3b8';
-        else if (i === 2) ctx.fillStyle = '#b45309';
-        else ctx.fillStyle = '#64748b';
-
-        ctx.fillText(`${i + 1}`, x + 10, currentY + 25);
-
-        // --- AVATAR CACHE SYSTEM ---
-        let avatarImage;
-        const cacheKey = item.userId;
-
-        if (userAvatarCache.has(cacheKey)) {
-            const cached = userAvatarCache.get(cacheKey);
-            // 10 dakika cache (Resim URL değişmediyse)
-            if (Date.now() - cached.timestamp < 10 * 60 * 1000) {
-                avatarImage = cached.image;
-            }
+        // 1. Sıra için özel arkaplan
+        if (i === 0) {
+            const grad = ctx.createLinearGradient(x, currentY, x + colWidth, currentY);
+            grad.addColorStop(0, `rgba(${parseInt(themeColor.slice(1, 3), 16)}, ${parseInt(themeColor.slice(3, 5), 16)}, ${parseInt(themeColor.slice(5, 7), 16)}, 0.15)`);
+            grad.addColorStop(1, 'transparent');
+            ctx.fillStyle = grad;
+            ctx.fillRect(x, currentY - 10, colWidth, 60);
+        } else if (i % 2 === 0) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
+            ctx.fillRect(x, currentY - 10, colWidth, 60);
         }
 
+        // Rank Number
+        ctx.font = 'bold 30px sans-serif';
+        if (i === 0) { ctx.fillStyle = '#fbbf24'; ctx.shadowColor = '#fbbf24'; ctx.shadowBlur = 10; }
+        else if (i === 1) { ctx.fillStyle = '#94a3b8'; ctx.shadowColor = '#94a3b8'; ctx.shadowBlur = 5; }
+        else if (i === 2) { ctx.fillStyle = '#b45309'; ctx.shadowColor = '#b45309'; ctx.shadowBlur = 5; }
+        else { ctx.fillStyle = '#64748b'; ctx.shadowBlur = 0; }
+
+        ctx.fillText(`${i + 1}`, x + 15, currentY + 30);
+        ctx.shadowBlur = 0;
+
+        // Avatar
+        let avatarImage;
+        const cacheKey = item.userId;
+        if (userAvatarCache.has(cacheKey)) {
+            const cached = userAvatarCache.get(cacheKey);
+            if (Date.now() - cached.timestamp < 10 * 60 * 1000) avatarImage = cached.image;
+        }
         if (!avatarImage) {
             try {
                 let user = client.users.cache.get(item.userId);
@@ -160,35 +208,47 @@ async function drawRankList(ctx, title, x, y, list, client, type, color) {
         }
 
         if (avatarImage) {
-            const avatarSize = 40;
+            const avatarSize = 46;
             ctx.save();
-            applyRoundAvatar(ctx, x + 40, currentY - 5, avatarSize);
-            ctx.drawImage(avatarImage, x + 40, currentY - 5, avatarSize, avatarSize);
+            applyRoundAvatar(ctx, x + 55, currentY - 5, avatarSize);
+            ctx.drawImage(avatarImage, x + 55, currentY - 5, avatarSize, avatarSize);
             ctx.restore();
+
+            // Avatar Border (Optional)
+            if (i === 0) {
+                ctx.beginPath();
+                ctx.arc(x + 55 + avatarSize / 2, currentY - 5 + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+                ctx.strokeStyle = themeColor;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
         }
 
-        // --- İSİM ---
+        // Username
         let username = 'Bilinmiyor';
         try {
             const user = client.users.cache.get(item.userId);
             if (user) username = user.username;
         } catch (e) { }
 
-        ctx.font = 'bold 16px sans-serif';
+        ctx.font = 'bold 20px "Segoe UI", sans-serif';
         ctx.fillStyle = '#ffffff';
-        ctx.fillText(username.substring(0, 10), x + 90, currentY + 10);
+        // Rank 1 ismi glowlu
+        if (i === 0) { ctx.shadowColor = themeColor; ctx.shadowBlur = 10; }
+        ctx.fillText(username.substring(0, 15), x + 115, currentY + 15);
+        ctx.shadowBlur = 0;
 
-        // Değer
-        ctx.font = '14px sans-serif';
-        ctx.fillStyle = color;
+        // Value
+        ctx.font = '16px "Segoe UI", sans-serif';
+        ctx.fillStyle = themeColor;
+
         let valText = '';
-        if (type === 'xp') valText = `LVL ${item.level} • ${item.xp.toLocaleString()} XP`;
-        else if (type === 'voice') valText = `${Math.floor(item.totalVoiceMinutes / 60)}s ${item.totalVoiceMinutes % 60}dk`;
+        if (type === 'voice') valText = `${Math.floor(item.totalVoiceMinutes / 60)}s ${item.totalVoiceMinutes % 60}dk`;
         else valText = `${item.totalMessages.toLocaleString()} Mesaj`;
 
-        ctx.fillText(valText, x + 90, currentY + 30);
+        ctx.fillText(valText, x + 115, currentY + 38);
 
-        currentY += 60;
+        currentY += 65;
     }
 }
 
