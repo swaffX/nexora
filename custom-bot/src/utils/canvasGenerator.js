@@ -227,6 +227,7 @@ module.exports = {
             } catch (e) { }
 
             // İsim (Streak varsa turuncu + ateş)
+            // İsim (Streak >= 3 ise Turuncu + Ateş İkonu)
             ctx.textAlign = 'left';
             ctx.font = 'bold 60px sans-serif';
             const name = user.username || `Player ${user.odasi?.substring(0, 5) || '???'}`;
@@ -234,6 +235,17 @@ module.exports = {
             if (streak >= 3) {
                 ctx.fillStyle = '#ff8800';
                 ctx.fillText(name, 400, y + 15);
+
+                // Ateş Emojisi (Resim olarak yükle)
+                try {
+                    const nameWidth = ctx.measureText(name).width;
+                    const fireUrl = 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/1f525.png';
+                    const fireImg = await loadImage(fireUrl);
+                    // İkon boyutu: 60x60, Metne ortalı
+                    ctx.drawImage(fireImg, 400 + nameWidth + 15, y - 45, 60, 60);
+                } catch (e) {
+                    // İkon yüklenemezse sessizce geç
+                }
             } else {
                 ctx.fillStyle = '#ffffff';
                 ctx.fillText(name, 400, y + 15);
