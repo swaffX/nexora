@@ -1,3 +1,4 @@
+const { PermissionsBitField } = require('discord.js');
 const RankConfig = require('../../../shared/models/RankConfig');
 
 // Level rolleri için konfigürasyon (renkler) - Hex Number Format
@@ -24,7 +25,6 @@ module.exports = {
 
     /**
      * Sunucudaki Level rollerini kontrol eder, yoksa oluşturur ve DB'ye kaydeder.
-     * Ayrıca rolleri sıralar (Level 1 altta, Level 10 üstte).
      * @param {Guild} guild 
      */
     async ensureRolesExist(guild) {
@@ -42,8 +42,6 @@ module.exports = {
         let rolesUpdated = false;
 
         // 1. Rolleri Kontrol Et / Oluştur (Sırayla 1..10)
-        // Böylece Discord'da 1 oluşur, sonra 2 (üstüne gelir), sonra 3...
-        // Sonuç: En üstte 10 olur.
         for (let i = 1; i <= 10; i++) {
             const roleName = this.getRoleName(i);
             const savedRoleId = rolesMap[i];
@@ -53,9 +51,8 @@ module.exports = {
                 role = guild.roles.cache.get(savedRoleId);
             }
 
-            // Eğer rol yoksa (silinmişse veya hiç yoksa)
+            // Eğer rol yoksa
             if (!role) {
-                // İsimle bulmaya çalış (belki manuel oluşturuldu ama DB'de yok)
                 role = guild.roles.cache.find(r => r.name === roleName);
 
                 if (!role) {
@@ -63,9 +60,9 @@ module.exports = {
                         console.log(`Creating missing rank role: ${roleName}`);
                         role = await guild.roles.create({
                             name: roleName,
-                            color: LEVEL_COLORS[i] || '#ffffff',
+                            color: LEVEL_COLORS[i] || 0xFFFFFF,
                             reason: 'Nexora Rank System Auto-Setup',
-                            hoist: true // Üyeleri sağ tarafta ayrı göstersin mi? Genelde ranklar gösterir.
+                            hoist: true
                         });
                     } catch (e) {
                         console.error(`Failed to create role ${roleName}:`, e.message);
@@ -106,7 +103,7 @@ module.exports = {
 
         let config = await RankConfig.findOne({ guildId: member.guild.id });
 
-        // Eğer config yoksa (ilk kurulum), rolleri oluşturmayı tetikle
+        // Config yoksa (ilk kurulum), rolleri oluşturmayı tetikle
         if (!config || config.roles.length < 10) {
             await this.ensureRolesExist(member.guild);
             config = await RankConfig.findOne({ guildId: member.guild.id });
@@ -114,11 +111,23 @@ module.exports = {
 
         if (!config) return;
 
+        // VALORANT ROL KONTROLÜ (Güvenlik)
+        const REQUIRED_VALORANT_ROLE = '1466189076347486268';
+        const allRankRoleIds = config.roles.map(r => r.roleId);
+
+        if (!member.roles.cache.has(REQUIRED_VALORANT_ROLE)) {
+            // Rolü yoksa, üzerindeki tüm rank rollerini temizle
+            const rolesToRemove = member.roles.cache.filter(r => allRankRoleIds.includes(r.id));
+            if (rolesToRemove.size > 0) {
+                await member.roles.remove(rolesToRemove).catch(() => { });
+            }
+            return; // Rank vermeden çık
+        }
+
         const targetRoleConfig = config.roles.find(r => r.level === newLevel);
         if (!targetRoleConfig) return; // Hedef rol yok
 
         const targetRoleId = targetRoleConfig.roleId;
-        const allRankRoleIds = config.roles.map(r => r.roleId);
 
         // Kaldırılacaklar (Level rolleri olup da hedef olmayanlar)
         const rolesToRemove = member.roles.cache.filter(r =>
