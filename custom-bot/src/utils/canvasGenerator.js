@@ -10,19 +10,17 @@ const hexToRgba = (hex, alpha) => {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
-// ELO Level Info (Canvas için min/max/color bilgisi - eloService ile senkron)
+// ELO Level Info
 const getLevelInfo = (elo) => {
     const level = eloService.getLevelFromElo(elo);
     const thresholds = eloService.ELO_CONFIG.LEVEL_THRESHOLDS;
 
-    // Renk Haritası (Hex Number değil String kullanıyor burası çünkü slice yapılıyor)
     const colors = {
         1: '#00ff00', 2: '#00ff00', 3: '#00ff00',
         4: '#ffcc00', 5: '#ffcc00', 6: '#ffcc00', 7: '#ffcc00',
         8: '#ff4400', 9: '#ff4400', 10: '#ff0000'
     };
 
-    // Min/Max hesapla
     let min = 100, max = 500;
     for (let i = 0; i < thresholds.length; i++) {
         if (thresholds[i].level === level) {
@@ -49,14 +47,12 @@ module.exports = {
         const levelData = getLevelInfo(elo);
         const rankColor = levelData.color;
 
-        // 1. Arkaplan (Modern Dark Gradient)
         const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-        bgGradient.addColorStop(0, '#18181b'); // Zinc
-        bgGradient.addColorStop(1, '#09090b'); // Black
+        bgGradient.addColorStop(0, '#18181b');
+        bgGradient.addColorStop(1, '#09090b');
         ctx.fillStyle = bgGradient;
         ctx.fillRect(0, 0, width, height);
 
-        // 2. Rank Glow (Sağ Taraf)
         const r = parseInt(rankColor.slice(1, 3), 16);
         const g = parseInt(rankColor.slice(3, 5), 16);
         const b = parseInt(rankColor.slice(5, 7), 16);
@@ -68,11 +64,9 @@ module.exports = {
         ctx.fillStyle = glow;
         ctx.fillRect(0, 0, width, height);
 
-        // Sol Kenar Çizgisi (Rank Rengi)
         ctx.fillStyle = rankColor;
         ctx.fillRect(0, 0, 10, height);
 
-        // 3. Rank İkonu (Sol Taraf)
         try {
             const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${levelData.lv}.png`);
             const icon = await loadImage(iconPath);
@@ -82,22 +76,18 @@ module.exports = {
             ctx.shadowBlur = 0;
         } catch (e) { }
 
-        // 4. Kullanıcı Bilgileri (Orta - Üst)
         const textX = 380;
 
-        // İsim
         ctx.font = 'bold 70px "Segoe UI", sans-serif';
         ctx.fillStyle = '#ffffff';
         let name = user.username ? user.username.toUpperCase() : 'UNKNOWN';
         if (name.length > 15) name = name.substring(0, 15) + '...';
         ctx.fillText(name, textX, 100);
 
-        // ELO ve Progress Bar
         const progressY = 160;
         const barWidth = 750;
         const barHeight = 15;
 
-        // Progress Hesabı
         let progress = 0;
         if (levelData.lv < 10) {
             const range = levelData.max - levelData.min;
@@ -108,11 +98,9 @@ module.exports = {
             progress = 1;
         }
 
-        // Bar Arkaplan
         ctx.fillStyle = '#333';
         ctx.fillRect(textX, progressY, barWidth, barHeight);
 
-        // Bar Doluluk
         if (progress > 0) {
             ctx.fillStyle = rankColor;
             ctx.shadowColor = rankColor;
@@ -121,13 +109,11 @@ module.exports = {
             ctx.shadowBlur = 0;
         }
 
-        // ELO Text (Barın Altı)
         ctx.font = 'bold 35px "Segoe UI", sans-serif';
         ctx.fillStyle = '#cccccc';
         const eloText = `${elo} ELO`;
         ctx.fillText(eloText, textX, progressY + 55);
 
-        // Next Level Text (FIXED: max + 1 -> max)
         if (levelData.lv < 10) {
             ctx.textAlign = 'right';
             ctx.fillStyle = '#666';
@@ -140,7 +126,6 @@ module.exports = {
             ctx.textAlign = 'left';
         }
 
-        // 5. İstatistik Kutuları (Alt Kısım)
         const statsY = 280;
         const boxWidth = 175;
         const boxHeight = 120;
@@ -183,10 +168,10 @@ module.exports = {
         return canvas.toBuffer();
     },
 
-    // YENİ LEADERBOARD (MODERN TASARIM)
+    // YENİ LEADERBOARD (MODERN TASARIM - FIXED WIDTH)
     async createLeaderboardImage(users) {
         const rowHeight = 140;
-        const width = 1600;
+        const width = 2000; // Genişletildi (Çakışmayı önlemek için)
         const height = 300 + (users.length * (rowHeight + 20));
         const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
@@ -246,7 +231,6 @@ module.exports = {
             let name = user.username ? user.username.toUpperCase() : 'UNKNOWN';
             if (name.length > 15) name = name.substring(0, 15) + '...';
 
-            // Streak Renk
             const streak = Number(stats.winStreak) || 0;
             if (streak >= 3) ctx.fillStyle = '#fbbf24';
             else if (streak <= -3) ctx.fillStyle = '#ef4444';
@@ -262,15 +246,12 @@ module.exports = {
             } catch (e) { }
 
             // Stats Box
-            const w = stats.totalWins || 0;
-            const l = stats.totalLosses || w; // Hata: l undefined olursa w değil 0 olmalı. totalLosses genelde vardır.
-            // Düzeltelim
             const wins = stats.totalWins || 0;
             const losses = stats.totalLosses || 0;
             const total = wins + losses;
             const wr = total > 0 ? Math.round((wins / total) * 100) : 0;
 
-            const statsX = 1000;
+            const statsX = 1200; // Genişlik arttırıldığı için sağa kaydırıldı
 
             // W
             ctx.font = 'bold 45px "DIN Alternate", sans-serif';
@@ -280,21 +261,24 @@ module.exports = {
 
             // L
             ctx.fillStyle = '#ef4444';
-            ctx.fillText(`${losses} L`, statsX + 180, y + 85);
+            ctx.fillText(`${losses} L`, statsX + 200, y + 85);
 
             // WR
             ctx.fillStyle = wr >= 50 ? '#2ecc71' : '#e74c3c';
-            ctx.fillText(`%${wr}`, statsX + 360, y + 85);
+            ctx.fillText(`%${wr}`, statsX + 400, y + 85);
 
-            // ELO
-            ctx.font = 'bold 60px "DIN Alternate", sans-serif';
+            // ELO (En Sağ)
+            // Sayıyı BÜYÜT
+            ctx.font = 'bold 80px "DIN Alternate", sans-serif';
             ctx.fillStyle = '#ffffff';
             ctx.textAlign = 'right';
-            ctx.fillText(`${stats.elo}`, width - 100, y + 95);
+            const eloX = width - 80;
+            ctx.fillText(`${stats.elo}`, eloX, y + 90);
 
-            ctx.font = '20px sans-serif';
+            // Label'ı ALTINA al
+            ctx.font = 'bold 22px "Segoe UI", sans-serif';
             ctx.fillStyle = '#666';
-            ctx.fillText('ELO', width - 80, y + 95);
+            ctx.fillText('ELO POINTS', eloX, y + 125); // Altına alındı
 
             y += rowHeight + 20;
         }
@@ -302,7 +286,6 @@ module.exports = {
         return canvas.toBuffer();
     },
 
-    // ESKİ/YEDEK LEADERBOARD
     async createLeaderboardImage_OLD(users) {
         const rowHeight = 150;
         const width = 2000;
