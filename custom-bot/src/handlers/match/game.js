@@ -1,6 +1,5 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ChannelType, PermissionFlagsBits, AttachmentBuilder, MessageFlags } = require('discord.js');
 const path = require('path');
-const rankHandler = require('../../rankHandler');
+const rankHandler = require('../rankHandler');
 const fs = require('fs');
 const { Match, User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const eloService = require('../../services/eloService');
