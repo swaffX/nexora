@@ -52,17 +52,19 @@ module.exports = {
             const attachment = new AttachmentBuilder(buffer, { name: 'elo-card.png' });
 
             // --- MAÇ GEÇMİŞİ ANALİZİ ---
-            // Son 5 Maç (Detaylı Liste İçin)
-            const recentMatches = await Match.find({
+            // FİLTRE: Belirli bir maçtan itibaren (Reset noktası)
+            const MIN_MATCH_ID = '1468676273680285706';
+            const baseQuery = {
                 status: 'FINISHED',
+                matchId: { $gte: MIN_MATCH_ID },
                 $or: [{ teamA: targetUser.id }, { teamB: targetUser.id }]
-            }).sort({ createdAt: -1 }).limit(5);
+            };
 
-            // Son 50 Maç (Duo ve Map Analizi İçin - Daha kesin veri)
-            const historyMatches = await Match.find({
-                status: 'FINISHED',
-                $or: [{ teamA: targetUser.id }, { teamB: targetUser.id }]
-            }).sort({ createdAt: -1 }).limit(50);
+            // Son 5 Maç (Listeleme için)
+            const recentMatches = await Match.find(baseQuery).sort({ createdAt: -1 }).limit(5);
+
+            // Son 50 Maç (Analiz için - Sadece filtrelenenler arasından)
+            const historyMatches = await Match.find(baseQuery).sort({ createdAt: -1 }).limit(50);
 
             // ANALİZLER
             const teammates = {};
