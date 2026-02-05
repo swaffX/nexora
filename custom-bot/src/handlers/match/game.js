@@ -650,10 +650,14 @@ module.exports = {
 
                     if (isWin) {
                         user.matchStats.totalWins++;
-                        user.matchStats.winStreak = currentStreak + 1; // +1
+                        // Win Streak Mantığı (Negatifse 1'e dön, değilse artır)
+                        if (currentStreak < 0) user.matchStats.winStreak = 1;
+                        else user.matchStats.winStreak = currentStreak + 1;
                     } else {
                         user.matchStats.totalLosses++;
-                        user.matchStats.winStreak = 0; // Sıfırla
+                        // Lose Streak Mantığı (Pozitifse -1'e dön, değilse azalt)
+                        if (currentStreak > 0) user.matchStats.winStreak = -1;
+                        else user.matchStats.winStreak = currentStreak - 1;
                     }
 
                     // ELO değişikliğini hesapla

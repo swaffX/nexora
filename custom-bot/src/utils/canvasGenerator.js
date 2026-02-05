@@ -125,11 +125,23 @@ module.exports = {
         ctx.textAlign = 'left';
 
         // STREAK (WinRate Üstünde: Y=290)
+        // STREAK (WinRate Üstünde: Y=290)
         const streak = Number(stats.winStreak) || 0;
-        if (streak >= 2) {
+        if (streak >= 2 || streak <= -2) {
             ctx.font = 'bold 30px "Segoe UI", sans-serif';
-            ctx.fillStyle = streak >= 3 ? '#ff5500' : '#cccccc';
-            const streakText = streak >= 3 ? `${streak} WIN STREAK (HOT)` : `${streak} Win Streak`; ctx.fillText(streakText, wrX, 290);
+
+            if (streak >= 2) {
+                // Win Streak (Pozitif)
+                ctx.fillStyle = streak >= 3 ? '#ff5500' : '#cccccc'; // 3+ Hot (Turuncu), 2 (Gri)
+                const streakText = streak >= 3 ? `${streak} WIN STREAK (HOT)` : `${streak} Win Streak`;
+                ctx.fillText(streakText, wrX, 290);
+            } else {
+                // Lose Streak (Negatif)
+                ctx.fillStyle = '#e74c3c'; // Kırmızı
+                const limit = Math.abs(streak);
+                const streakText = `${limit} LOSE STREAK`;
+                ctx.fillText(streakText, wrX, 290);
+            }
         }
 
         // WIN RATE (Y=340)
@@ -233,7 +245,7 @@ module.exports = {
             const name = user.username || `Player ${user.odasi?.substring(0, 5) || '???'}`;
 
             if (streak >= 3) {
-                ctx.fillStyle = '#ff8800';
+                ctx.fillStyle = '#ff8800'; // Turuncu (Win)
                 ctx.fillText(name, 400, y + 15);
 
                 // Ateş Emojisi (Resim olarak yükle)
@@ -246,6 +258,9 @@ module.exports = {
                 } catch (e) {
                     // İkon yüklenemezse sessizce geç
                 }
+            } else if (streak <= -3) {
+                ctx.fillStyle = '#ff0000'; // Full Kırmızı (Lose)
+                ctx.fillText(name, 400, y + 15);
             } else {
                 ctx.fillStyle = '#ffffff';
                 ctx.fillText(name, 400, y + 15);

@@ -283,10 +283,12 @@ async function recalculateStatsFromHistory(user) {
 
         if (isWin) {
             wins++;
-            streak++;
+            if (streak < 0) streak = 1; // Lose streak'i boz
+            else streak++;
         } else {
             losses++;
-            streak = 0;
+            if (streak > 0) streak = -1; // Win streak'i boz
+            else streak--; // Lose streak'i artır (daha negatif yap)
         }
     }
 
