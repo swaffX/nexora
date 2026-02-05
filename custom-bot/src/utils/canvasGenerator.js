@@ -125,7 +125,7 @@ module.exports = {
         ctx.textAlign = 'left';
 
         // STREAK (WinRate Üstünde: Y=290)
-        const streak = stats.winStreak || 0;
+        const streak = Number(stats.winStreak) || 0;
         if (streak >= 2) {
             ctx.font = 'bold 30px "Segoe UI", sans-serif';
             ctx.fillStyle = streak >= 3 ? '#ff5500' : '#cccccc';
@@ -207,7 +207,7 @@ module.exports = {
             const user = users[i];
             const stats = user.matchStats || { elo: eloService.ELO_CONFIG.DEFAULT_ELO };
             const lvlInfo = getLevelInfo(stats.elo);
-            const streak = stats.winStreak || 0;
+            const streak = Number(stats.winStreak) || 0;
 
             // Sıra Numarası
             ctx.font = 'bold 60px sans-serif';
