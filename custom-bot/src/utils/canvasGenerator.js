@@ -133,7 +133,7 @@ module.exports = {
         if (levelData.lv < 10) {
             ctx.textAlign = 'right';
             ctx.fillStyle = '#666';
-            ctx.fillText(`NEXT: ${levelData.max + 1}`, textX + barWidth, progressY + 55);
+            ctx.fillText(`NEXT: ${levelData.max}`, textX + barWidth, progressY + 55);
             ctx.textAlign = 'left';
         } else {
             ctx.textAlign = 'right';
