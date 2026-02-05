@@ -18,18 +18,20 @@ const ELO_CONFIG = {
     BASE_LOSS: -20,
     MVP_BONUS: 5,
     MAX_ROUND_BONUS: 10,
+    WIN_STREAK_BONUS: 5,      // Seri Bonusu (+5 ELO)
+    WIN_STREAK_THRESHOLD: 3,  // 3. maçtan itibaren bonus başlar
     FAIRNESS_DIVISOR: 40, // Her 40 ELO farkı = ±1 puan
     MAX_FAIRNESS_ADJUSTMENT: 10,
     LEVEL_THRESHOLDS: [
-        { max: 500, level: 1 },
-        { max: 750, level: 2 },
-        { max: 900, level: 3 },
-        { max: 1050, level: 4 },
-        { max: 1200, level: 5 },
-        { max: 1350, level: 6 },
-        { max: 1530, level: 7 },
-        { max: 1750, level: 8 },
-        { max: 2000, level: 9 },
+        { max: 300, level: 1 },
+        { max: 450, level: 2 },
+        { max: 600, level: 3 },
+        { max: 750, level: 4 },
+        { max: 900, level: 5 },
+        { max: 1050, level: 6 },
+        { max: 1200, level: 7 },
+        { max: 1350, level: 8 },
+        { max: 1600, level: 9 },
         { max: Infinity, level: 10 }
     ]
 };
@@ -102,6 +104,9 @@ function ensureValidStats(user) {
     if (typeof stats.totalLosses !== 'number') {
         stats.totalLosses = 0;
     }
+    if (typeof stats.winStreak !== 'number') {
+        stats.winStreak = 0;
+    }
 
     // Sınırları uygula
     stats.elo = clampElo(stats.elo);
@@ -143,7 +148,7 @@ async function applyEloChange(user, change, reason = 'Unknown') {
  * @param {Object} params Hesaplama parametreleri
  * @returns {number} Final ELO değişikliği
  */
-function calculateMatchEloChange({ isWin, roundDiff, myTeamAvg, enemyTeamAvg, isMvpWinner, isMvpLoser }) {
+function calculateMatchEloChange({ isWin, roundDiff, myTeamAvg, enemyTeamAvg, isMvpWinner, isMvpLoser, currentStreak = 0 }) {
     // Adalet faktörü hesapla
     let eloDiff = enemyTeamAvg - myTeamAvg;
     let fairnessAdjustment = Math.round(eloDiff / ELO_CONFIG.FAIRNESS_DIVISOR);
@@ -160,10 +165,20 @@ function calculateMatchEloChange({ isWin, roundDiff, myTeamAvg, enemyTeamAvg, is
     const roundBonus = Math.min(roundDiff || 0, ELO_CONFIG.MAX_ROUND_BONUS);
 
     let finalChange = 0;
+    let reasonText = '';
 
     if (isWin) {
         // Kazanma: Baz + Raund Bonusu + Adalet + MVP
         finalChange = ELO_CONFIG.BASE_WIN + roundBonus + fairnessAdjustment;
+
+        // Win Streak Bonusu
+        // currentStreak, maç ÖNCESİ seri. Bu maçı kazandığı için +1 olacak.
+        // Eğer (currentStreak + 1) >= 3 ise Bonus Alır.
+        if ((currentStreak + 1) >= ELO_CONFIG.WIN_STREAK_THRESHOLD) {
+            finalChange += ELO_CONFIG.WIN_STREAK_BONUS;
+            reasonText = `Win + Streak x${currentStreak + 1}`;
+        }
+
         if (isMvpWinner) finalChange += ELO_CONFIG.MVP_BONUS;
     } else {
         // Kaybetme: Baz + Adalet + MVP Koruması
@@ -186,6 +201,7 @@ function createDefaultStats() {
         totalMatches: 0,
         totalWins: 0,
         totalLosses: 0,
+        winStreak: 0,
         elo: ELO_CONFIG.DEFAULT_ELO,
         matchLevel: ELO_CONFIG.DEFAULT_LEVEL
     };

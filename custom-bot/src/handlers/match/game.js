@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { Match, User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const eloService = require('../../services/eloService');
+const canvasGenerator = require('../../utils/canvasGenerator');
 
 module.exports = {
 
@@ -149,52 +150,64 @@ module.exports = {
         }
         // -----------------------------------------------------
 
-        // --- HARİTA GÖRSELİ (LOCAL ASSETS) ---
-        let mapName = match.selectedMap || 'Unknown';
-        // Dosya yolu: src/handlers/match/game.js -> ../../../assets/maps/MapName.png
+        // Kaptan Bilgilerini Çek
+        const captainA = await channel.guild.members.fetch(match.captainA).catch(() => null);
+        const captainB = await channel.guild.members.fetch(match.captainB).catch(() => null);
 
-        const assetsPath = path.join(__dirname, '..', '..', '..', 'assets', 'maps');
-        const mapFilePath = path.join(assetsPath, `${mapName}.png`);
+        // İsimleri Kısalt
+        const shortNameA = captainA?.displayName ? captainA.displayName.toUpperCase().substring(0, 12) : 'PLAYER A';
+        const shortNameB = captainB?.displayName ? captainB.displayName.toUpperCase().substring(0, 12) : 'PLAYER B';
 
+        const nameA = `TEAM ${shortNameA}`;
+        const nameB = `TEAM ${shortNameB}`;
+
+        // --- GÖRSEL HAZIRLIĞI (VERSUS CANVAS) ---
         let mapAttachment = null;
-        let mapImageName = 'default.png';
+        let mapImageName = 'versus.png';
 
-        // Debug için
-        // console.log("Map Path Looking at:", mapFilePath);
+        try {
+            // Stats Çek
+            const captainUserDataA = await User.findOne({ odasi: match.captainA, odaId: channel.guild.id });
+            const captainUserDataB = await User.findOne({ odasi: match.captainB, odaId: channel.guild.id });
 
-        if (fs.existsSync(mapFilePath)) {
-            mapAttachment = new AttachmentBuilder(mapFilePath, { name: `${mapName}.png` });
-            mapImageName = `${mapName}.png`;
-        } else {
-            // Belki küçük harfle?
-            const lowerPath = path.join(assetsPath, `${mapName.toLowerCase()}.png`);
-            if (fs.existsSync(lowerPath)) {
-                mapAttachment = new AttachmentBuilder(lowerPath, { name: `${mapName}.png` });
+            const statsA = captainUserDataA?.matchStats || { matchLevel: 1, elo: 200 };
+            const statsB = captainUserDataB?.matchStats || { matchLevel: 1, elo: 200 };
+
+            // Canvas Oluştur
+            if (captainA && captainB) {
+                const buffer = await canvasGenerator.createVersusImage(
+                    { user: captainA.user, stats: statsA, name: shortNameA },
+                    { user: captainB.user, stats: statsB, name: shortNameB },
+                    match.selectedMap || 'Unknown'
+                );
+                mapAttachment = new AttachmentBuilder(buffer, { name: 'versus.png' });
+            }
+        } catch (e) {
+            console.error('Versus Image Gen Error:', e);
+            // Hata durumunda eski statik harita görseline fallback yapabiliriz ama şimdilik devam
+        }
+
+        // Eğer Versus Canvas başarısız olursa, statik harita görselini dene
+        if (!mapAttachment) {
+            const assetsPath = path.join(__dirname, '..', '..', '..', 'assets', 'maps');
+            const mapName = match.selectedMap || 'Unknown';
+            let mapPath = path.join(assetsPath, `${mapName}.png`);
+            if (!fs.existsSync(mapPath)) mapPath = path.join(assetsPath, `${mapName.toLowerCase()}.png`);
+
+            if (fs.existsSync(mapPath)) {
+                mapAttachment = new AttachmentBuilder(mapPath, { name: `${mapName}.png` });
                 mapImageName = `${mapName}.png`;
             }
         }
 
-        // --- ÖNCEKİ MESAJLARI TEMİZLE (Draft, Voting, Side Selection vb.) ---
+        // --- ÖNCEKİ MESAJLARI TEMİZLE ---
         try {
             const messages = await channel.messages.fetch({ limit: 50 });
             const botMessages = messages.filter(m => m.author.id === channel.client.user.id);
             if (botMessages.size > 0) {
                 await channel.bulkDelete(botMessages).catch(() => { });
             }
-        } catch (e) {
-            console.log('[Cleanup] Previous messages cleanup error:', e.message);
-        }
-        // ---------------------------------------------------------------------
-
-        const captainA = await channel.guild.members.fetch(match.captainA).catch(() => ({ displayName: 'PLAYER A' }));
-        const captainB = await channel.guild.members.fetch(match.captainB).catch(() => ({ displayName: 'PLAYER B' }));
-
-        // İsimleri Kısalt (Layout bozulmaması için)
-        const shortNameA = captainA.displayName ? captainA.displayName.toUpperCase().substring(0, 12) : 'PLAYER A';
-        const shortNameB = captainB.displayName ? captainB.displayName.toUpperCase().substring(0, 12) : 'PLAYER B';
-
-        const nameA = `TEAM ${shortNameA}`;
-        const nameB = `TEAM ${shortNameB}`;
+        } catch (e) { }
 
         const divider = '<a:ayrma:1468003499072688309>'.repeat(5);
 
@@ -520,13 +533,18 @@ module.exports = {
                 const myTeamAvg = isTeamA ? avgEloA : avgEloB;
                 const enemyTeamAvg = isTeamA ? avgEloB : avgEloA;
 
+                // Mevcut Streak
+                const currentStreak = user.matchStats.winStreak || 0;
+
                 if (winnerTeam !== 'DRAW') {
                     const isWin = (winnerTeam === 'A' && isTeamA) || (winnerTeam === 'B' && !isTeamA);
 
                     if (isWin) {
                         user.matchStats.totalWins++;
+                        user.matchStats.winStreak = currentStreak + 1; // +1
                     } else {
                         user.matchStats.totalLosses++;
+                        user.matchStats.winStreak = 0; // Sıfırla
                     }
 
                     // ELO değişikliğini hesapla
@@ -536,7 +554,8 @@ module.exports = {
                         myTeamAvg,
                         enemyTeamAvg,
                         isMvpWinner: match.mvpPlayerId === pid,
-                        isMvpLoser: match.mvpLoserId === pid
+                        isMvpLoser: match.mvpLoserId === pid,
+                        currentStreak: currentStreak
                     });
 
                     // ELO'yu uygula (Audit log ile)

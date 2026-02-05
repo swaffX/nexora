@@ -118,6 +118,7 @@ const userSchema = new mongoose.Schema({
     matchStats: {
         totalMatches: { type: Number, default: 0, min: 0 },
         totalWins: { type: Number, default: 0, min: 0 },
+        winStreak: { type: Number, default: 0 }, // Yeni: Galibiyet Serisi
         totalLosses: { type: Number, default: 0, min: 0 },
         elo: {
             type: Number,

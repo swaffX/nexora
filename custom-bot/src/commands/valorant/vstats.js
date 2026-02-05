@@ -5,8 +5,8 @@ const ValorantUser = require(path.join(__dirname, '..', '..', '..', '..', 'share
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('stats')
-        .setDescription('View your current Valorant rank and stats.')
+        .setName('vstats')
+        .setDescription('View your current Valorant rank and stats (Riot API).')
         .addUserOption(option =>
             option.setName('user')
                 .setDescription('Check another user\'s stats')

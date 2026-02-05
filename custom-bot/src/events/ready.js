@@ -6,7 +6,7 @@ const { joinVoiceChannel } = require('@discordjs/voice');
 module.exports = {
     name: Events.ClientReady,
     once: true,
-    execute(client) {
+    async execute(client) {
         logger.success(`⚔️ Nexora Custom Bot Devrede: ${client.user.tag}`);
 
         // DURUM
@@ -42,7 +42,19 @@ module.exports = {
         // Otomatik maç timeout kontrolü devre dışı bırakıldı
         // Maçlar artık manuel olarak bitirilmeli
 
-        // --- LEADERBOARD GÜNCELLEYİCİ ---
+        // MIGRATION: 100 ELO PROBLEMİNİ ÇÖZ (SADECE 100 OLANLAR)
+        const { User } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models')); // Moved User require to a higher scope
+        try {
+            const res = await User.updateMany(
+                { 'matchStats.elo': 100 },
+                { $set: { 'matchStats.elo': 200, 'matchStats.matchLevel': 1 } }
+            );
+            if (res.modifiedCount > 0) {
+                logger.info(`[MIGRATION] ${res.modifiedCount} kullanıcının ELO'su 100 -> 200 olarak düzeltildi.`);
+            }
+        } catch (e) { console.error('Migration hatası:', e); }
+
+        // LEADERBOARD UPDATE LOOP (30 Saniye)---
         try {
             const leaderboard = require('../handlers/leaderboard');
             leaderboard.updateLeaderboard(client); // İlk açılışta bir kez çalıştır
