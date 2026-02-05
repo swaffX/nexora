@@ -1,5 +1,6 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ChannelType, PermissionFlagsBits, AttachmentBuilder, MessageFlags } = require('discord.js');
 const path = require('path');
+const rankHandler = require('../../rankHandler');
 const fs = require('fs');
 const { Match, User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const eloService = require('../../services/eloService');
@@ -674,6 +675,10 @@ module.exports = {
                     // ELO'yu uygula (Audit log ile)
                     const reason = isWin ? `Win vs Avg:${enemyTeamAvg}` : `Loss vs Avg:${enemyTeamAvg}`;
                     await eloService.applyEloChange(user, eloChange, `Match #${match.matchNumber} | ${reason}`);
+
+                    // Rank Rolü Senkronizasyonu
+                    const member = await interaction.guild.members.fetch(pid).catch(() => null);
+                    if (member) await rankHandler.syncRank(member, user.matchStats.matchLevel);
 
                     // Log dizisine ekle
                     eloChanges.push({

@@ -2,6 +2,7 @@ const { Events } = require('discord.js');
 const path = require('path');
 const logger = require(path.join(__dirname, '..', '..', '..', 'shared', 'logger'));
 const { joinVoiceChannel } = require('@discordjs/voice');
+const rankHandler = require('../handlers/rankHandler');
 
 module.exports = {
     name: Events.ClientReady,
@@ -86,6 +87,9 @@ module.exports = {
             try {
                 const guild = client.guilds.cache.get(GUILD_ID);
                 if (!guild) return;
+
+                // Rank Rollerini Kontrol Et / Oluştur
+                await rankHandler.ensureRolesExist(guild); // YENİ EKLENDİ
 
                 logger.info('🔄 ELO Rol senkronizasyonu başlatılıyor...');
                 await guild.members.fetch(); // Tüm üyeleri çek

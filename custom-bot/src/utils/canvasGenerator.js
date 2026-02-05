@@ -2,6 +2,14 @@ const { createCanvas, loadImage } = require('canvas');
 const path = require('path');
 const eloService = require('../services/eloService');
 
+// Helper: Hex to RGB
+const hexToRgba = (hex, alpha) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
 // ELO Level Info (Canvas için min/max/color bilgisi - eloService ile senkron)
 const getLevelInfo = (elo) => {
     const level = eloService.getLevelFromElo(elo);
@@ -29,148 +37,158 @@ const getLevelInfo = (elo) => {
 
 module.exports = {
     async createEloCard(user, stats) {
-        // RETINA ÇÖZÜNÜRLÜK
-        const width = 1600;
-        const height = 500;
+        const width = 1200;
+        const height = 450;
         const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
 
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        ctx.antialias = 'subpixel';
 
-        // 1. ARKAPLAN
-        ctx.fillStyle = '#181818';
-        ctx.fillRect(0, 0, width, height);
-
-        // Verileri Al
         const elo = stats.elo !== undefined ? stats.elo : 100;
         const levelData = getLevelInfo(elo);
-        const currentLevel = levelData.lv;
+        const rankColor = levelData.color;
 
-        // --- İLERLEME HESABI ---
+        // 1. Arkaplan (Modern Dark Gradient)
+        const bgGradient = ctx.createLinearGradient(0, 0, width, height);
+        bgGradient.addColorStop(0, '#18181b'); // Zinc
+        bgGradient.addColorStop(1, '#09090b'); // Black
+        ctx.fillStyle = bgGradient;
+        ctx.fillRect(0, 0, width, height);
+
+        // 2. Rank Glow (Sağ Taraf)
+        const r = parseInt(rankColor.slice(1, 3), 16);
+        const g = parseInt(rankColor.slice(3, 5), 16);
+        const b = parseInt(rankColor.slice(5, 7), 16);
+        const glowColor = `rgba(${r}, ${g}, ${b}, 0.15)`;
+
+        const glow = ctx.createRadialGradient(width * 0.9, height * 0.5, 0, width * 0.9, height * 0.5, 500);
+        glow.addColorStop(0, glowColor);
+        glow.addColorStop(1, 'transparent');
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, width, height);
+
+        // Sol Kenar Çizgisi (Rank Rengi)
+        ctx.fillStyle = rankColor;
+        ctx.fillRect(0, 0, 10, height);
+
+        // 3. Rank İkonu (Sol Taraf)
+        try {
+            const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${levelData.lv}.png`);
+            const icon = await loadImage(iconPath);
+            // Gölge
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 20;
+            ctx.drawImage(icon, 50, 75, 300, 300);
+            ctx.shadowBlur = 0;
+        } catch (e) { }
+
+        // 4. Kullanıcı Bilgileri (Orta - Üst)
+        const textX = 380;
+
+        // İsim
+        ctx.font = 'bold 70px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#ffffff';
+        let name = user.username ? user.username.toUpperCase() : 'UNKNOWN';
+        if (name.length > 15) name = name.substring(0, 15) + '...';
+        ctx.fillText(name, textX, 100);
+
+        // ELO ve Progress Bar
+        const progressY = 160;
+        const barWidth = 750;
+        const barHeight = 15;
+
+        // Progress Hesabı
         let progress = 0;
-        if (currentLevel < 10) {
-            // MUTLAK İLERLEME: Barın başı 0 ELO, sonu Target Level Max ELO.
-            // Böylece 100 ELO'daki biri barın %20'sini dolu görür (100/500).
-            progress = elo / levelData.max;
+        if (levelData.lv < 10) {
+            const range = levelData.max - levelData.min;
+            const current = elo - levelData.min;
+            progress = range > 0 ? current / range : 0;
             progress = Math.min(1, Math.max(0, progress));
         } else {
             progress = 1;
         }
 
-        // ================= SOL TARA (SADECE İKON) =================
-        const centerX = 300;
-        const centerY = 250;
+        // Bar Arkaplan
+        ctx.fillStyle = '#333';
+        ctx.beginPath();
+        ctx.fillRect(textX, progressY, barWidth, barHeight);
 
-        try {
-            const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${currentLevel}.png`);
-            const icon = await loadImage(iconPath);
-
-            const iconSize = 250;
-            ctx.drawImage(icon, centerX - (iconSize / 2), centerY - (iconSize / 2), iconSize, iconSize);
-        } catch (e) {
-            console.error('Icon Load Error:', e);
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 120px sans-serif';
-            ctx.fillText(currentLevel.toString(), centerX, centerY);
+        // Bar Doluluk
+        if (progress > 0) {
+            ctx.fillStyle = rankColor;
+            ctx.shadowColor = rankColor;
+            ctx.shadowBlur = 15;
+            ctx.fillRect(textX, progressY, barWidth * progress, barHeight);
+            ctx.shadowBlur = 0;
         }
 
-        // ================= SAĞ TARAF (METİNLER) =================
-        const textStartX = 600;
+        // ELO Text (Barın Altı)
+        ctx.font = 'bold 35px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#cccccc';
+        const eloText = `${elo} ELO`;
+        ctx.fillText(eloText, textX, progressY + 55);
 
-        // ÜST BAŞLIK 
-        ctx.font = '500 36px "Segoe UI", Roboto, sans-serif';
-        ctx.fillStyle = '#888888';
-        ctx.textAlign = 'left';
-        ctx.fillText(`LEVEL ${currentLevel} • NEXORA COMPETITIVE`, textStartX, 120);
-
-        // KULLANICI ADI
-        let displayName = user.username.toUpperCase();
-        ctx.fillStyle = '#ffffff';
-        if (displayName.length > 15) {
-            ctx.font = 'bold 60px "Segoe UI", Roboto, sans-serif';
+        // Next Level Text
+        if (levelData.lv < 10) {
+            ctx.textAlign = 'right';
+            ctx.fillStyle = '#666';
+            ctx.fillText(`NEXT: ${levelData.max + 1}`, textX + barWidth, progressY + 55);
+            ctx.textAlign = 'left';
         } else {
-            ctx.font = 'bold 90px "Segoe UI", Roboto, sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillStyle = rankColor;
+            ctx.fillText(`MAX LEVEL`, textX + barWidth, progressY + 55);
+            ctx.textAlign = 'left';
         }
 
-        if (displayName.length > 18) displayName = displayName.substring(0, 18) + '...';
-        ctx.fillText(displayName, textStartX, 220);
+        // 5. İstatistik Kutuları (Alt Kısım)
+        const statsY = 280;
+        const boxWidth = 175;
+        const boxHeight = 120;
+        const gap = 15;
 
-        // ELO SAYILARI
-        ctx.font = 'bold 100px "DIN Alternate", "Segoe UI", sans-serif';
+        const drawStatBox = (idx, label, value, color = '#fff') => {
+            const x = textX + (idx * (boxWidth + gap));
 
-        const currentEloText = `${elo}`;
-        const maxEloText = currentLevel < 10 ? ` / ${levelData.max}` : '';
+            // Kutu Arkaplan
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.beginPath();
+            ctx.fillRect(x, statsY, boxWidth, boxHeight);
 
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(currentEloText, textStartX, 340);
+            // Değer
+            ctx.font = 'bold 45px "Segoe UI", sans-serif';
+            ctx.fillStyle = color;
+            ctx.textAlign = 'center';
+            ctx.fillText(String(value), x + boxWidth / 2, statsY + 60);
 
-        let totalEloWidth = ctx.measureText(currentEloText).width;
+            // Etiket
+            ctx.font = '20px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#888';
+            ctx.fillText(label.toUpperCase(), x + boxWidth / 2, statsY + 95);
+            ctx.textAlign = 'left';
+        };
 
-        if (maxEloText) {
-            const currentEloWidth = ctx.measureText(currentEloText).width;
-            ctx.fillStyle = '#666666';
-            ctx.fillText(maxEloText, textStartX + currentEloWidth, 340);
-            totalEloWidth += ctx.measureText(maxEloText).width;
-        }
-
-        // --- WIN RATE & STREAK ---
         const total = stats.totalMatches || 0;
         const wins = stats.totalWins || 0;
-        const wr = total > 0 ? Math.round((wins / total) * 100) : 0;
-
-        // X Koordinatı: ELO bitiminden sonra
-        const wrX = textStartX + totalEloWidth + 60;
-        ctx.textAlign = 'left';
-
-        // STREAK (WinRate Üstünde: Y=290)
-        // STREAK (WinRate Üstünde: Y=290)
+        const losses = stats.totalLosses || 0;
+        const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
         const streak = Number(stats.winStreak) || 0;
-        if (streak >= 2 || streak <= -2) {
-            ctx.font = 'bold 30px "Segoe UI", sans-serif';
 
-            if (streak >= 2) {
-                // Win Streak (Pozitif)
-                ctx.fillStyle = streak >= 3 ? '#ff5500' : '#cccccc'; // 3+ Hot (Turuncu), 2 (Gri)
-                const streakText = streak >= 3 ? `${streak} WIN STREAK (HOT)` : `${streak} Win Streak`;
-                ctx.fillText(streakText, wrX, 290);
-            } else {
-                // Lose Streak (Negatif)
-                ctx.fillStyle = '#e74c3c'; // Kırmızı
-                const limit = Math.abs(streak);
-                const streakText = `${limit} LOSE STREAK`;
-                ctx.fillText(streakText, wrX, 290);
-            }
-        }
+        drawStatBox(0, 'Matches', total);
+        drawStatBox(1, 'Wins', wins, '#2ecc71');
+        drawStatBox(2, 'Win Rate', `%${winRate}`, winRate >= 50 ? '#2ecc71' : '#e74c3c');
 
-        // WIN RATE (Y=340)
-        ctx.font = 'bold 45px "Segoe UI", sans-serif';
-        ctx.fillStyle = wr >= 50 ? '#00ff00' : '#ff4400';
-        ctx.fillText(`%${wr} WIN RATE`, wrX, 340);
+        // Streak Özel Renk
+        let streakColor = '#fff';
+        let streakVal = Math.abs(streak);
+        let streakLabel = 'Streak';
+        if (streak >= 3) { streakColor = '#f39c12'; streakLabel = '🔥 Win Streak'; }
+        else if (streak >= 1) { streakColor = '#2ecc71'; streakLabel = 'Win Streak'; } // 1-2
+        else if (streak <= -1) { streakColor = '#e74c3c'; streakLabel = 'Lose Streak'; }
 
-        // ================= ALT BAR (GLOW EFEKTLİ) =================
-        const barY = 410; // Biraz aşağı aldım streak sığsın diye
-        const barHeight = 25;
-        const barWidth = 800;
+        drawStatBox(3, streakLabel, streakVal, streakColor);
 
-        // ... (Bar çizimi aynı kalabilir, sadece Y koordinatı güncellenmeli)
-
-        // Arkaplan
-        ctx.fillStyle = '#333333';
-        ctx.fillRect(textStartX, barY, barWidth, barHeight);
-
-        // Doluluk
-        if (progress > 0) {
-            ctx.save();
-            ctx.fillStyle = '#ff5500';
-            ctx.shadowColor = '#ff5500';
-            ctx.shadowBlur = 30;
-            ctx.fillRect(textStartX, barY, barWidth * progress, barHeight);
-            ctx.restore();
-        }
-
-        // ...
         return canvas.toBuffer();
     },
 
@@ -239,7 +257,6 @@ module.exports = {
             } catch (e) { }
 
             // İsim (Streak varsa turuncu + ateş)
-            // İsim (Streak >= 3 ise Turuncu + Ateş İkonu)
             ctx.textAlign = 'left';
             ctx.font = 'bold 60px sans-serif';
             const name = user.username || `Player ${user.odasi?.substring(0, 5) || '???'}`;
@@ -253,11 +270,8 @@ module.exports = {
                     const nameWidth = ctx.measureText(name).width;
                     const fireUrl = 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/1f525.png';
                     const fireImg = await loadImage(fireUrl);
-                    // İkon boyutu: 60x60, Metne ortalı
                     ctx.drawImage(fireImg, 400 + nameWidth + 15, y - 45, 60, 60);
-                } catch (e) {
-                    // İkon yüklenemezse sessizce geç
-                }
+                } catch (e) { }
             } else if (streak <= -3) {
                 ctx.fillStyle = '#ff0000'; // Full Kırmızı (Lose)
                 ctx.fillText(name, 400, y + 15);
@@ -271,7 +285,7 @@ module.exports = {
             const lCount = (stats.totalMatches || 0) - wCount;
 
             ctx.font = 'bold 40px sans-serif';
-            let statCursor = 1150; // ELO ile çakışmayı önlemek için sola kaydırıldı
+            let statCursor = 1150;
 
             // Lose (Right Align)
             ctx.textAlign = 'right';
@@ -306,30 +320,26 @@ module.exports = {
     },
 
     async createVersusImage(teamA, teamB, mapName) {
-        // teamA/B structure: { user: UserObject (Discord), stats: { matchLevel, elo }, name: string }
-
         const width = 1920;
         const height = 1080;
         const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = true;
 
-        // 1. Arkaplan (Harita Görseli)
+        // 1. Arkaplan
         try {
-            // Map handling logic similar to game.js
             const assetsPath = path.join(__dirname, '..', '..', 'assets', 'maps');
             let mapPath = path.join(assetsPath, `${mapName}.png`);
             if (!require('fs').existsSync(mapPath)) mapPath = path.join(assetsPath, `${mapName.toLowerCase()}.png`);
 
             if (require('fs').existsSync(mapPath)) {
                 const bg = await loadImage(mapPath);
-                // Cover mode logic
                 const scale = Math.max(width / bg.width, height / bg.height);
                 const x = (width / 2) - (bg.width * scale / 2);
                 const y = (height / 2) - (bg.height * scale / 2);
                 ctx.drawImage(bg, x, y, bg.width * scale, bg.height * scale);
             } else {
-                ctx.fillStyle = '#2B2D31'; // Fallback bg
+                ctx.fillStyle = '#2B2D31';
                 ctx.fillRect(0, 0, width, height);
             }
         } catch (e) {
@@ -337,8 +347,7 @@ module.exports = {
             ctx.fillRect(0, 0, width, height);
         }
 
-        // Karartma & Blur efekti (Gradient)
-        // Sol Mavi, Sağ Kırmızı
+        // Karartma & Blur
         const gradient = ctx.createLinearGradient(0, 0, width, 0);
         gradient.addColorStop(0, 'rgba(0, 0, 40, 0.9)');    // Koyu Mavi
         gradient.addColorStop(0.4, 'rgba(0, 0, 20, 0.7)');
@@ -347,34 +356,28 @@ module.exports = {
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, width, height);
 
-        // VS Text Ortalama
+        // VS Text
         ctx.font = 'bold 250px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-
-        // V
         ctx.fillStyle = '#ffffff';
         ctx.fillText('V', width / 2 - 20, height / 2);
-        // S
-        ctx.fillStyle = '#ff5500'; // Nexora Orange
+        ctx.fillStyle = '#ff5500';
         ctx.fillText('S', width / 2 + 130, height / 2);
 
         // --- DRAW CAPTAIN FUNCTION ---
         const drawCaptain = async (captainData, x, align) => {
             const { user, stats, name } = captainData;
-
-            // Avatar
             const avatarSize = 400;
             const avatarY = height / 2 - 100;
 
             try {
-                // Yuvarlak Avatar
+                // Avatar
                 ctx.save();
                 ctx.beginPath();
                 ctx.arc(x, avatarY, avatarSize / 2, 0, Math.PI * 2);
                 ctx.closePath();
                 ctx.clip();
-
                 const avatarURL = user.displayAvatarURL({ extension: 'png', size: 512 });
                 const avatar = await loadImage(avatarURL);
                 ctx.drawImage(avatar, x - avatarSize / 2, avatarY - avatarSize / 2, avatarSize, avatarSize);
@@ -384,10 +387,10 @@ module.exports = {
                 ctx.beginPath();
                 ctx.arc(x, avatarY, avatarSize / 2, 0, Math.PI * 2);
                 ctx.lineWidth = 15;
-                ctx.strokeStyle = align === 'left' ? '#3498DB' : '#E74C3C'; // Team Colors
+                ctx.strokeStyle = align === 'left' ? '#3498DB' : '#E74C3C';
                 ctx.stroke();
 
-                // Level İkonu (Avatarın altına bindir)
+                // Level İkonu
                 const lvlInfo = getLevelInfo(stats.elo);
                 const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
                 try {
@@ -395,10 +398,7 @@ module.exports = {
                     const iconSize = 120;
                     ctx.drawImage(icon, x - (iconSize / 2), avatarY + (avatarSize / 2) - 40, iconSize, iconSize);
                 } catch (e) { }
-
-            } catch (e) {
-                console.error("Avatar load error", e);
-            }
+            } catch (e) { }
 
             // İsim
             ctx.fillStyle = '#ffffff';
@@ -412,13 +412,11 @@ module.exports = {
             ctx.fillText(`Level ${stats.matchLevel} • ${stats.elo} ELO`, x, avatarY + avatarSize / 2 + 170);
         };
 
-        // Kaptan A (Sol - Mavi)
+        // Kaptanlar
         await drawCaptain(teamA, width * 0.25, 'left');
-
-        // Kaptan B (Sağ - Kırmızı)
         await drawCaptain(teamB, width * 0.75, 'right');
 
-        // Map İsmi (En üst ortada)
+        // Map İsmi
         ctx.font = 'bold 60px sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
@@ -434,7 +432,7 @@ module.exports = {
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = true;
 
-        // 1. Arkaplan (Harita)
+        // Arkaplan
         try {
             const assetsPath = path.join(__dirname, '..', '..', 'assets', 'maps');
             let mapPath = path.join(assetsPath, `${mapName}.png`);
@@ -442,7 +440,6 @@ module.exports = {
 
             if (require('fs').existsSync(mapPath)) {
                 const bg = await loadImage(mapPath);
-                // Cover
                 const scale = Math.max(width / bg.width, height / bg.height);
                 const x = (width / 2) - (bg.width * scale / 2);
                 const y = (height / 2) - (bg.height * scale / 2);
@@ -454,7 +451,6 @@ module.exports = {
             ctx.fillStyle = '#2B2D31'; ctx.fillRect(0, 0, width, height);
         }
 
-        // Karartma
         ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
         ctx.fillRect(0, 0, width, height);
 
@@ -466,28 +462,22 @@ module.exports = {
         ctx.fillText('SIDE SELECTION', width / 2, 80);
         ctx.shadowBlur = 0;
 
-        // Seçici Kim?
+        // Seçici
         const isSelectorA = selectorId === captainA.id;
         const selectorUser = isSelectorA ? captainA.user : captainB.user;
         const selectorName = isSelectorA ? captainA.name : captainB.name;
-
-        // Orta Avatar (Seçici)
         const avatarSize = 200;
         const cx = width / 2;
         const cy = height / 2 + 20;
 
         try {
-            // Glow effect
             ctx.save();
-            ctx.shadowColor = '#fbbf24'; // Gold glow
-            ctx.shadowBlur = 40;
+            ctx.shadowColor = '#fbbf24'; ctx.shadowBlur = 40;
             ctx.beginPath();
             ctx.arc(cx, cy, avatarSize / 2, 0, Math.PI * 2);
-            ctx.fillStyle = '#000';
-            ctx.fill();
+            ctx.fillStyle = '#000'; ctx.fill();
             ctx.restore();
 
-            // Avatar Draw
             const avatarURL = selectorUser.displayAvatarURL({ extension: 'png', size: 256 });
             const avatar = await loadImage(avatarURL);
 
@@ -499,16 +489,14 @@ module.exports = {
             ctx.drawImage(avatar, cx - avatarSize / 2, cy - avatarSize / 2, avatarSize, avatarSize);
             ctx.restore();
 
-            // Border
             ctx.lineWidth = 8;
             ctx.strokeStyle = '#fbbf24';
             ctx.beginPath();
             ctx.arc(cx, cy, avatarSize / 2, 0, Math.PI * 2);
             ctx.stroke();
+        } catch (e) { }
 
-        } catch (e) { console.error(e); }
-
-        // Alt Metin
+        // Alt Metinler
         ctx.font = 'bold 40px sans-serif';
         ctx.fillStyle = '#fbbf24';
         ctx.fillText(`${selectorName.toUpperCase()} CHOOSING...`, cx, cy + avatarSize / 2 + 50);
@@ -517,13 +505,11 @@ module.exports = {
         ctx.fillStyle = '#cccccc';
         ctx.fillText('ATTACK or DEFEND', cx, cy + avatarSize / 2 + 90);
 
-        // Sol Takım (Team A) İsmi (Silik)
         ctx.font = 'bold 50px sans-serif';
         ctx.fillStyle = isSelectorA ? '#3498DB' : 'rgba(52, 152, 219, 0.4)';
         ctx.textAlign = 'left';
         ctx.fillText(captainA.name.toUpperCase(), 50, height / 2);
 
-        // Sağ Takım (Team B) İsmi (Silik)
         ctx.textAlign = 'right';
         ctx.fillStyle = !isSelectorA ? '#E74C3C' : 'rgba(231, 76, 60, 0.4)';
         ctx.fillText(captainB.name.toUpperCase(), width - 50, height / 2);
@@ -538,14 +524,11 @@ module.exports = {
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = true;
 
-        // Arkaplan (Koyu)
         ctx.fillStyle = '#1a1a1a';
         ctx.fillRect(0, 0, width, height);
 
-        // Takım Rengi (Arkaplan Glow)
-        const teamColor = winner.team === 'A' ? '#3498DB' : '#E74C3C'; // Mavi veya Kırmızı
+        const teamColor = winner.team === 'A' ? '#3498DB' : '#E74C3C';
 
-        // Sunburst Effect (Arka Planda Dönen Işıklar - Sabit çizim)
         ctx.save();
         ctx.translate(width / 2, height / 2);
         for (let i = 0; i < 12; i++) {
@@ -559,7 +542,6 @@ module.exports = {
         }
         ctx.restore();
 
-        // Konfeti (Rastgele Noktalar)
         for (let i = 0; i < 50; i++) {
             ctx.fillStyle = Math.random() < 0.5 ? '#f1c40f' : '#ffffff';
             ctx.beginPath();
@@ -567,19 +549,15 @@ module.exports = {
             ctx.fill();
         }
 
-        // Kazanan Avatarı
         const avatarSize = 250;
         const cx = width / 2;
         const cy = height / 2 - 30;
 
         try {
-            // Daire Çerçeve
             ctx.beginPath();
             ctx.arc(cx, cy, avatarSize / 2 + 10, 0, Math.PI * 2);
-            ctx.fillStyle = teamColor;
-            ctx.fill();
+            ctx.fillStyle = teamColor; ctx.fill();
 
-            // Avatar
             const avatarURL = winner.user.displayAvatarURL({ extension: 'png', size: 256 });
             const avatar = await loadImage(avatarURL);
 
@@ -589,10 +567,8 @@ module.exports = {
             ctx.clip();
             ctx.drawImage(avatar, cx - avatarSize / 2, cy - avatarSize / 2, avatarSize, avatarSize);
             ctx.restore();
+        } catch (e) { }
 
-        } catch (e) { console.error(e); }
-
-        // WINNER Yazısı
         ctx.font = 'bold 80px "VALORANT", sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
