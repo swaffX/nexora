@@ -1,7 +1,7 @@
 const path = require('path');
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
-const { embeds } = require(path.join(__dirname, '..', '..', '..', 'shared', 'embeds'));
-const { Penal } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
+const { embeds } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'embeds'));
+const { Penal } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 
 module.exports = {
     data: new SlashCommandBuilder()
