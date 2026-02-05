@@ -75,9 +75,8 @@ module.exports = {
         ctx.font = 'bold 70px "Segoe UI", sans-serif';
 
         let nameX = textX;
-        // RANK EKLEME
         if (rank) {
-            ctx.fillStyle = '#666'; // Rank rengi gri
+            ctx.fillStyle = '#666';
             ctx.fillText(`#${rank}`, nameX, 100);
             const rankWidth = ctx.measureText(`#${rank}`).width;
             nameX += rankWidth + 20;
@@ -148,11 +147,9 @@ module.exports = {
         const wins = stats.totalWins || 0;
         const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
         const streak = Number(stats.winStreak) || 0;
-
         drawStatBox(0, 'Matches', total);
         drawStatBox(1, 'Wins', wins, '#2ecc71');
         drawStatBox(2, 'Win Rate', `%${winRate}`, winRate >= 50 ? '#2ecc71' : '#e74c3c');
-
         drawStatBox(3, 'Streak', Math.abs(streak), streak >= 0 ? '#2ecc71' : '#e74c3c');
         return canvas.toBuffer();
     },
@@ -177,8 +174,8 @@ module.exports = {
         const g = parseInt(rankColor.slice(3, 5), 16);
         const b = parseInt(rankColor.slice(5, 7), 16);
 
-        // Glow
-        const glow = ctx.createRadialGradient(width * 0.9, height, 0, width * 0.9, height, 500);
+        // GLOW: Tüm sağ tarafı kapsayan
+        const glow = ctx.createRadialGradient(width, height / 2, 0, width, height / 2, 900);
         glow.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.2)`);
         glow.addColorStop(1, 'transparent');
         ctx.fillStyle = glow;
@@ -214,10 +211,8 @@ module.exports = {
                 ctx.rect(boxX, matchY, boxW, boxH);
                 ctx.clip();
 
-                // Sağa dayalı çizim için imgX hesaplamıştık ama cover crop güzeldir.
                 ctx.drawImage(mapBg, imgX, imgY, w, h);
 
-                // Fade soldan sağa
                 const fade = ctx.createLinearGradient(boxX, matchY, boxX + boxW, matchY);
                 fade.addColorStop(0, '#18181b');
                 fade.addColorStop(0.5, '#18181b');
@@ -271,20 +266,10 @@ module.exports = {
 
         // Best Map
         if (bestMap) {
-            ctx.fillStyle = 'rgba(255,255,255,0.03)';
-            ctx.fillRect(rightX, 100, 430, 120);
-
-            ctx.font = 'bold 20px "Segoe UI", sans-serif';
-            ctx.fillStyle = '#666';
-            ctx.fillText('BEST MAP', rightX + 20, 140);
-            ctx.font = 'bold 45px "Segoe UI", sans-serif';
-            ctx.fillStyle = '#fff';
-            ctx.fillText(bestMap.name.toUpperCase(), rightX + 20, 190);
-            ctx.font = '30px "DIN Alternate", sans-serif';
-            ctx.fillStyle = '#2ecc71';
-            ctx.textAlign = 'right';
-            ctx.fillText(`%${bestMap.wr} WR`, rightX + 410, 190);
-            ctx.textAlign = 'left';
+            ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(rightX, 100, 430, 120);
+            ctx.font = 'bold 20px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('BEST MAP', rightX + 20, 140);
+            ctx.font = 'bold 45px "Segoe UI", sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText(bestMap.name.toUpperCase(), rightX + 20, 190);
+            ctx.font = '30px "DIN Alternate", sans-serif'; ctx.fillStyle = '#2ecc71'; ctx.textAlign = 'right'; ctx.fillText(`%${bestMap.wr} WR`, rightX + 410, 190); ctx.textAlign = 'left';
         }
 
         // Fav Duo
@@ -316,14 +301,21 @@ module.exports = {
 
         // --- FOOTER (User Info & Rank) ---
         const footerY = 560;
+        const footerBgStart = footerY - 20;
+        const footerHeight = height - footerBgStart;
+        const footerMid = footerBgStart + (footerHeight / 2); // Center Y coordinate for content
+
         ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.fillRect(0, footerY - 20, width, height - footerY + 20);
+        ctx.fillRect(0, footerBgStart, width, footerHeight);
+
+        // Vertical Alignment: MIDDLE
+        ctx.textBaseline = 'middle';
 
         if (user.avatar) {
             try {
                 const avatar = await loadImage(user.avatar);
-                ctx.save(); ctx.beginPath(); ctx.arc(80, footerY + 50, 40, 0, Math.PI * 2); ctx.clip();
-                ctx.drawImage(avatar, 40, footerY + 10, 80, 80); ctx.restore();
+                ctx.save(); ctx.beginPath(); ctx.arc(80, footerMid, 40, 0, Math.PI * 2); ctx.clip();
+                ctx.drawImage(avatar, 40, footerMid - 40, 80, 80); ctx.restore();
             } catch (e) { }
         }
 
@@ -333,16 +325,15 @@ module.exports = {
         // RANK
         if (rank) {
             ctx.fillStyle = '#666';
-            ctx.fillText(`#${rank}`, nameX, footerY + 65);
+            ctx.fillText(`#${rank}`, nameX, footerMid);
             const rankWidth = ctx.measureText(`#${rank}`).width;
             nameX += rankWidth + 15;
-            // Rank'ın fontu biraz daha küçük olabilir ama bold 50 ile ismin yanında olması okunurluğu artırır.
         }
 
         ctx.fillStyle = '#fff';
         let mainName = user.username.toUpperCase();
         if (mainName.length > 15) mainName = mainName.substring(0, 15);
-        ctx.fillText(mainName, nameX, footerY + 65);
+        ctx.fillText(mainName, nameX, footerMid);
 
         // Right side alignment (ELO + Icon)
         ctx.textAlign = 'right';
@@ -353,19 +344,17 @@ module.exports = {
         const iconSize = 80;
         const iconX = eloX - eloWidth - iconSize - 30;
 
-        ctx.shadowColor = rankColor; ctx.shadowBlur = 15;
-        ctx.fillStyle = '#fff';
-        ctx.fillText(eloText, eloX, footerY + 60);
+        // Glow kaldırıldı (User isteği)
         ctx.shadowBlur = 0;
-        ctx.textAlign = 'left';
+        ctx.fillStyle = '#fff';
+        ctx.fillText(eloText, eloX, footerMid);
 
         try {
             const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
             if (fs.existsSync(iconPath)) {
                 const icon = await loadImage(iconPath);
-                ctx.shadowColor = rankColor; ctx.shadowBlur = 20;
-                ctx.drawImage(icon, iconX, footerY - 10, iconSize, iconSize);
-                ctx.shadowBlur = 0;
+                // Icon Glow kaldırıldı
+                ctx.drawImage(icon, iconX, footerMid - (iconSize / 2), iconSize, iconSize);
             }
         } catch (e) { }
 
