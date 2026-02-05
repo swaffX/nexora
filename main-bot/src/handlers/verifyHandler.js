@@ -39,31 +39,6 @@ module.exports = {
 
             await interaction.editReply({ content: '✅ Kaydınız başarıyla tamamlandı! İyi eğlenceler.' });
 
-            // Sohbet Kanalına Hoşgeldin Embedi
-            // Kullanıcının belirttiği ID (Fallback olarak)
-            const targetChannelId = guildSettings.register.chatChannelId || '1463875477377912853';
-
-            if (targetChannelId) {
-                try {
-                    let chatChannel = interaction.guild.channels.cache.get(targetChannelId);
-                    if (!chatChannel) {
-                        chatChannel = await interaction.guild.channels.fetch(targetChannelId).catch(() => null);
-                    }
-
-                    if (chatChannel) {
-                        const memberCount = interaction.guild.memberCount;
-                        await chatChannel.send({
-                            content: `<@${member.id}> aramıza katıldı! 🎉 Herkes selam versin!`,
-                            embeds: [embeds.welcome(member, "", memberCount)]
-                        });
-                    } else {
-                        console.error(`Sohbet kanalı bulunamadı: ${targetChannelId}`);
-                    }
-                } catch (msgError) {
-                    console.error('Sohbet mesajı gönderme hatası:', msgError);
-                }
-            }
-
         } catch (error) {
             console.error('Verify Hatası:', error);
             await interaction.editReply({ content: '❌ İşlem sırasında bir hata oluştu (Yetki yetersiz olabilir).' });
