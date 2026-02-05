@@ -254,13 +254,9 @@ module.exports = {
             .addComponents(
                 new ButtonBuilder()
                     .setCustomId(`match_score_${match.matchId}`)
-                    .setLabel('Skor Bildir')
-                    .setStyle(ButtonStyle.Primary)
-                    .setEmoji('📝'),
-                new ButtonBuilder()
-                    .setCustomId(`match_cancel_${match.matchId}`)
-                    .setLabel('İptal Et')
-                    .setStyle(ButtonStyle.Danger)
+                    .setLabel('Maçı Bitir')
+                    .setStyle(ButtonStyle.Success) // Yeşil
+                    .setEmoji('🏁')
             );
 
         const payload = {
@@ -276,6 +272,11 @@ module.exports = {
     },
 
     async openScoreModal(interaction, match) {
+        // YETKİ KONTROLÜ: Sadece Host
+        if (interaction.user.id !== match.hostId) {
+            return interaction.reply({ content: '❌ Bu işlemi sadece maçı oluşturan yetkili yapabilir!', flags: MessageFlags.Ephemeral });
+        }
+
         // Temizliği başlat (Await etme, arkaplanda yap)
         this.cleanupMatchChannels(interaction.guild, match).catch(e => console.error('[Voice Cleanup Error]', e));
 
