@@ -168,7 +168,7 @@ module.exports = {
         return canvas.toBuffer();
     },
 
-    // YENİ LEADERBOARD (MODERN TASARIM - CENTER ALIGNMENT)
+    // YENİ LEADERBOARD (MODERN TASARIM - CENTER ALIGNMENT - FIXED POSITIONS)
     async createLeaderboardImage(users) {
         const rowHeight = 140;
         const width = 2000;
@@ -251,37 +251,37 @@ module.exports = {
             const total = wins + losses;
             const wr = total > 0 ? Math.round((wins / total) * 100) : 0;
 
-            // CENTER ALIGNMENT SETUP
-            // W @ 1250, L @ 1450, WR @ 1650, ELO @ 1850 (Width: 2000)
+            // Sola çekilen koordinatlar (Daha dengeli)
+            // W @ 1150, L @ 1350, WR @ 1550, ELO @ 1800
 
             ctx.textAlign = 'center';
 
             // W
             ctx.font = 'bold 45px "DIN Alternate", sans-serif';
             ctx.fillStyle = '#2ecc71';
-            ctx.fillText(`${wins} W`, 1250, y + 90);
+            ctx.fillText(`${wins} W`, 1150, y + 90);
 
             // L
             ctx.fillStyle = '#ef4444';
-            ctx.fillText(`${losses} L`, 1450, y + 90);
+            ctx.fillText(`${losses} L`, 1350, y + 90);
 
             // WR (CENTERED)
             ctx.fillStyle = wr >= 50 ? '#2ecc71' : '#e74c3c';
-            ctx.fillText(`%${wr}`, 1650, y + 85);
+            ctx.fillText(`%${wr}`, 1550, y + 85);
             // Label
             ctx.font = 'bold 22px "Segoe UI", sans-serif';
             ctx.fillStyle = '#666';
-            ctx.fillText('WIN RATE', 1650, y + 125);
+            ctx.fillText('WIN RATE', 1550, y + 125);
 
             // ELO (CENTERED)
             ctx.font = 'bold 80px "DIN Alternate", sans-serif';
             ctx.fillStyle = '#ffffff';
-            ctx.fillText(`${stats.elo}`, 1880, y + 90); // 1900 -> 1880 (Biraz sağ kenardan pay)
+            ctx.fillText(`${stats.elo}`, 1800, y + 90); // 1880 -> 1800 (Daha sola)
 
             // Label
             ctx.font = 'bold 22px "Segoe UI", sans-serif';
             ctx.fillStyle = '#666';
-            ctx.fillText('ELO POINTS', 1880, y + 125); // Tam ortalı
+            ctx.fillText('ELO POINTS', 1800, y + 125);
 
             y += rowHeight + 20;
         }
@@ -296,7 +296,6 @@ module.exports = {
         const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
 
         ctx.fillStyle = '#181818';
         ctx.fillRect(0, 0, width, height);
@@ -340,8 +339,10 @@ module.exports = {
 
             try {
                 const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
-                const icon = await loadImage(iconPath);
-                ctx.drawImage(icon, 250, y - 60, 100, 100);
+                try {
+                    const icon = await loadImage(iconPath);
+                    ctx.drawImage(icon, 250, y - 60, 100, 100);
+                } catch (e) { }
             } catch (e) { }
 
             ctx.textAlign = 'left';
