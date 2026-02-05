@@ -57,11 +57,12 @@ async function createLeaderboardImage(guildName, guildIconUrl, data, client) {
     ctx.fillText(guildName.toUpperCase(), width / 2, 160);
     ctx.shadowBlur = 0;
 
-    // KATEGORİLER (XP - VOICE - CHAT)
-    // Emojileri kaldırdım, sadece metin
-    await drawRankList(ctx, 'TOP LEVEL', 50, 200, data.xp, client, 'xp', '#fbbf24'); // Amber
-    await drawRankList(ctx, 'TOP VOICE', 370, 200, data.voice, client, 'voice', '#3b82f6'); // Blue
-    await drawRankList(ctx, 'TOP CHAT', 690, 200, data.messages, client, 'msg', '#10b981'); // Emerald
+    // KATEGORİLER (VOICE - CHAT)
+    // Sadece 2 sütun kaldı, ortalayalım
+    // width=1000, 260px sütunlar.
+    // x1 = 200, x2 = 540
+    await drawRankList(ctx, 'TOP VOICE', 200, 200, data.voice, client, 'voice', '#3b82f6'); // Blue
+    await drawRankList(ctx, 'TOP CHAT', 540, 200, data.messages, client, 'msg', '#10b981'); // Emerald
 
     // Footer (Global Stats)
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';

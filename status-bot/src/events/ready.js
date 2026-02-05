@@ -51,16 +51,13 @@ module.exports = {
                         const channel = guild.channels.cache.get(settings.levelSystem.leaderboardChannelId);
                         if (!channel) continue;
 
-                        // 1. Top XP (All Time)
-                        const topXp = await User.find({ odaId: guildId }).sort({ xp: -1 }).limit(10).lean();
-
-                        // 2. Top Chatters
+                        // 1. Top Chatters
                         const topMsg = await User.find({ odaId: guildId, totalMessages: { $gt: 0 } }).sort({ totalMessages: -1 }).limit(10).lean();
 
-                        // 3. Voice Champions
+                        // 2. Voice Champions
                         const topVoice = await User.find({ odaId: guildId, totalVoiceMinutes: { $gt: 0 } }).sort({ totalVoiceMinutes: -1 }).limit(10).lean();
 
-                        // 4. Global Stats
+                        // 3. Global Stats
                         const allUsers = await User.find({ odaId: guildId }, 'totalMessages totalVoiceMinutes');
                         let totalMsgCount = 0;
                         let totalVoiceCount = 0;
@@ -70,7 +67,7 @@ module.exports = {
                         });
 
                         const data = {
-                            xp: topXp.map(u => ({ userId: u.odasi, level: u.level, xp: u.xp })),
+                            // xp: [], // LEVEL KALDIRILDI
                             messages: topMsg.map(u => ({ userId: u.odasi, totalMessages: u.totalMessages })),
                             voice: topVoice.map(u => ({ userId: u.odasi, totalVoiceMinutes: u.totalVoiceMinutes })),
                             stats: {
@@ -95,7 +92,6 @@ module.exports = {
                                 try {
                                     const msg = await channel.messages.fetch(settings.levelSystem.leaderboardMessageId);
                                     if (msg) {
-                                        // Mesajı güncelle (Resim değişecek, eski resimler silinir otomatik)
                                         await msg.edit({ content: msgContent, embeds: [], files: [attachment] });
                                     }
                                 } catch (e) {
