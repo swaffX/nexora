@@ -250,6 +250,56 @@ function balanceTeams(players) {
     return { teamA, teamB };
 }
 
+/**
+ * Kullanıcının stats geçmişini (Win/Loss/Streak) maç geçmişine bakarak yeniden hesapla
+ * @param {Object} user 
+ */
+async function recalculateStatsFromHistory(user) {
+    const path = require('path');
+    const { Match } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
+
+    // Stats.js'deki reset filtresiyle uyumlu olsun
+    const MIN_MATCH_ID = '1468676273680285706';
+
+    const matches = await Match.find({
+        status: 'FINISHED',
+        matchId: { $gte: MIN_MATCH_ID },
+        $or: [{ teamA: user.odasi }, { teamB: user.odasi }]
+    }).sort({ createdAt: 1 });
+
+    let wins = 0;
+    let losses = 0;
+    let streak = 0;
+
+    for (const m of matches) {
+        let actualWinner = m.winner;
+        if (m.scoreA !== undefined && m.scoreB !== undefined) {
+            if (m.scoreA > m.scoreB) actualWinner = 'A';
+            else if (m.scoreB > m.scoreA) actualWinner = 'B';
+        }
+
+        const isTeamA = m.teamA.some(id => String(id) === String(user.odasi));
+        const isWin = (isTeamA && actualWinner === 'A') || (!isTeamA && actualWinner === 'B');
+
+        if (isWin) {
+            wins++;
+            streak++;
+        } else {
+            losses++;
+            streak = 0;
+        }
+    }
+
+    if (!user.matchStats) user.matchStats = {};
+    user.matchStats.totalMatches = wins + losses;
+    user.matchStats.totalWins = wins;
+    user.matchStats.totalLosses = losses;
+    user.matchStats.winStreak = streak;
+
+    await user.save();
+    return user;
+}
+
 module.exports = {
     ELO_CONFIG,
     LEVEL_EMOJIS,
@@ -260,5 +310,6 @@ module.exports = {
     applyEloChange,
     calculateMatchEloChange,
     createDefaultStats,
-    balanceTeams
+    balanceTeams,
+    recalculateStatsFromHistory
 };

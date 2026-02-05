@@ -120,21 +120,23 @@ module.exports = {
         const wins = stats.totalWins || 0;
         const wr = total > 0 ? Math.round((wins / total) * 100) : 0;
 
+        // X Koordinatı: ELO bitiminden sonra
+        const wrX = textStartX + totalEloWidth + 60;
+        ctx.textAlign = 'left';
+
+        // STREAK (WinRate Üstünde: Y=290)
+        const streak = stats.winStreak || 0;
+        if (streak > 0) {
+            ctx.font = 'bold 30px "Segoe UI", sans-serif';
+            ctx.fillStyle = streak >= 3 ? '#ff5500' : '#cccccc';
+            const streakText = streak >= 3 ? `🔥 ${streak} WIN STREAK` : `${streak} Win Streak`;
+            ctx.fillText(streakText, wrX, 290);
+        }
+
+        // WIN RATE (Y=340)
         ctx.font = 'bold 45px "Segoe UI", sans-serif';
         ctx.fillStyle = wr >= 50 ? '#00ff00' : '#ff4400';
-        ctx.textAlign = 'left';
-        ctx.fillText(`%${wr} WIN RATE`, textStartX + totalEloWidth + 40, 340);
-
-        // STREAK
-        const streak = stats.winStreak || 0;
-        if (streak >= 3) {
-            ctx.fillStyle = '#ff5500';
-            ctx.fillText(`🔥 ${streak} STREAK`, textStartX, 390); // Barın hemen üstü/altı
-        } else if (streak > 0) {
-            ctx.fillStyle = '#888888';
-            ctx.font = 'bold 30px "Segoe UI", sans-serif';
-            ctx.fillText(`${streak} Win Streak`, textStartX + totalEloWidth + 300, 340);
-        }
+        ctx.fillText(`%${wr} WIN RATE`, wrX, 340);
 
         // ================= ALT BAR (GLOW EFEKTLİ) =================
         const barY = 410; // Biraz aşağı aldım streak sığsın diye
