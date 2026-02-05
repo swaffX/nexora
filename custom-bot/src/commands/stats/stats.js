@@ -55,6 +55,13 @@ module.exports = {
                 await userDoc.save();
             }
 
+            // --- RANK HESAPLAMA ---
+            const userRank = await User.countDocuments({
+                odaId: guildId,
+                'matchStats.elo': { $gt: stats.elo }
+            }) + 1;
+            // ---------------------
+
             const MIN_MATCH_ID = '1468676273680285706';
             const baseQuery = {
                 status: 'FINISHED',
@@ -65,7 +72,6 @@ module.exports = {
             const recentMatches = await Match.find(baseQuery).sort({ createdAt: -1 }).limit(5);
             const historyMatches = await Match.find(baseQuery).sort({ createdAt: -1 }).limit(50);
 
-            // 1. Last Matches Data (With ELO Changes)
             const matchHistoryData = [];
             for (const m of recentMatches) {
                 const isTeamA = m.teamA.includes(targetUser.id);
@@ -85,7 +91,6 @@ module.exports = {
                 const mapName = m.selectedMap || 'Unknown';
                 const dateStr = getTimeAgo(m.createdAt);
 
-                // ELO Change Lookup
                 let eloChangeVal = null;
                 let currentEloVal = null;
                 if (m.eloChanges && Array.isArray(m.eloChanges)) {
@@ -102,12 +107,11 @@ module.exports = {
                     score: `${myTeamScore}-${enemyScore}`,
                     date: dateStr,
                     eloChange: eloChangeVal,
-                    newElo: currentEloVal, // Added for display
-                    dateObj: m.createdAt // Opsiyonel
+                    newElo: currentEloVal,
+                    dateObj: m.createdAt
                 });
             }
 
-            // 2. Best Map & Teammate Analysis
             const teammates = {};
             const mapStats = {};
 
@@ -182,12 +186,14 @@ module.exports = {
                 avatar: targetUser.displayAvatarURL({ extension: 'png' })
             };
 
+            // Pass rank to canvas
             const buffer = await canvasGenerator.createDetailedStatsImage(
                 userForCard,
                 stats,
                 matchHistoryData,
                 bestMapData,
-                favTeammateData
+                favTeammateData,
+                userRank // NEW
             );
 
             const attachment = new AttachmentBuilder(buffer, { name: 'stats-card.png' });

@@ -40,16 +40,25 @@ module.exports = {
             if (userDoc) {
                 eloService.ensureValidStats(userDoc);
                 stats = userDoc.matchStats;
-                // Değişiklik varsa kaydet
                 if (userDoc.isModified('matchStats')) await userDoc.save();
             }
+
+            // --- RANK HESAPLAMA ---
+            const userRank = await User.countDocuments({
+                odaId: guildId,
+                'matchStats.elo': { $gt: stats.elo }
+            }) + 1;
+            // ---------------------
 
             // GÖRSEL OLUŞTUR
             const userForCard = {
                 username: targetUser.username,
                 avatar: targetUser.displayAvatarURL({ extension: 'png' })
             };
-            const buffer = await canvasGenerator.createEloCard(userForCard, stats);
+
+            // Pass userRank to generate visuals
+            const buffer = await canvasGenerator.createEloCard(userForCard, stats, userRank);
+
             const attachment = new AttachmentBuilder(buffer, { name: 'elo-card.png' });
 
             // Sadece görseli gönder
