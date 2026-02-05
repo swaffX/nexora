@@ -9,9 +9,12 @@ if (!process.env.MONGODB_URI) {
 
 console.log('MongoDB URI Status:', process.env.MONGODB_URI ? 'Loaded' : '⚠️ NOT FOUND');
 
-// Model path'i shared içinde normalde. Relative path ayarlayalım.
-// custom-bot root'undayız. shared ../shared
-const MatchModel = require('../shared/models/Match');
+// Model path'i yerine manuel tanımla (Bağlantı sorunu/Mongoose instance farkı riskine karşı)
+const matchSchema = new mongoose.Schema({
+    matchNumber: Number
+}, { collection: 'matches', strict: false });
+
+const MatchModel = mongoose.models.Match || mongoose.model('Match', matchSchema);
 
 async function fixMatchCount() {
     try {
