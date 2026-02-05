@@ -1,5 +1,6 @@
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const path = require('path');
+const fs = require('fs');
 
 try {
     GlobalFonts.registerFromPath(path.join(__dirname, '..', '..', '..', 'assets', 'fonts', 'Valorant.ttf'), 'VALORANT');
@@ -56,53 +57,42 @@ async function createLeaderboardImage(guildName, guildIconUrl, data, client) {
     ctx.fillStyle = headerGlow;
     ctx.fillRect(0, 0, width, 250);
 
-    // 2. Logo & Başlık
-    if (guildIconUrl) {
-        try {
-            // GIF url gelse bile canvas ilk kareyi çizer. Önemli olan şekli düzeltmek.
-            const logo = await loadImage(guildIconUrl);
-            const logoSize = 120; // Biraz büyüttüm
+    // 2. Logo (Custom GIF: standard (1).gif)
+    // NEXORA yazısı kaldırıldı, sadece logo var.
+    try {
+        const customLogoPath = path.join(__dirname, '..', '..', '..', 'standard (1).gif');
+        let logoImage;
+
+        if (fs.existsSync(customLogoPath)) {
+            logoImage = await loadImage(customLogoPath);
+        } else if (guildIconUrl) {
+            logoImage = await loadImage(guildIconUrl);
+        }
+
+        if (logoImage) {
+            const logoSize = 180; // Yazı kalktı, logo büyüdü
             const logoX = width / 2 - logoSize / 2;
-            const logoY = 20;
+            const logoY = 30;
 
+            // Glow Draw (Yuvarlak)
             ctx.save();
-            applyRoundAvatar(ctx, logoX, logoY, logoSize);
-            // Glow'u clip içine değil, resme shadow olarak verelim ama clip yüzünden shadow kesilebilir.
-            // Bu yüzden önce shadowlu çizim, sonra clip gerekebilir ama en temiz yöntem:
-            // Logo zaten yuvarlak değilse (kare geliyorsa), clip ile yuvarlak olur.
-            // Dışına glow vermek için: applyRoundAvatar -> fill with shadow -> drawImage
-
+            ctx.beginPath();
+            ctx.arc(width / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
             ctx.shadowColor = '#ff4655';
-            ctx.shadowBlur = 30;
-            ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
-            ctx.restore();
-            ctx.shadowBlur = 0;
-
-            // Eğer üstteki yöntem shadowu keserse, alternatif:
-            // Önce shadowlu bir daire çiz (resim arkasına), sonra resmi clip ile çiz.
-            ctx.save();
-            ctx.beginPath(); ctx.arc(width / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
-            ctx.shadowColor = '#ff4655'; ctx.shadowBlur = 30; ctx.fillStyle = 'rgba(0,0,0,0)'; ctx.fill();
+            ctx.shadowBlur = 40;
+            ctx.fillStyle = 'rgba(0,0,0,0)'; // Sadece shadow görünsün
+            ctx.fill();
             ctx.restore();
 
+            // Image Draw (Clip)
             ctx.save();
             applyRoundAvatar(ctx, logoX, logoY, logoSize);
-            ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
+            ctx.drawImage(logoImage, logoX, logoY, logoSize, logoSize);
             ctx.restore();
-
-        } catch (e) { }
+        }
+    } catch (e) {
+        console.error('Logo yükleme hatası:', e);
     }
-
-    ctx.fillStyle = '#ffffff';
-    // Font: VALORANT yerine daha modern, okunaklı, ince bir font
-    // Kullanıcı talebi: Nexus fontu değiştir, küçült.
-    ctx.font = 'bold 50px "Segoe UI", sans-serif';
-    ctx.textAlign = 'center';
-
-    // Hafif glow
-    ctx.shadowColor = '#ff4655'; ctx.shadowBlur = 15;
-    ctx.fillText(guildName.toUpperCase(), width / 2, 170); // Y koordinat logo boyutuna göre ayarlandı
-    ctx.shadowBlur = 0;
 
     // 3. Listeler
     await drawRankList(ctx, 'TOP VOICE', 60, 230, data.voice, client, 'voice', '#3b82f6');
@@ -150,8 +140,7 @@ const userAvatarCache = new Map();
 async function drawRankList(ctx, title, x, y, list, client, type, themeColor) {
     const w = 400;
 
-    // Başlık
-    ctx.font = '30px "VALORANT", sans-serif'; // Başlıklar hala temalı kalsın
+    ctx.font = '30px "VALORANT", sans-serif';
     ctx.fillStyle = '#fff'; ctx.textAlign = 'left';
     ctx.shadowColor = themeColor; ctx.shadowBlur = 15;
     ctx.fillText(title, x, y); ctx.shadowBlur = 0;
