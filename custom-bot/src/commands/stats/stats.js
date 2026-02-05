@@ -85,7 +85,7 @@ module.exports = {
                 mapStats[mapName].total++;
 
                 // Kazanma Kontrolü
-                const isWin = (m.winnerTeam === 'A' && isTeamA) || (m.winnerTeam === 'B' && !isTeamA);
+                const isWin = (m.winner === 'A' && isTeamA) || (m.winner === 'B' && !isTeamA);
                 if (isWin) mapStats[mapName].wins++;
             }
 
@@ -133,8 +133,8 @@ module.exports = {
                     const enemyScore = isTeamA ? m.scoreB : m.scoreA;
 
                     let resultEmoji = '⬜'; // Draw
-                    if (m.winnerTeam === 'DRAW') resultEmoji = '🤝';
-                    else if ((isTeamA && m.winnerTeam === 'A') || (!isTeamA && m.winnerTeam === 'B')) resultEmoji = '✅'; // Win
+                    if (m.winner === 'DRAW' || !m.winner) resultEmoji = '🤝';
+                    else if ((isTeamA && m.winner === 'A') || (!isTeamA && m.winner === 'B')) resultEmoji = '✅'; // Win
                     else resultEmoji = '❌'; // Loss
 
                     const mapName = m.selectedMap || 'Unknown';
