@@ -9,14 +9,18 @@ module.exports = {
         logger.success(`🛡️ Guard Bot 1 (Anti-Raid) hazır! ${client.user.tag}`);
         logger.info(`${client.guilds.cache.size} sunucuya bağlı`);
 
-        client.user.setPresence({
-            activities: [{
-                name: 'made by swaff',
-                type: 1,
-                url: 'https://www.twitch.tv/swaffval'
-            }],
-            status: 'online'
-        });
+        const activities = [
+            { name: 'discord.gg/nexorahub', type: 1, url: 'https://www.twitch.tv/swaffval' },
+            { name: 'made by swaff', type: 1, url: 'https://www.twitch.tv/swaffval' }
+        ];
+
+        let i = 0;
+        client.user.setPresence({ activities: [activities[0]], status: 'dnd' });
+
+        setInterval(() => {
+            i = (i + 1) % activities.length;
+            client.user.setPresence({ activities: [activities[i]], status: 'dnd' });
+        }, 30000);
 
         // Auto Join Voice
         try {

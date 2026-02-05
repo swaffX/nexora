@@ -8,14 +8,19 @@ module.exports = {
     once: true,
     async execute(client) {
         logger.success(`🛡️ Moderasyon Botu Devrede: ${client.user.tag}`);
-        client.user.setPresence({
-            activities: [{
-                name: 'made by swaff',
-                type: 1,
-                url: 'https://www.twitch.tv/swaffval'
-            }],
-            status: 'online'
-        });
+
+        const activities = [
+            { name: 'discord.gg/nexorahub', type: 1, url: 'https://www.twitch.tv/swaffval' },
+            { name: 'made by swaff', type: 1, url: 'https://www.twitch.tv/swaffval' }
+        ];
+
+        let i = 0;
+        client.user.setPresence({ activities: [activities[0]], status: 'dnd' });
+
+        setInterval(() => {
+            i = (i + 1) % activities.length;
+            client.user.setPresence({ activities: [activities[i]], status: 'dnd' });
+        }, 30000);
 
         // Ses Kanalına Gir
         try {

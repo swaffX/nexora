@@ -7,17 +7,20 @@ module.exports = {
     name: Events.ClientReady,
     once: true,
     async execute(client) {
-        logger.success(`⚔️ Nexora Custom Bot Devrede: ${client.user.tag}`);
+        logger.success(`🎮 Custom Bot Devrede: ${client.user.tag}`);
 
-        // DURUM
-        client.user.setPresence({
-            activities: [{
-                name: 'made by swaff',
-                type: 1, // Streaming
-                url: 'https://www.twitch.tv/swaffval'
-            }],
-            status: 'online'
-        });
+        const activities = [
+            { name: 'discord.gg/nexorahub', type: 1, url: 'https://www.twitch.tv/swaffval' },
+            { name: 'made by swaff', type: 1, url: 'https://www.twitch.tv/swaffval' }
+        ];
+
+        let i = 0;
+        client.user.setPresence({ activities: [activities[0]], status: 'dnd' });
+
+        setInterval(() => {
+            i = (i + 1) % activities.length;
+            client.user.setPresence({ activities: [activities[i]], status: 'dnd' });
+        }, 30000);
 
         // SES
         const VOICE_CHANNEL_ID = '1463921161925558485';

@@ -28,19 +28,9 @@ module.exports = {
             watch: ["src"],
             ignore_watch: ["node_modules", ".env"],
         },
-
         {
             name: "moderation-bot",
             script: "./moderation-bot/src/index.js",
-            watch: false,
-            ignore_watch: ["node_modules", "logs"],
-            env: {
-                NODE_ENV: "production"
-            }
-        },
-        {
-            name: "welcome-bot",
-            script: "./welcome-bot/src/index.js",
             watch: false,
             ignore_watch: ["node_modules", "logs"],
             env: {
@@ -59,35 +49,6 @@ module.exports = {
         {
             name: "status-bot",
             script: "./status-bot/src/index.js",
-            watch: false,
-            ignore_watch: ["node_modules", "logs"],
-            env: {
-                NODE_ENV: "production"
-            }
-        },
-        {
-            name: "supervisor-bot",
-            script: "./supervisor-bot/src/index.js",
-            watch: false,
-            ignore_watch: ["node_modules", "logs"],
-            env: {
-                NODE_ENV: "production"
-            }
-        },
-        {
-            name: "music-bot",
-            cwd: "./music-bot",
-            script: "./src/index.js",
-            watch: false,
-            ignore_watch: ["node_modules", "logs"],
-            env: {
-                NODE_ENV: "production"
-            }
-        },
-        {
-            name: "music-dashboard",
-            cwd: "./music-dashboard",
-            script: "./src/app.js",
             watch: false,
             ignore_watch: ["node_modules", "logs"],
             env: {
