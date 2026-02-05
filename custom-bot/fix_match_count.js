@@ -2,6 +2,13 @@ const mongoose = require('mongoose');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
+// Eğer URI gelmediyse bir üst dizine bak (VPS yapısı için)
+if (!process.env.MONGODB_URI) {
+    require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+}
+
+console.log('MongoDB URI Status:', process.env.MONGODB_URI ? 'Loaded' : '⚠️ NOT FOUND');
+
 // Model path'i shared içinde normalde. Relative path ayarlayalım.
 // custom-bot root'undayız. shared ../shared
 const MatchModel = require('../shared/models/Match');
