@@ -126,11 +126,10 @@ module.exports = {
 
         // STREAK (WinRate Üstünde: Y=290)
         const streak = stats.winStreak || 0;
-        if (streak > 0) {
+        if (streak >= 2) {
             ctx.font = 'bold 30px "Segoe UI", sans-serif';
             ctx.fillStyle = streak >= 3 ? '#ff5500' : '#cccccc';
-            const streakText = streak >= 3 ? `🔥 ${streak} WIN STREAK` : `${streak} Win Streak`;
-            ctx.fillText(streakText, wrX, 290);
+            const streakText = streak >= 3 ? `${streak} WIN STREAK (HOT)` : `${streak} Win Streak`; ctx.fillText(streakText, wrX, 290);
         }
 
         // WIN RATE (Y=340)
@@ -234,7 +233,7 @@ module.exports = {
 
             if (streak >= 3) {
                 ctx.fillStyle = '#ff8800';
-                ctx.fillText(`${name} 🔥`, 400, y + 15);
+                ctx.fillText(name, 400, y + 15);
             } else {
                 ctx.fillStyle = '#ffffff';
                 ctx.fillText(name, 400, y + 15);
