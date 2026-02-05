@@ -4,6 +4,7 @@ const { Match, User } = require(path.join(__dirname, '..', '..', '..', '..', 'sh
 const draftHandler = require('./draft');
 const { getLobbyConfig, BLOCKED_ROLE_ID } = require('./constants');
 const eloService = require('../../services/eloService');
+const canvasGenerator = require('../../utils/canvasGenerator');
 
 module.exports = {
     async createLobby(interaction, targetLobbyId, initialLobbyCode = null) {
@@ -293,16 +294,16 @@ module.exports = {
         }
     },
 
+
     async startDraftCoinFlip(channel, match) {
-        // Kanalı kontrol et (guild üzerindeyse fetch gerekebilir, ama object ise sorun yok)
         const embed = new EmbedBuilder()
             .setColor(0xF1C40F)
-            .setTitle('🪙 DRAFT ÖNCESİ YAZI TURA')
-            .setDescription(`**Kaptanlar belirlendi!**\n\nİlk oyuncuyu kimin seçeceğini belirlemek için __Yazı Tura__ atılacak.\n\n🔵 **Team A:** <@${match.captainA}>\n🔴 **Team B:** <@${match.captainB}>\n\n**Herhangi** bir kaptan butona basabilir!`)
-            .setThumbnail('https://cdn-icons-png.flaticon.com/512/12369/12369138.png'); // Coin Icon
+            .setTitle('🎡 KAPTANLAR KURA ÇARKI')
+            .setDescription(`**Kaptanlar Hazır!**\n\nİlk seçim hakkını (Harita/Taraf) kimin alacağını belirlemek için çarkı çevirin.\n\n🔵 **Team A:** <@${match.captainA}>\n🔴 **Team B:** <@${match.captainB}>\n\nHerhangi bir kaptan çevirebilir!`)
+            .setThumbnail('https://cdn-icons-png.flaticon.com/512/2855/2855473.png'); // Wheel Icon
 
         const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId(`match_draftcoin_${match.matchId}`).setLabel('🎲 Parayı Havaya At').setStyle(ButtonStyle.Primary).setEmoji('🪙'),
+            new ButtonBuilder().setCustomId(`match_draftcoin_${match.matchId}`).setLabel('🎡 Çarkı Çevir').setStyle(ButtonStyle.Primary),
             new ButtonBuilder().setCustomId(`match_autobalance_${match.matchId}`).setLabel('⚖️ Takımları Dengele').setStyle(ButtonStyle.Secondary).setDisabled(true)
         );
 
@@ -310,35 +311,78 @@ module.exports = {
     },
 
     async handleDraftCoinFlip(interaction) {
-        const { MessageFlags } = require('discord.js');
+        const { MessageFlags, AttachmentBuilder } = require('discord.js');
         const matchId = interaction.customId.split('_')[2];
         const match = await Match.findOne({ matchId });
 
         if (!match) return;
         if (interaction.user.id !== match.captainA && interaction.user.id !== match.captainB) {
-            return interaction.reply({ content: 'Sadece kaptanlar parayı atabilir!', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: 'Sadece kaptanlar çarkı çevirebilir!', flags: MessageFlags.Ephemeral });
         }
 
+        // 1. Animasyon Mesajı (GIF)
+        const animationEmbed = new EmbedBuilder()
+            .setColor(0x3498DB)
+            .setTitle('🎡 ÇARK DÖNÜYOR...')
+            .setDescription('Kaptanlar için şans perisi dönüyor... Acaba kim kazanacak?')
+            .setImage('https://media.tenor.com/-eJ9y3A-0iMAAAAM/spinning-wheel-spin.gif'); // Spinning Wheel GIF
+
+        await interaction.update({ content: null, embeds: [animationEmbed], components: [] });
+
+        // 2. Bekle (4 Saniye)
+        await new Promise(r => setTimeout(r, 4000));
+
+        // 3. Sonuç Belirle
         const winnerTeam = Math.random() < 0.5 ? 'A' : 'B';
         const winnerId = winnerTeam === 'A' ? match.captainA : match.captainB;
+        const loserId = winnerTeam === 'A' ? match.captainB : match.captainA;
 
-        // Kazananı Kaydet (Geçici olarak priorityPicker olarak kullanabiliriz veya direkt buton ID'sinde tutarız)
-        // Ama veritabanında tutmak daha güvenli (Hacklenmemesi için)
-        // Match modeline priorityWinner eklemek yerine status'u değiştirelim.
         match.status = 'DRAFT_CHOICE';
         await match.save();
 
-        const embed = new EmbedBuilder()
-            .setColor(0x2ECC71)
-            .setTitle('🎉 YAZI TURA KAZANILDI!')
-            .setDescription(`**Kazanan:** <@${winnerId}> (Team ${winnerTeam})\n\n**Seçim Hakkı Sizde!** Hangisini istersiniz?\n\n👤 **Player Priority:** İlk oyuncuyu sen seçersin, tarafı rakip seçer.\n🛡️ **Side Priority:** Tarafı (Saldırı/Savunma) sen seçersin, ilk oyuncuyu rakip seçer.`);
+        // 4. Canvas Görseli Oluştur
+        const winnerUser = await interaction.guild.members.fetch(winnerId).catch(() => null);
+        const loserUser = await interaction.guild.members.fetch(loserId).catch(() => null);
+
+        const winnerData = {
+            name: winnerUser?.displayName || (winnerTeam === 'A' ? 'Team A' : 'Team B'),
+            user: winnerUser?.user || { displayAvatarURL: () => '' },
+            team: winnerTeam
+        };
+        const loserData = {
+            name: loserUser?.displayName || 'Loser',
+            user: loserUser?.user || { displayAvatarURL: () => '' },
+            team: winnerTeam === 'A' ? 'B' : 'A'
+        };
+
+        let attachment = null;
+        try {
+            const buffer = await canvasGenerator.createWheelResult(winnerData, loserData);
+            attachment = new AttachmentBuilder(buffer, { name: 'wheel-result.png' });
+        } catch (e) { console.error('Wheel Canvas Error:', e); }
+
+        const resultEmbed = new EmbedBuilder()
+            .setColor(winnerTeam === 'A' ? 0x3498DB : 0xE74C3C)
+            .setTitle('🎉 KURA SONUCU!')
+            .setDescription(`**Kazanan:** <@${winnerId}> (Team ${winnerTeam})\n\n**Seçim Hakkı Sizde!** Hangisini istersiniz?\n\n👤 **Player Priority:** İlk oyuncuyu sen seçersin.\n🛡️ **Side Priority:** Tarafı (Saldırı/Savunma) sen seçersin.`);
+
+        if (attachment) resultEmbed.setImage('attachment://wheel-result.png');
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`match_priority_PLAYER_${match.matchId}_${winnerTeam}`).setLabel('İlk Oyuncuyu Seç').setStyle(ButtonStyle.Primary).setEmoji('👤'),
             new ButtonBuilder().setCustomId(`match_priority_SIDE_${match.matchId}_${winnerTeam}`).setLabel('Taraf Seçme Hakkı').setStyle(ButtonStyle.Success).setEmoji('🛡️')
         );
 
-        await interaction.update({ content: null, embeds: [embed], components: [row] });
+        const payload = { embeds: [resultEmbed], components: [row] };
+        if (attachment) payload.files = [attachment];
+
+        // Mesajı güncelle
+        try {
+            await interaction.editReply(payload);
+        } catch (e) {
+            // Eğer interaction süresi dolduysa fallback
+            await interaction.channel.send(payload);
+        }
     },
 
     async handleDraftPriorityChoice(interaction) {

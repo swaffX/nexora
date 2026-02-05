@@ -20,10 +20,40 @@ module.exports = {
         match.status = 'SIDE_SELECTION';
         await match.save();
 
+        // 1. Kaptan Verilerini Hazırla (Canvas İçin)
+        const captainA = await channel.guild.members.fetch(match.captainA).catch(() => null);
+        const captainB = await channel.guild.members.fetch(match.captainB).catch(() => null);
+
+        // Mock User objects if fetch fails
+        const mockUser = { displayAvatarURL: () => 'https://cdn.discordapp.com/embed/avatars/0.png', username: 'Unknown' };
+
+        const dataA = {
+            id: match.captainA,
+            name: captainA?.displayName || 'Team A',
+            user: captainA?.user || mockUser
+        };
+        const dataB = {
+            id: match.captainB,
+            name: captainB?.displayName || 'Team B',
+            user: captainB?.user || mockUser
+        };
+
+        // 2. Canvas Oluştur
+        let attachment = null;
+        try {
+            // Harita adını match objesinden alıyoruz
+            const mapName = match.selectedMap || 'Unknown';
+            const buffer = await canvasGenerator.createSideSelectionImage(dataA, dataB, match.sideSelector, mapName);
+            attachment = new AttachmentBuilder(buffer, { name: 'side-selection.png' });
+        } catch (e) {
+            console.error('Side Selection Canvas Error:', e);
+        }
+
         const embed = new EmbedBuilder()
-            .setColor(0x2ECC71)
+            .setColor(0xF1C40F) // Gold
             .setTitle('🛡️ TARAF SEÇİMİ')
-            .setDescription(`**Harita:** ${match.selectedMap}\n\n**Team A:** <@${match.captainA}>\n**Team B:** <@${match.captainB}>\n\n**Seçim Sırası:** <@${match.sideSelector}>\nTarafınızı seçin!`)
+            .setDescription(`**Harita:** ${match.selectedMap}\n\nSeçim Sırası: <@${match.sideSelector}>\nLütfen tarafınızı seçin (Saldırı veya Savunma).`)
+            .setImage('attachment://side-selection.png');
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`match_side_ATTACK_${match.matchId}`).setLabel('SALDIRI (Attack)').setStyle(ButtonStyle.Danger).setEmoji('🗡️'),
@@ -31,7 +61,15 @@ module.exports = {
             new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('İptal').setStyle(ButtonStyle.Secondary).setEmoji('🛑')
         );
 
-        await channel.send({ content: `<@${match.sideSelector}>`, embeds: [embed], components: [row] });
+        const payload = {
+            content: `<@${match.sideSelector}>`,
+            embeds: [embed],
+            components: [row]
+        };
+
+        if (attachment) payload.files = [attachment];
+
+        await channel.send(payload);
     },
 
     // handleRPSMove ve resolveRPSGame SİLİNDİ

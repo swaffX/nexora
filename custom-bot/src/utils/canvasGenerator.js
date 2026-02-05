@@ -410,5 +410,184 @@ module.exports = {
         ctx.fillText(`MAP: ${mapName.toUpperCase()}`, width / 2, 100);
 
         return canvas.toBuffer();
+    },
+
+    async createSideSelectionImage(captainA, captainB, selectorId, mapName) {
+        const width = 1200;
+        const height = 600;
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+
+        // 1. Arkaplan (Harita)
+        try {
+            const assetsPath = path.join(__dirname, '..', '..', 'assets', 'maps');
+            let mapPath = path.join(assetsPath, `${mapName}.png`);
+            if (!require('fs').existsSync(mapPath)) mapPath = path.join(assetsPath, `${mapName.toLowerCase()}.png`);
+
+            if (require('fs').existsSync(mapPath)) {
+                const bg = await loadImage(mapPath);
+                // Cover
+                const scale = Math.max(width / bg.width, height / bg.height);
+                const x = (width / 2) - (bg.width * scale / 2);
+                const y = (height / 2) - (bg.height * scale / 2);
+                ctx.drawImage(bg, x, y, bg.width * scale, bg.height * scale);
+            } else {
+                ctx.fillStyle = '#2B2D31'; ctx.fillRect(0, 0, width, height);
+            }
+        } catch (e) {
+            ctx.fillStyle = '#2B2D31'; ctx.fillRect(0, 0, width, height);
+        }
+
+        // Karartma
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(0, 0, width, height);
+
+        // Başlık
+        ctx.font = 'bold 60px "VALORANT", sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = '#000000'; ctx.shadowBlur = 10;
+        ctx.fillText('SIDE SELECTION', width / 2, 80);
+        ctx.shadowBlur = 0;
+
+        // Seçici Kim?
+        const isSelectorA = selectorId === captainA.id;
+        const selectorUser = isSelectorA ? captainA.user : captainB.user;
+        const selectorName = isSelectorA ? captainA.name : captainB.name;
+
+        // Orta Avatar (Seçici)
+        const avatarSize = 200;
+        const cx = width / 2;
+        const cy = height / 2 + 20;
+
+        try {
+            // Glow effect
+            ctx.save();
+            ctx.shadowColor = '#fbbf24'; // Gold glow
+            ctx.shadowBlur = 40;
+            ctx.beginPath();
+            ctx.arc(cx, cy, avatarSize / 2, 0, Math.PI * 2);
+            ctx.fillStyle = '#000';
+            ctx.fill();
+            ctx.restore();
+
+            // Avatar Draw
+            const avatarURL = selectorUser.displayAvatarURL({ extension: 'png', size: 256 });
+            const avatar = await loadImage(avatarURL);
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, avatarSize / 2, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.clip();
+            ctx.drawImage(avatar, cx - avatarSize / 2, cy - avatarSize / 2, avatarSize, avatarSize);
+            ctx.restore();
+
+            // Border
+            ctx.lineWidth = 8;
+            ctx.strokeStyle = '#fbbf24';
+            ctx.beginPath();
+            ctx.arc(cx, cy, avatarSize / 2, 0, Math.PI * 2);
+            ctx.stroke();
+
+        } catch (e) { console.error(e); }
+
+        // Alt Metin
+        ctx.font = 'bold 40px sans-serif';
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillText(`${selectorName.toUpperCase()} CHOOSING...`, cx, cy + avatarSize / 2 + 50);
+
+        ctx.font = '30px sans-serif';
+        ctx.fillStyle = '#cccccc';
+        ctx.fillText('ATTACK or DEFEND', cx, cy + avatarSize / 2 + 90);
+
+        // Sol Takım (Team A) İsmi (Silik)
+        ctx.font = 'bold 50px sans-serif';
+        ctx.fillStyle = isSelectorA ? '#3498DB' : 'rgba(52, 152, 219, 0.4)';
+        ctx.textAlign = 'left';
+        ctx.fillText(captainA.name.toUpperCase(), 50, height / 2);
+
+        // Sağ Takım (Team B) İsmi (Silik)
+        ctx.textAlign = 'right';
+        ctx.fillStyle = !isSelectorA ? '#E74C3C' : 'rgba(231, 76, 60, 0.4)';
+        ctx.fillText(captainB.name.toUpperCase(), width - 50, height / 2);
+
+        return canvas.toBuffer();
+    },
+
+    async createWheelResult(winner, loser) {
+        const width = 800;
+        const height = 600;
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+
+        // Arkaplan (Koyu)
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(0, 0, width, height);
+
+        // Takım Rengi (Arkaplan Glow)
+        const teamColor = winner.team === 'A' ? '#3498DB' : '#E74C3C'; // Mavi veya Kırmızı
+
+        // Sunburst Effect (Arka Planda Dönen Işıklar - Sabit çizim)
+        ctx.save();
+        ctx.translate(width / 2, height / 2);
+        for (let i = 0; i < 12; i++) {
+            ctx.rotate(Math.PI / 6);
+            ctx.fillStyle = (i % 2 === 0) ? teamColor : '#222';
+            ctx.globalAlpha = 0.2;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.arc(0, 0, 500, -Math.PI / 12, Math.PI / 12);
+            ctx.fill();
+        }
+        ctx.restore();
+
+        // Konfeti (Rastgele Noktalar)
+        for (let i = 0; i < 50; i++) {
+            ctx.fillStyle = Math.random() < 0.5 ? '#f1c40f' : '#ffffff';
+            ctx.beginPath();
+            ctx.arc(Math.random() * width, Math.random() * height, Math.random() * 5 + 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Kazanan Avatarı
+        const avatarSize = 250;
+        const cx = width / 2;
+        const cy = height / 2 - 30;
+
+        try {
+            // Daire Çerçeve
+            ctx.beginPath();
+            ctx.arc(cx, cy, avatarSize / 2 + 10, 0, Math.PI * 2);
+            ctx.fillStyle = teamColor;
+            ctx.fill();
+
+            // Avatar
+            const avatarURL = winner.user.displayAvatarURL({ extension: 'png', size: 256 });
+            const avatar = await loadImage(avatarURL);
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, avatarSize / 2, 0, Math.PI * 2);
+            ctx.clip();
+            ctx.drawImage(avatar, cx - avatarSize / 2, cy - avatarSize / 2, avatarSize, avatarSize);
+            ctx.restore();
+
+        } catch (e) { console.error(e); }
+
+        // WINNER Yazısı
+        ctx.font = 'bold 80px "VALORANT", sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = teamColor; ctx.shadowBlur = 20;
+        ctx.fillText('WINNER', cx, height - 120);
+
+        ctx.font = 'bold 40px sans-serif';
+        ctx.shadowBlur = 0;
+        ctx.fillText(winner.name.toUpperCase(), cx, height - 60);
+
+        return canvas.toBuffer();
     }
 };
