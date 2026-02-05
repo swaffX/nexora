@@ -69,13 +69,16 @@ module.exports = {
             const mapStats = {}; // { 'Ascent': { wins: 0, total: 0 } }
 
             for (const m of historyMatches) {
-                const isTeamA = m.teamA.includes(targetUser.id);
+                const safeTargetId = String(targetUser.id);
+                // String conversion for robust check
+                const isTeamA = m.teamA.some(id => String(id) === safeTargetId);
                 const teamList = isTeamA ? m.teamA : m.teamB;
 
                 // Teammate Analizi
                 for (const pid of teamList) {
-                    if (pid === targetUser.id) continue;
-                    teammates[pid] = (teammates[pid] || 0) + 1;
+                    const safePid = String(pid);
+                    if (safePid === safeTargetId) continue;
+                    teammates[safePid] = (teammates[safePid] || 0) + 1;
                 }
 
                 // Map Analizi
@@ -86,8 +89,9 @@ module.exports = {
 
                 // Kazanma Kontrolü
                 // KAZANAN BELİRLEME (Score Based Fallback)
+                // KAZANAN BELİRLEME (Score Based Fallback - Always Trust Score)
                 let actualWinner = m.winner;
-                if (!actualWinner && m.scoreA !== undefined && m.scoreB !== undefined) {
+                if (m.scoreA !== undefined && m.scoreB !== undefined) {
                     if (m.scoreA > m.scoreB) actualWinner = 'A';
                     else if (m.scoreB > m.scoreA) actualWinner = 'B';
                 }
@@ -143,7 +147,7 @@ module.exports = {
 
                     // KAZANAN BELİRLEME (Score Based Fallback)
                     let actualWinner = m.winner;
-                    if (!actualWinner && m.scoreA !== undefined && m.scoreB !== undefined) {
+                    if (m.scoreA !== undefined && m.scoreB !== undefined) {
                         if (m.scoreA > m.scoreB) actualWinner = 'A';
                         else if (m.scoreB > m.scoreA) actualWinner = 'B';
                     }
