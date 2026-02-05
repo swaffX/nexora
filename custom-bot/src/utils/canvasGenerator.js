@@ -168,10 +168,10 @@ module.exports = {
         return canvas.toBuffer();
     },
 
-    // YENİ LEADERBOARD (MODERN TASARIM - FIXED WIDTH)
+    // YENİ LEADERBOARD (MODERN TASARIM - CENTER ALIGNMENT)
     async createLeaderboardImage(users) {
         const rowHeight = 140;
-        const width = 2000; // Genişletildi (Çakışmayı önlemek için)
+        const width = 2000;
         const height = 300 + (users.length * (rowHeight + 20));
         const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
@@ -251,34 +251,37 @@ module.exports = {
             const total = wins + losses;
             const wr = total > 0 ? Math.round((wins / total) * 100) : 0;
 
-            const statsX = 1200; // Genişlik arttırıldığı için sağa kaydırıldı
+            // CENTER ALIGNMENT SETUP
+            // W @ 1250, L @ 1450, WR @ 1650, ELO @ 1850 (Width: 2000)
+
+            ctx.textAlign = 'center';
 
             // W
             ctx.font = 'bold 45px "DIN Alternate", sans-serif';
             ctx.fillStyle = '#2ecc71';
-            ctx.textAlign = 'center';
-            ctx.fillText(`${wins} W`, statsX, y + 85);
+            ctx.fillText(`${wins} W`, 1250, y + 90);
 
             // L
             ctx.fillStyle = '#ef4444';
-            ctx.fillText(`${losses} L`, statsX + 200, y + 85);
+            ctx.fillText(`${losses} L`, 1450, y + 90);
 
-            // WR
+            // WR (CENTERED)
             ctx.fillStyle = wr >= 50 ? '#2ecc71' : '#e74c3c';
-            ctx.fillText(`%${wr}`, statsX + 400, y + 85);
-
-            // ELO (En Sağ)
-            // Sayıyı BÜYÜT
-            ctx.font = 'bold 80px "DIN Alternate", sans-serif';
-            ctx.fillStyle = '#ffffff';
-            ctx.textAlign = 'right';
-            const eloX = width - 80;
-            ctx.fillText(`${stats.elo}`, eloX, y + 90);
-
-            // Label'ı ALTINA al
+            ctx.fillText(`%${wr}`, 1650, y + 85);
+            // Label
             ctx.font = 'bold 22px "Segoe UI", sans-serif';
             ctx.fillStyle = '#666';
-            ctx.fillText('ELO POINTS', eloX, y + 125); // Altına alındı
+            ctx.fillText('WIN RATE', 1650, y + 125);
+
+            // ELO (CENTERED)
+            ctx.font = 'bold 80px "DIN Alternate", sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(`${stats.elo}`, 1880, y + 90); // 1900 -> 1880 (Biraz sağ kenardan pay)
+
+            // Label
+            ctx.font = 'bold 22px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#666';
+            ctx.fillText('ELO POINTS', 1880, y + 125); // Tam ortalı
 
             y += rowHeight + 20;
         }
