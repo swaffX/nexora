@@ -15,16 +15,32 @@ const MatchModel = require('../shared/models/Match');
 
 async function fixMatchCount() {
     try {
-        await mongoose.connect(process.env.MONGODB_URI);
-        console.log('Connected to DB');
+        console.log('Connecting to MongoDB...');
+        await mongoose.connect(process.env.MONGODB_URI, {
+            serverSelectionTimeoutMS: 10000,
+            socketTimeoutMS: 45000,
+        });
 
-        const guildId = '1463868666360631337'; // Nexora Guild ID (Step 1'den user info'da yok ama loglarda gördüm sanki veya User'ın odaId'si)
-        // Kullanıcının attığı ID bir mesaj ID'si. Guild ID'yi bilmiyorum.
-        // Ama Match.findOne boş query ile de çalışır veya en son maçı bulurum.
+        // Bağlantı açık mı?
+        if (mongoose.connection.readyState === 1) {
+            console.log('✅ Connected to DB successfully.');
+        } else {
+            console.log('⏳ Waiting for connection ready state...');
+            await new Promise(resolve => {
+                mongoose.connection.once('open', () => {
+                    console.log('✅ DB Connected (Event)');
+                    resolve();
+                });
+            });
+        }
+
+        console.log(`Checking matches collection...`);
+
+        const guildId = '1463868666360631337';
 
         // En yüksek numaralı maçı bul
-        const lastMatch = await MatchModel.findOne().sort({ matchNumber: -1 });
-        console.log('Last Match Number:', lastMatch ? lastMatch.matchNumber : 'None');
+        const lastMatch = await MatchModel.findOne({}).sort({ matchNumber: -1 }).maxTimeMS(20000); // 20sn timeout
+        console.log('Last Match Number found:', lastMatch ? lastMatch.matchNumber : 'None');
 
         if (lastMatch && lastMatch.matchNumber > 38) {
             console.log(`Deleting matches with matchNumber > 38...`);
@@ -32,7 +48,7 @@ async function fixMatchCount() {
             console.log(`Deleted ${result.deletedCount} matches.`);
 
             // Kontrol
-            const newLast = await MatchModel.findOne().sort({ matchNumber: -1 });
+            const newLast = await MatchModel.findOne({}).sort({ matchNumber: -1 });
             console.log('New Last Match Number:', newLast ? newLast.matchNumber : 'None');
             console.log('Next match will be:', newLast ? newLast.matchNumber + 1 : 1);
         } else {
@@ -40,9 +56,11 @@ async function fixMatchCount() {
         }
 
     } catch (e) {
-        console.error(e);
+        console.error('SCRIPT ERROR:', e);
     } finally {
+        console.log('Closing connection...');
         await mongoose.disconnect();
+        console.log('Done.');
     }
 }
 
