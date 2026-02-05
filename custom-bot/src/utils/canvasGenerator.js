@@ -238,6 +238,25 @@ module.exports = {
                 ctx.fillText(name, 400, y + 15);
             }
 
+            // --- Win / Lose Stats ---
+            const wCount = stats.totalWins || 0;
+            const lCount = (stats.totalMatches || 0) - wCount;
+
+            ctx.font = 'bold 40px sans-serif';
+            let statCursor = 1250; // ELO (1500) öncesi güvenli boşluk
+
+            // Lose (Right Align)
+            ctx.textAlign = 'right';
+            ctx.fillStyle = '#e74c3c'; // Kırmızı
+            const lText = `${lCount} Lose`;
+            ctx.fillText(lText, statCursor, y + 10);
+
+            const lWidth = ctx.measureText(lText).width;
+
+            // Win (Right Align - Lose'un solu)
+            ctx.fillStyle = '#2ecc71'; // Yeşil
+            ctx.fillText(`${wCount} Win`, statCursor - lWidth - 30, y + 10);
+
             // ELO
             ctx.fillStyle = '#eeeeee';
             ctx.textAlign = 'right';

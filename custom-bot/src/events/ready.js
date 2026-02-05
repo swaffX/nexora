@@ -42,15 +42,22 @@ module.exports = {
         // Otomatik maç timeout kontrolü devre dışı bırakıldı
         // Maçlar artık manuel olarak bitirilmeli
 
-        // MIGRATION: 100 ELO PROBLEMİNİ ÇÖZ (SADECE 100 OLANLAR)
-        const { User } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models')); // Moved User require to a higher scope
+        // MIGRATION: 100 ELO PROBLEMİNİ ÇÖZ (SADECE HİÇ MAÇ OYNAMAMIŞ ESKİ KAYITLAR)
+        const { User } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
         try {
             const res = await User.updateMany(
-                { 'matchStats.elo': 100 },
+                {
+                    'matchStats.elo': 100,
+                    $or: [
+                        { 'matchStats.totalMatches': 0 },
+                        { 'matchStats.totalMatches': { $exists: false } },
+                        { 'matchStats.totalMatches': null }
+                    ]
+                },
                 { $set: { 'matchStats.elo': 200, 'matchStats.matchLevel': 1 } }
             );
             if (res.modifiedCount > 0) {
-                logger.info(`[MIGRATION] ${res.modifiedCount} kullanıcının ELO'su 100 -> 200 olarak düzeltildi.`);
+                logger.info(`[MIGRATION] ${res.modifiedCount} kullanıcının (0 Maç) ELO'su 100 -> 200 olarak düzeltildi.`);
             }
         } catch (e) { console.error('Migration hatası:', e); }
 

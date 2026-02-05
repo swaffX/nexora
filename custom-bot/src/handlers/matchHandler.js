@@ -153,6 +153,11 @@ module.exports = {
                 // winner case is removed
 
                 // --- SCORE & MVP ---
+                case 'prefinish': // match_prefinish_MATCHID
+                    const mPre = await Match.findOne({ matchId: parts[2] });
+                    if (mPre) await game.preFinishMatch(interaction, mPre);
+                    break;
+
                 case 'score':
                     const mScore = await Match.findOne({ matchId: parts[2] });
                     if (mScore) await game.openScoreModal(interaction, mScore);

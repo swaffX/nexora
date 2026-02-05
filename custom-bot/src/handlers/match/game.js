@@ -253,10 +253,15 @@ module.exports = {
         const row = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
-                    .setCustomId(`match_score_${match.matchId}`)
+                    .setCustomId(`match_prefinish_${match.matchId}`) // Önce temizlik, sonra skor
                     .setLabel('Maçı Bitir')
-                    .setStyle(ButtonStyle.Success) // Yeşil
-                    .setEmoji('🏁')
+                    .setStyle(ButtonStyle.Success)
+                    .setEmoji('🏁'),
+                new ButtonBuilder()
+                    .setCustomId(`match_cancel_${match.matchId}`)
+                    .setLabel('İptal')
+                    .setStyle(ButtonStyle.Secondary)
+                    .setEmoji('🛑')
             );
 
         const payload = {
@@ -277,9 +282,7 @@ module.exports = {
             return interaction.reply({ content: '❌ Bu işlemi sadece maçı oluşturan yetkili yapabilir!', flags: MessageFlags.Ephemeral });
         }
 
-        // Temizliği başlat (Await etme, arkaplanda yap)
-        this.cleanupMatchChannels(interaction.guild, match).catch(e => console.error('[Voice Cleanup Error]', e));
-
+        // Temizlik zaten yapıldı, direkt modalı aç
         const { ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 
         const modal = new ModalBuilder()
@@ -308,35 +311,59 @@ module.exports = {
         await interaction.showModal(modal);
     },
 
+    // Yeni Fonksiyon: Temizlik ve Hazırlık
+    async preFinishMatch(interaction, match) {
+        if (interaction.user.id !== match.hostId) {
+            return interaction.reply({ content: '❌ Bu işlemi sadece maçı oluşturan yetkili yapabilir!', flags: MessageFlags.Ephemeral });
+        }
+
+        await interaction.reply({ content: '🔄 **Oyuncular lobiye taşınıyor ve kanallar temizleniyor... Lütfen bekleyin.**', flags: MessageFlags.Ephemeral });
+
+        // Temizliği Bekle
+        await this.cleanupMatchChannels(interaction.guild, match);
+
+        const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+        // Yeni Kontrol Panelini Gönder
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId(`match_score_${match.matchId}`).setLabel('Skor ve MVP Gir').setStyle(ButtonStyle.Primary).setEmoji('📝')
+        );
+
+        await interaction.editReply({
+            content: '✅ **Temizlik Tamamlandı!**\nAşağıdaki butona basarak maç sonucunu girebilirsiniz.',
+            components: [row]
+        });
+    },
+
     async cleanupMatchChannels(guild, match) {
         if (!guild) return;
-        // console.log('[Cleanup] Kanal temizliği başlatıldı...');
         try {
-            // 1. Oyuncuları Lobby Voice'a taşı (Fire and Forget)
+            // 1. Oyuncuları Lobby Voice'a taşı
             if (match.lobbyVoiceId) {
                 const allPlayers = [...match.teamA, ...match.teamB];
-                // Hepsini taşı
-                allPlayers.forEach(async pid => {
+                await Promise.all(allPlayers.map(async (pid) => {
                     try {
                         const member = guild.members.cache.get(pid) || await guild.members.fetch(pid).catch(() => null);
                         if (member && member.voice.channelId) {
-                            member.voice.setChannel(match.lobbyVoiceId).catch(() => { });
+                            await member.voice.setChannel(match.lobbyVoiceId).catch(() => { });
                         }
                     } catch (e) { }
-                });
+                }));
             }
 
             // 2. Ses kanallarını sil
             if (match.createdChannelIds && match.createdChannelIds.length > 0) {
-                // Biraz bekle (1sn - taşınma başlasın) sonra sil
-                setTimeout(async () => {
-                    for (const cid of match.createdChannelIds) {
-                        try {
-                            const ch = guild.channels.cache.get(cid) || await guild.channels.fetch(cid).catch(() => null);
-                            if (ch) await ch.delete().catch(() => { });
-                        } catch (e) { }
-                    }
-                }, 1000);
+                // Taşınma için kısa bekleme
+                await new Promise(r => setTimeout(r, 1000));
+
+                for (const cid of match.createdChannelIds) {
+                    // YAZI KANALINI SİLME! Match Channel ID'si created listesinde olabilir
+                    if (cid === match.channelId) continue;
+
+                    try {
+                        const ch = guild.channels.cache.get(cid) || await guild.channels.fetch(cid).catch(() => null);
+                        if (ch) await ch.delete().catch(() => { });
+                    } catch (e) { }
+                }
             }
         } catch (e) {
             console.error("Cleanup error:", e);
@@ -370,8 +397,13 @@ module.exports = {
         }
 
         // Kazananı Belirle
+        // Kazananı Belirle
         if (sA > sB) match.winner = 'A';
         else match.winner = 'B';
+
+        // MVP Reset (Güvenlik Önlemi - İkisi de seçilmeli)
+        match.mvpPlayerId = null;
+        match.mvpLoserId = null;
 
         await match.save();
 
