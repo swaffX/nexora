@@ -1,18 +1,17 @@
-const { PermissionsBitField } = require('discord.js');
 const RankConfig = require('../../../shared/models/RankConfig');
 
-// Level rolleri için konfigürasyon (renkler)
+// Level rolleri için konfigürasyon (renkler) - Hex Number Format
 const LEVEL_COLORS = {
-    1: '#ffffff', // Beyaz
-    2: '#00ff00', // Yeşil
-    3: '#00ff00',
-    4: '#ffff00', // Sarı
-    5: '#ffff00',
-    6: '#ffff00',
-    7: '#ffff00',
-    8: '#ff8800', // Turuncu
-    9: '#ff8800',
-    10: '#ff0000' // Kırmızı
+    1: 0xFFFFFF, // Beyaz
+    2: 0x00FF00, // Yeşil
+    3: 0x00FF00,
+    4: 0xFFFF00, // Sarı
+    5: 0xFFFF00,
+    6: 0xFFFF00,
+    7: 0xFFFF00,
+    8: 0xFF8800, // Turuncu
+    9: 0xFF8800,
+    10: 0xFF0000 // Kırmızı
 };
 
 module.exports = {
