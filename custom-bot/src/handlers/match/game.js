@@ -276,6 +276,9 @@ module.exports = {
     },
 
     async openScoreModal(interaction, match) {
+        // Temizliği başlat (Await etme, arkaplanda yap)
+        this.cleanupMatchChannels(interaction.guild, match).catch(e => console.error('[Voice Cleanup Error]', e));
+
         const { ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 
         const modal = new ModalBuilder()
@@ -302,6 +305,41 @@ module.exports = {
         modal.addComponents(firstRow, secondRow);
 
         await interaction.showModal(modal);
+    },
+
+    async cleanupMatchChannels(guild, match) {
+        if (!guild) return;
+        // console.log('[Cleanup] Kanal temizliği başlatıldı...');
+        try {
+            // 1. Oyuncuları Lobby Voice'a taşı (Fire and Forget)
+            if (match.lobbyVoiceId) {
+                const allPlayers = [...match.teamA, ...match.teamB];
+                // Hepsini taşı
+                allPlayers.forEach(async pid => {
+                    try {
+                        const member = guild.members.cache.get(pid) || await guild.members.fetch(pid).catch(() => null);
+                        if (member && member.voice.channelId) {
+                            member.voice.setChannel(match.lobbyVoiceId).catch(() => { });
+                        }
+                    } catch (e) { }
+                });
+            }
+
+            // 2. Ses kanallarını sil
+            if (match.createdChannelIds && match.createdChannelIds.length > 0) {
+                // Biraz bekle (1sn - taşınma başlasın) sonra sil
+                setTimeout(async () => {
+                    for (const cid of match.createdChannelIds) {
+                        try {
+                            const ch = guild.channels.cache.get(cid) || await guild.channels.fetch(cid).catch(() => null);
+                            if (ch) await ch.delete().catch(() => { });
+                        } catch (e) { }
+                    }
+                }, 1000);
+            }
+        } catch (e) {
+            console.error("Cleanup error:", e);
+        }
     },
 
     async handleScoreSubmit(interaction, matchParam) {

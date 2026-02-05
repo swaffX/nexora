@@ -132,10 +132,9 @@ module.exports = {
                     const myTeamScore = isTeamA ? m.scoreA : m.scoreB;
                     const enemyScore = isTeamA ? m.scoreB : m.scoreA;
 
-                    let resultEmoji = '⬜'; // Draw
-                    if (m.winner === 'DRAW' || !m.winner) resultEmoji = '🤝';
-                    else if ((isTeamA && m.winner === 'A') || (!isTeamA && m.winner === 'B')) resultEmoji = '✅'; // Win
-                    else resultEmoji = '❌'; // Loss
+                    let resultEmoji = '❓'; // Default Bilinmeyen
+                    if ((isTeamA && m.winner === 'A') || (!isTeamA && m.winner === 'B')) resultEmoji = '✅'; // WIN
+                    else if ((isTeamA && m.winner === 'B') || (!isTeamA && m.winner === 'A')) resultEmoji = '❌'; // LOSS
 
                     const mapName = m.selectedMap || 'Unknown';
                     const dateStr = `<t:${Math.floor(m.createdAt.getTime() / 1000)}:R>`;
@@ -153,6 +152,7 @@ module.exports = {
             const embed = new EmbedBuilder()
                 .setColor(0x2B2D31)
                 .setTitle(`📊 İstatistikler: ${targetUser.username}`)
+                .setThumbnail(targetUser.displayAvatarURL({ extension: 'png' }))
                 .addFields(
                     { name: '🔥 Son Maçlar', value: historyText, inline: false },
                     { name: '🗺️ En İyi Harita', value: bestMap, inline: true },
