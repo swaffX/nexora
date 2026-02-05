@@ -85,7 +85,15 @@ module.exports = {
                 mapStats[mapName].total++;
 
                 // Kazanma Kontrolü
-                const isWin = (m.winner === 'A' && isTeamA) || (m.winner === 'B' && !isTeamA);
+                // KAZANAN BELİRLEME (Score Based Fallback)
+                let actualWinner = m.winner;
+                if (!actualWinner && m.scoreA !== undefined && m.scoreB !== undefined) {
+                    if (m.scoreA > m.scoreB) actualWinner = 'A';
+                    else if (m.scoreB > m.scoreA) actualWinner = 'B';
+                }
+
+                // Kazanma Kontrolü
+                const isWin = (actualWinner === 'A' && isTeamA) || (actualWinner === 'B' && !isTeamA);
                 if (isWin) mapStats[mapName].wins++;
             }
 
@@ -132,9 +140,17 @@ module.exports = {
                     const myTeamScore = isTeamA ? m.scoreA : m.scoreB;
                     const enemyScore = isTeamA ? m.scoreB : m.scoreA;
 
+
+                    // KAZANAN BELİRLEME (Score Based Fallback)
+                    let actualWinner = m.winner;
+                    if (!actualWinner && m.scoreA !== undefined && m.scoreB !== undefined) {
+                        if (m.scoreA > m.scoreB) actualWinner = 'A';
+                        else if (m.scoreB > m.scoreA) actualWinner = 'B';
+                    }
+
                     let resultEmoji = '❓'; // Default Bilinmeyen
-                    if ((isTeamA && m.winner === 'A') || (!isTeamA && m.winner === 'B')) resultEmoji = '✅'; // WIN
-                    else if ((isTeamA && m.winner === 'B') || (!isTeamA && m.winner === 'A')) resultEmoji = '❌'; // LOSS
+                    if ((isTeamA && actualWinner === 'A') || (!isTeamA && actualWinner === 'B')) resultEmoji = '✅'; // WIN
+                    else if ((isTeamA && actualWinner === 'B') || (!isTeamA && actualWinner === 'A')) resultEmoji = '❌'; // LOSS
 
                     const mapName = m.selectedMap || 'Unknown';
                     const dateStr = `<t:${Math.floor(m.createdAt.getTime() / 1000)}:R>`;
