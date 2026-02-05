@@ -51,48 +51,35 @@ async function createLeaderboardImage(guildName, guildIconUrl, data, client) {
     for (let i = 0; i < width; i += 40) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, height); ctx.stroke(); }
     for (let i = 0; i < height; i += 40) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(width, i); ctx.stroke(); }
 
-    const headerGlow = ctx.createRadialGradient(width / 2, 100, 0, width / 2, 100, 400);
-    headerGlow.addColorStop(0, 'rgba(255, 70, 85, 0.15)');
+    const headerGlow = ctx.createRadialGradient(width / 2, 50, 0, width / 2, 50, 400);
+    headerGlow.addColorStop(0, 'rgba(255, 255, 255, 0.05)');
     headerGlow.addColorStop(1, 'transparent');
     ctx.fillStyle = headerGlow;
-    ctx.fillRect(0, 0, width, 250);
+    ctx.fillRect(0, 0, width, 200);
 
-    // 2. Logo (Custom GIF: standard (1).gif)
-    // NEXORA yazısı kaldırıldı, sadece logo var.
-    try {
-        const customLogoPath = path.join(__dirname, '..', '..', '..', 'standard (1).gif');
-        let logoImage;
+    // 2. Header (NEXORA STATS) - Resimsiz
+    ctx.fillStyle = '#ffffff';
+    // Font: Modern, temiz, çok büyük değil
+    ctx.font = 'bold 50px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
 
-        if (fs.existsSync(customLogoPath)) {
-            logoImage = await loadImage(customLogoPath);
-        } else if (guildIconUrl) {
-            logoImage = await loadImage(guildIconUrl);
-        }
+    // Beyaz Modern Glow
+    ctx.shadowColor = '#ffffff';
+    ctx.shadowBlur = 20;
+    ctx.fillText('NEXORA STATS', width / 2, 120);
+    ctx.shadowBlur = 0;
 
-        if (logoImage) {
-            const logoSize = 180; // Yazı kalktı, logo büyüdü
-            const logoX = width / 2 - logoSize / 2;
-            const logoY = 30;
-
-            // Glow Draw (Yuvarlak)
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(width / 2, logoY + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
-            ctx.shadowColor = '#ff4655';
-            ctx.shadowBlur = 40;
-            ctx.fillStyle = 'rgba(0,0,0,0)'; // Sadece shadow görünsün
-            ctx.fill();
-            ctx.restore();
-
-            // Image Draw (Clip)
-            ctx.save();
-            applyRoundAvatar(ctx, logoX, logoY, logoSize);
-            ctx.drawImage(logoImage, logoX, logoY, logoSize, logoSize);
-            ctx.restore();
-        }
-    } catch (e) {
-        console.error('Logo yükleme hatası:', e);
-    }
+    // Altına ince çizgi
+    const lineX = width / 2 - 100;
+    const lineY = 140;
+    const lineG = ctx.createLinearGradient(lineX, 0, lineX + 200, 0);
+    lineG.addColorStop(0, 'transparent');
+    lineG.addColorStop(0.5, '#ffffff');
+    lineG.addColorStop(1, 'transparent');
+    ctx.fillStyle = lineG;
+    ctx.shadowColor = '#fff'; ctx.shadowBlur = 10;
+    ctx.fillRect(lineX, lineY, 200, 2);
+    ctx.shadowBlur = 0;
 
     // 3. Listeler
     await drawRankList(ctx, 'TOP VOICE', 60, 230, data.voice, client, 'voice', '#3b82f6');
@@ -105,11 +92,11 @@ async function createLeaderboardImage(guildName, guildIconUrl, data, client) {
     ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.fillRect(0, footerY, width, footerHeight);
 
-    const lineG = ctx.createLinearGradient(0, footerY, width, footerY);
-    lineG.addColorStop(0, 'transparent');
-    lineG.addColorStop(0.5, '#475569');
-    lineG.addColorStop(1, 'transparent');
-    ctx.fillStyle = lineG;
+    const footerLineG = ctx.createLinearGradient(0, footerY, width, footerY);
+    footerLineG.addColorStop(0, 'transparent');
+    footerLineG.addColorStop(0.5, '#475569');
+    footerLineG.addColorStop(1, 'transparent');
+    ctx.fillStyle = footerLineG;
     ctx.fillRect(0, footerY, width, 1);
 
     const colW = width / 3;
