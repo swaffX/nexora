@@ -64,6 +64,16 @@ const matchSchema = new mongoose.Schema({
     scoreA: { type: Number, default: 0 },
     scoreB: { type: Number, default: 0 },
 
+    // ELO Logları
+    eloChanges: [{
+        userId: String,
+        oldElo: Number,
+        newElo: Number,
+        change: Number,
+        reason: String
+    }],
+    winner: { type: String }, // Match winner (A, B, or DRAW)
+
     // Maç Sonucu ve Kanıt
     winnerTeam: { type: String, enum: ['A', 'B'] },
     playedMaps: { type: [String], default: [] }, // Bu lobide oynanan haritalar

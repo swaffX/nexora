@@ -1,5 +1,6 @@
 const { createCanvas, loadImage } = require('canvas');
 const path = require('path');
+const fs = require('fs'); // fs gerekli
 const eloService = require('../services/eloService');
 
 // Helper: Hex to RGB
@@ -159,7 +160,7 @@ module.exports = {
         let streakColor = '#fff';
         let streakVal = Math.abs(streak);
         let streakLabel = 'Streak';
-        if (streak >= 3) { streakColor = '#f39c12'; streakLabel = '🔥 Win Streak'; }
+        if (streak >= 3) { streakColor = '#f39c12'; streakLabel = 'Win Streak'; }
         else if (streak >= 1) { streakColor = '#2ecc71'; streakLabel = 'Win Streak'; }
         else if (streak <= -1) { streakColor = '#e74c3c'; streakLabel = 'Lose Streak'; }
 
@@ -168,7 +169,188 @@ module.exports = {
         return canvas.toBuffer();
     },
 
-    // YENİ LEADERBOARD (MODERN TASARIM - CENTER ALIGNMENT - FIXED POSITIONS)
+    async createDetailedStatsImage(user, stats, matchHistory, bestMap, favoriteTeammate) {
+        const eloCardBuffer = await this.createEloCard(user, stats);
+        const eloCardImage = await loadImage(eloCardBuffer);
+
+        const width = 1200;
+        const topHeight = 600;
+        const totalHeight = topHeight + 450;
+
+        const canvas = createCanvas(width, totalHeight);
+        const ctx = canvas.getContext('2d');
+
+        const bgGradient = ctx.createLinearGradient(0, 0, width, totalHeight);
+        bgGradient.addColorStop(0, '#18181b');
+        bgGradient.addColorStop(1, '#09090b');
+        ctx.fillStyle = bgGradient;
+        ctx.fillRect(0, 0, width, totalHeight);
+
+        ctx.drawImage(eloCardImage, 0, topHeight);
+
+        ctx.font = 'bold 30px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#666';
+        ctx.fillText('LAST MATCHES (5)', 50, 70);
+
+        let matchY = 100;
+        for (const match of matchHistory) {
+            // Arkaplan Resmi
+            let mapBg = null;
+            try {
+                const assetsPath = path.join(__dirname, '..', '..', 'assets', 'maps');
+                // Dosya adını bulmaya çalış (pearl.png, Pearl.png vb.)
+                const mapNameLower = match.map.toLowerCase();
+                let p = path.join(assetsPath, `${mapNameLower}.png`);
+
+                if (Date.now() % 2 === 0 && !fs.existsSync(p)) {
+                    // Bazen dosya bulunamazsa alternatifler denenebilir ama şimdilik simple
+                }
+
+                if (fs.existsSync(p)) {
+                    mapBg = await loadImage(p);
+                }
+            } catch (e) { }
+
+            if (mapBg) {
+                // Resmi kutuya sığdır ve kırp
+                const boxW = 600;
+                const boxH = 80;
+                // Cover
+                const scale = Math.max(boxW / mapBg.width, boxH / mapBg.height);
+                const w = mapBg.width * scale;
+                const h = mapBg.height * scale;
+
+                // Center crop
+                const x = 50 + (boxW - w) / 2;
+                const y = matchY + (boxH - h) / 2;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(50, matchY, boxW, boxH);
+                ctx.clip();
+
+                ctx.drawImage(mapBg, x, y, w, h);
+
+                // Dark Overlay
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(50, matchY, boxW, boxH);
+                ctx.restore();
+            } else {
+                ctx.fillStyle = 'rgba(255,255,255,0.03)';
+                ctx.fillRect(50, matchY, 600, 80);
+            }
+
+            const isWin = match.result === 'WIN';
+            const color = isWin ? '#2ecc71' : '#e74c3c';
+            const symbol = isWin ? 'W' : 'L';
+
+            ctx.fillStyle = color;
+            ctx.fillRect(50, matchY, 5, 80);
+
+            ctx.font = 'bold 35px "DIN Alternate", sans-serif';
+            ctx.fillStyle = color;
+            ctx.fillText(symbol, 80, matchY + 52);
+
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 30px "Segoe UI", sans-serif';
+            ctx.fillText(match.map.toUpperCase(), 140, matchY + 50);
+
+            // DETAYLI SKOR METNİ
+            // Örn: 13-11 • +25 • 326 ELO
+            let detailText = match.score;
+            if (match.eloChange !== null && match.eloChange !== undefined) {
+                const sign = match.eloChange > 0 ? '+' : '';
+                detailText += ` • ${sign}${match.eloChange}`;
+
+                if (match.newElo !== null && match.newElo !== undefined) {
+                    detailText += ` • ${match.newElo} ELO`;
+                }
+            }
+
+            ctx.fillStyle = '#ccc';
+            ctx.font = '30px "DIN Alternate", sans-serif';
+            ctx.fillText(detailText, 400, matchY + 50);
+
+            ctx.font = 'italic 20px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#666';
+            ctx.textAlign = 'right';
+            ctx.fillText(match.date, 630, matchY + 48);
+            ctx.textAlign = 'left';
+
+            matchY += 95;
+        }
+
+        const rightX = 720;
+
+        if (bestMap) {
+            ctx.fillStyle = 'rgba(255,255,255,0.03)';
+            ctx.fillRect(rightX, 100, 430, 120);
+
+            ctx.font = 'bold 20px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#666';
+            ctx.fillText('BEST MAP', rightX + 20, 140);
+
+            ctx.font = 'bold 45px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#fff';
+            ctx.fillText(bestMap.name.toUpperCase(), rightX + 20, 190);
+
+            ctx.font = '30px "DIN Alternate", sans-serif';
+            ctx.fillStyle = '#2ecc71';
+            ctx.textAlign = 'right';
+            ctx.fillText(`%${bestMap.wr} WR`, rightX + 410, 190);
+            ctx.textAlign = 'left';
+        }
+
+        if (favoriteTeammate) {
+            ctx.fillStyle = 'rgba(255,255,255,0.03)';
+            ctx.fillRect(rightX, 240, 430, 120);
+
+            ctx.font = 'bold 20px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#666';
+            ctx.fillText('FAVORITE DUO', rightX + 20, 280);
+
+            if (favoriteTeammate.avatarURL) {
+                try {
+                    const avatar = await loadImage(favoriteTeammate.avatarURL);
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(rightX + 60, 320, 35, 0, Math.PI * 2);
+                    ctx.clip();
+                    ctx.drawImage(avatar, rightX + 25, 285, 70, 70);
+                    ctx.restore();
+                } catch (e) { }
+            }
+
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 40px "Segoe UI", sans-serif';
+            ctx.fillText(favoriteTeammate.username, rightX + 110, 330);
+        }
+
+        ctx.fillStyle = 'rgba(255,255,255,0.03)';
+        ctx.fillRect(rightX, 380, 430, 120);
+
+        const w = stats.totalWins || 0;
+        const l = stats.totalLosses || 0;
+        const total = w + l;
+        const wr = total > 0 ? Math.round((w / total) * 100) : 0;
+
+        ctx.font = 'bold 20px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#666';
+        ctx.fillText('WIN RATE (SEASON)', rightX + 20, 420);
+
+        ctx.font = 'bold 50px "DIN Alternate", sans-serif';
+        ctx.fillStyle = wr >= 50 ? '#2ecc71' : '#e74c3c';
+        ctx.fillText(`%${wr}`, rightX + 20, 470);
+
+        ctx.font = '30px "DIN Alternate", sans-serif';
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'right';
+        ctx.fillText(`${w}W / ${l}L`, rightX + 410, 470);
+        ctx.textAlign = 'left';
+
+        return canvas.toBuffer();
+    },
+
     async createLeaderboardImage(users) {
         const rowHeight = 140;
         const width = 2000;
@@ -180,14 +362,12 @@ module.exports = {
         ctx.imageSmoothingQuality = 'high';
         ctx.antialias = 'subpixel';
 
-        // Arkaplan
         const bgGradient = ctx.createLinearGradient(0, 0, width, height);
         bgGradient.addColorStop(0, '#18181b');
         bgGradient.addColorStop(1, '#09090b');
         ctx.fillStyle = bgGradient;
         ctx.fillRect(0, 0, width, height);
 
-        // Header
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 80px "Segoe UI", sans-serif';
         ctx.textAlign = 'center';
@@ -205,27 +385,23 @@ module.exports = {
             const lvlInfo = getLevelInfo(stats.elo);
             const rankColor = lvlInfo.color;
 
-            // Kart Arkaplan & Glow
             ctx.fillStyle = '#27272a';
-            if (i === 0) { ctx.shadowColor = '#fbbf24'; ctx.shadowBlur = 25; ctx.fillStyle = '#3f2c0e'; } // Gold
-            else if (i === 1) { ctx.shadowColor = '#9ca3af'; ctx.shadowBlur = 15; ctx.fillStyle = '#2d3036'; } // Silver
-            else if (i === 2) { ctx.shadowColor = '#b45309'; ctx.shadowBlur = 10; ctx.fillStyle = '#2e1f13'; } // Bronze
+            if (i === 0) { ctx.shadowColor = '#fbbf24'; ctx.shadowBlur = 25; ctx.fillStyle = '#3f2c0e'; }
+            else if (i === 1) { ctx.shadowColor = '#9ca3af'; ctx.shadowBlur = 15; ctx.fillStyle = '#2d3036'; }
+            else if (i === 2) { ctx.shadowColor = '#b45309'; ctx.shadowBlur = 10; ctx.fillStyle = '#2e1f13'; }
             else { ctx.shadowBlur = 0; }
 
             ctx.fillRect(50, y, width - 100, rowHeight);
             ctx.shadowBlur = 0;
 
-            // Sol Şerit
             ctx.fillStyle = rankColor;
             ctx.fillRect(50, y, 10, rowHeight);
 
-            // Sıra No
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 60px "DIN Alternate", sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText(`#${i + 1}`, 130, y + 95);
 
-            // İsim
             ctx.textAlign = 'left';
             ctx.font = 'bold 50px "Segoe UI", sans-serif';
             let name = user.username ? user.username.toUpperCase() : 'UNKNOWN';
@@ -238,47 +414,35 @@ module.exports = {
 
             ctx.fillText(name, 350, y + 90);
 
-            // Level İkonu
             try {
                 const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
                 const icon = await loadImage(iconPath);
                 ctx.drawImage(icon, 220, y + 20, 100, 100);
             } catch (e) { }
 
-            // Stats Box
             const wins = stats.totalWins || 0;
             const losses = stats.totalLosses || 0;
             const total = wins + losses;
             const wr = total > 0 ? Math.round((wins / total) * 100) : 0;
 
-            // Sola çekilen koordinatlar (Daha dengeli)
-            // W @ 1150, L @ 1350, WR @ 1550, ELO @ 1800
-
             ctx.textAlign = 'center';
 
-            // W
             ctx.font = 'bold 45px "DIN Alternate", sans-serif';
             ctx.fillStyle = '#2ecc71';
             ctx.fillText(`${wins} W`, 1150, y + 90);
 
-            // L
             ctx.fillStyle = '#ef4444';
             ctx.fillText(`${losses} L`, 1350, y + 90);
 
-            // WR (CENTERED)
             ctx.fillStyle = wr >= 50 ? '#2ecc71' : '#e74c3c';
             ctx.fillText(`%${wr}`, 1550, y + 85);
-            // Label
             ctx.font = 'bold 22px "Segoe UI", sans-serif';
             ctx.fillStyle = '#666';
             ctx.fillText('WIN RATE', 1550, y + 125);
 
-            // ELO (CENTERED)
             ctx.font = 'bold 80px "DIN Alternate", sans-serif';
             ctx.fillStyle = '#ffffff';
-            ctx.fillText(`${stats.elo}`, 1800, y + 90); // 1880 -> 1800 (Daha sola)
-
-            // Label
+            ctx.fillText(`${stats.elo}`, 1800, y + 90);
             ctx.font = 'bold 22px "Segoe UI", sans-serif';
             ctx.fillStyle = '#666';
             ctx.fillText('ELO POINTS', 1800, y + 125);
@@ -339,10 +503,8 @@ module.exports = {
 
             try {
                 const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
-                try {
-                    const icon = await loadImage(iconPath);
-                    ctx.drawImage(icon, 250, y - 60, 100, 100);
-                } catch (e) { }
+                const icon = await loadImage(iconPath);
+                ctx.drawImage(icon, 250, y - 60, 100, 100);
             } catch (e) { }
 
             ctx.textAlign = 'left';
@@ -591,7 +753,8 @@ module.exports = {
         ctx.fillStyle = '#1a1a1a';
         ctx.fillRect(0, 0, width, height);
 
-        const teamColor = winner.team === 'A' ? '#3498DB' : '#E74C3C';
+        const winnerIsA = winner.team === 'A';
+        const teamColor = winnerIsA ? '#3498DB' : '#E74C3C'; // A: Mavi, B: Kırmızı
 
         ctx.save();
         ctx.translate(width / 2, height / 2);
@@ -622,15 +785,16 @@ module.exports = {
             ctx.arc(cx, cy, avatarSize / 2 + 10, 0, Math.PI * 2);
             ctx.fillStyle = teamColor; ctx.fill();
 
-            const avatarURL = winner.user.displayAvatarURL({ extension: 'png', size: 256 });
-            const avatar = await loadImage(avatarURL);
-
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(cx, cy, avatarSize / 2, 0, Math.PI * 2);
-            ctx.clip();
-            ctx.drawImage(avatar, cx - avatarSize / 2, cy - avatarSize / 2, avatarSize, avatarSize);
-            ctx.restore();
+            const avatarURL = winner.user.displayAvatarURL ? winner.user.displayAvatarURL({ extension: 'png', size: 256 }) : '';
+            if (avatarURL) {
+                const avatar = await loadImage(avatarURL);
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(cx, cy, avatarSize / 2, 0, Math.PI * 2);
+                ctx.clip();
+                ctx.drawImage(avatar, cx - avatarSize / 2, cy - avatarSize / 2, avatarSize, avatarSize);
+                ctx.restore();
+            }
         } catch (e) { }
 
         ctx.font = 'bold 80px "VALORANT", sans-serif';
@@ -641,7 +805,8 @@ module.exports = {
 
         ctx.font = 'bold 40px sans-serif';
         ctx.shadowBlur = 0;
-        ctx.fillText(winner.name.toUpperCase(), cx, height - 60);
+        const wName = winner.name || 'Winner';
+        ctx.fillText(wName.toUpperCase(), cx, height - 60);
 
         return canvas.toBuffer();
     }

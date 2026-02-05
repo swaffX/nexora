@@ -695,6 +695,10 @@ module.exports = {
             } catch (e) { console.error("[ELO Service] Process Error:", e); }
         }
 
+        // ELO Değişimlerini Kaydet
+        match.eloChanges = eloChanges;
+        await match.save();
+
         // --- SES KANALI TEMİZLİĞİ VE TAŞIMA ---
         try {
             const guild = interaction.guild;
