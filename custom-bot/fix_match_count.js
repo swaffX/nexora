@@ -1,11 +1,9 @@
 const mongoose = require('mongoose');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
-const { Match } = require('./src/models'); // Model path'ini tahmin etmem lazım veya require
 
 // Model path'i shared içinde normalde. Relative path ayarlayalım.
 // custom-bot root'undayız. shared ../shared
-const User = require('../shared/models/User');
 const MatchModel = require('../shared/models/Match');
 
 async function fixMatchCount() {
