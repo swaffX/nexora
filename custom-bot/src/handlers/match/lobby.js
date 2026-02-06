@@ -394,7 +394,8 @@ module.exports = {
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`match_priority_PLAYER_${match.matchId}_${winnerTeam}`).setLabel('İlk Oyuncuyu Seç').setStyle(ButtonStyle.Primary).setEmoji('👤'),
-            new ButtonBuilder().setCustomId(`match_priority_SIDE_${match.matchId}_${winnerTeam}`).setLabel('Taraf Seçme Hakkı').setStyle(ButtonStyle.Success).setEmoji('🛡️')
+            new ButtonBuilder().setCustomId(`match_priority_SIDE_${match.matchId}_${winnerTeam}`).setLabel('Taraf Seçme Hakkı').setStyle(ButtonStyle.Success).setEmoji('🛡️'),
+            new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('Maçı İptal Et').setStyle(ButtonStyle.Danger).setEmoji('🛑')
         );
 
         const payload = { embeds: [resultEmbed], components: [row] };

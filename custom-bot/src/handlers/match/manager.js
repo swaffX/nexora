@@ -108,16 +108,22 @@ module.exports = {
             console.error('Loglama Hatası:', logErr);
         }
 
-        await Match.findOneAndUpdate(
-            { matchId },
-            {
-                $set: {
-                    status: 'CANCELLED', // veya FINISHED, ama forceEnd genelde Cancelled oluyor. Logda "Sonuçlandı" dedik.
-                    finishReason: reason,
-                    createdChannelIds: []
+        if (match.status !== 'LIVE' && match.status !== 'PLAYING') {
+            // Maç başlamadıysa tamamen sil (Live gelmeden iptal)
+            await Match.deleteOne({ matchId });
+        } else {
+            // Başladıysa Status güncelle (Log kalsın)
+            await Match.findOneAndUpdate(
+                { matchId },
+                {
+                    $set: {
+                        status: 'CANCELLED',
+                        finishReason: reason,
+                        createdChannelIds: []
+                    }
                 }
-            }
-        );
+            );
+        }
         return true;
     },
 
