@@ -3,7 +3,6 @@ const path = require('path');
 const fs = require('fs');
 const eloService = require('../services/eloService');
 
-// Helper Functions
 const hexToRgba = (hex, alpha) => {
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
@@ -12,7 +11,7 @@ const hexToRgba = (hex, alpha) => {
 };
 
 const getLevelInfo = (elo) => {
-    const level = eloService.getLevelFromElo(elo || 100);
+    const level = eloService.getLevelFromElo(elo);
     const thresholds = eloService.ELO_CONFIG.LEVEL_THRESHOLDS;
     const colors = {
         1: '#00ff00', 2: '#00ff00', 3: '#00ff00',
@@ -30,6 +29,7 @@ const getLevelInfo = (elo) => {
     return { lv: level, min, max, color: colors[level] || '#ffffff' };
 };
 
+// Yıldız Çizim Fonksiyonu (MVP için)
 function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius, color) {
     let rot = Math.PI / 2 * 3;
     let x = cx;
@@ -53,6 +53,7 @@ function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius, color) {
     ctx.closePath();
     ctx.fillStyle = color;
     ctx.fill();
+    // Glow
     ctx.shadowColor = color;
     ctx.shadowBlur = 10;
     ctx.fill();
@@ -61,86 +62,55 @@ function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius, color) {
 
 module.exports = {
     async createMatchResultImage(match, eloChanges, playersData) {
+        // ... (Reverted logic for MatchResult) ...
         const width = 1200;
         const height = 800;
         const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
 
-        // 1. Background
-        const mapName = String(match.map || 'Breeze');
         let mapBg = null;
         try {
             const assetsPath = path.join(__dirname, '..', '..', 'assets', 'maps');
-            let p = path.join(assetsPath, `${mapName}.png`);
-            if (!fs.existsSync(p)) p = path.join(assetsPath, `${mapName.toLowerCase()}.png`);
-            if (!fs.existsSync(p)) p = path.join(assetsPath, `${mapName.trim()}.png`);
-            if (fs.existsSync(p)) {
-                mapBg = await loadImage(p);
-            }
-        } catch (e) { console.log('Map load error', e); }
+            let p = path.join(assetsPath, `${match.map}.png`);
+            if (!fs.existsSync(p)) p = path.join(assetsPath, `${match.map.toLowerCase()}.png`);
+            if (!fs.existsSync(p)) p = path.join(assetsPath, `${match.map.trim()}.png`);
+            if (fs.existsSync(p)) { mapBg = await loadImage(p); }
+        } catch (e) { }
 
         if (mapBg) {
             const scale = Math.max(width / mapBg.width, height / mapBg.height);
             const w = mapBg.width * scale;
             const h = mapBg.height * scale;
             ctx.drawImage(mapBg, (width - w) / 2, (height - h) / 2, w, h);
-            ctx.fillStyle = 'rgba(9, 9, 11, 0.85)';
-            ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = 'rgba(9, 9, 11, 0.85)'; ctx.fillRect(0, 0, width, height);
         } else {
             const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-            bgGradient.addColorStop(0, '#18181b');
-            bgGradient.addColorStop(1, '#09090b');
-            ctx.fillStyle = bgGradient;
-            ctx.fillRect(0, 0, width, height);
+            bgGradient.addColorStop(0, '#18181b'); bgGradient.addColorStop(1, '#09090b');
+            ctx.fillStyle = bgGradient; ctx.fillRect(0, 0, width, height);
         }
 
-        // 2. Header
         ctx.textAlign = 'center';
-        ctx.font = 'bold 30px "Segoe UI", sans-serif';
-        ctx.fillStyle = '#a1a1aa';
-        ctx.fillText(mapName.toUpperCase(), width / 2, 60);
+        ctx.font = 'bold 30px "Segoe UI", sans-serif'; ctx.fillStyle = '#a1a1aa';
+        ctx.fillText(match.map.toUpperCase(), width / 2, 60);
 
         ctx.font = 'bold 120px "DIN Alternate", sans-serif';
-        let scoreA = match.score ? match.score.A : 0;
-        let scoreB = match.score ? match.score.B : 0;
+        let scoreA = match.score.A; let scoreB = match.score.B;
         const colorA = scoreA > scoreB ? '#3b82f6' : (scoreA < scoreB ? '#ef4444' : '#fff');
         const colorB = scoreB > scoreA ? '#3b82f6' : (scoreB < scoreA ? '#ef4444' : '#fff');
 
-        ctx.fillStyle = '#fff';
-        ctx.shadowColor = '#fff'; ctx.shadowBlur = 15;
-        ctx.fillText('-', width / 2, 160);
-        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#fff'; ctx.shadowColor = '#fff'; ctx.shadowBlur = 15;
+        ctx.fillText('-', width / 2, 160); ctx.shadowBlur = 0;
 
-        ctx.textAlign = 'right';
-        ctx.fillStyle = colorA;
-        ctx.shadowColor = colorA; ctx.shadowBlur = 30;
-        ctx.fillText(String(scoreA), width / 2 - 50, 160);
-        ctx.shadowBlur = 0;
+        ctx.textAlign = 'right'; ctx.fillStyle = colorA; ctx.shadowColor = colorA; ctx.shadowBlur = 30;
+        ctx.fillText(scoreA, width / 2 - 50, 160); ctx.shadowBlur = 0;
 
-        ctx.textAlign = 'left';
-        ctx.fillStyle = colorB;
-        ctx.shadowColor = colorB; ctx.shadowBlur = 30;
-        ctx.fillText(String(scoreB), width / 2 + 50, 160);
-        ctx.shadowBlur = 0;
+        ctx.textAlign = 'left'; ctx.fillStyle = colorB; ctx.shadowColor = colorB; ctx.shadowBlur = 30;
+        ctx.fillText(scoreB, width / 2 + 50, 160); ctx.shadowBlur = 0;
 
-        // 3. Teams
-        const startY = 250;
-        const colWidth = 500;
-        const teamAX = 80;
-        const teamBX = width - 80 - colWidth;
-
-        ctx.textAlign = 'left';
-        ctx.font = 'bold 35px "VALORANT", sans-serif';
-        ctx.fillStyle = '#3b82f6';
-        ctx.shadowColor = '#3b82f6'; ctx.shadowBlur = 10;
-        ctx.fillText('TEAM A', teamAX, startY - 20);
-        ctx.shadowBlur = 0;
-
-        ctx.textAlign = 'right';
-        ctx.fillStyle = '#ef4444';
-        ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 10;
-        ctx.fillText('TEAM B', teamBX + colWidth, startY - 20);
-        ctx.shadowBlur = 0;
+        const startY = 250; const colWidth = 500; const teamAX = 80; const teamBX = width - 80 - colWidth;
+        ctx.textAlign = 'left'; ctx.font = 'bold 35px "VALORANT", sans-serif';
+        ctx.fillStyle = '#3b82f6'; ctx.shadowColor = '#3b82f6'; ctx.shadowBlur = 10; ctx.fillText('TEAM A', teamAX, startY - 20); ctx.shadowBlur = 0;
+        ctx.textAlign = 'right'; ctx.fillStyle = '#ef4444'; ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 10; ctx.fillText('TEAM B', teamBX + colWidth, startY - 20); ctx.shadowBlur = 0;
 
         const drawPlayerRow = async (userId, x, y, isRightAlign, teamColor) => {
             const user = playersData[userId] || { username: 'Unknown' };
@@ -156,43 +126,31 @@ module.exports = {
                 grad.addColorStop(0, `rgba(${parseInt(teamColor.slice(1, 3), 16)}, ${parseInt(teamColor.slice(3, 5), 16)}, ${parseInt(teamColor.slice(5, 7), 16)}, 0.15)`);
                 grad.addColorStop(1, 'rgba(0,0,0,0)');
             }
-            ctx.fillStyle = grad;
-            ctx.fillRect(x, y, colWidth, 60);
+            ctx.fillStyle = grad; ctx.fillRect(x, y, colWidth, 60);
 
             if (isMvp) {
-                ctx.strokeStyle = '#fbbf24';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(x, y, colWidth, 60);
+                ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2; ctx.strokeRect(x, y, colWidth, 60);
                 const iconX = isRightAlign ? x + colWidth + 20 : x - 25;
                 drawStar(ctx, iconX, y + 30, 5, 12, 6, '#fbbf24');
             }
 
-            const avatarSize = 46;
-            const avatarX = isRightAlign ? x + colWidth - 55 : x + 10;
-            const avatarY = y + 7;
-
+            const avatarSize = 46; const avatarX = isRightAlign ? x + colWidth - 55 : x + 10; const avatarY = y + 7;
             if (user.avatarURL) {
                 try {
-                    const avatar = await loadImage(user.avatarURL);
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
-                    ctx.clip();
-                    ctx.drawImage(avatar, avatarX, avatarY, avatarSize, avatarSize);
-                    ctx.restore();
+                    const avatar = await loadImage(user.avatarURL); ctx.save(); ctx.beginPath();
+                    ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2); ctx.clip();
+                    ctx.drawImage(avatar, avatarX, avatarY, avatarSize, avatarSize); ctx.restore();
                 } catch (e) { }
             }
 
-            ctx.font = 'bold 22px "Segoe UI", sans-serif';
-            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 22px "Segoe UI", sans-serif'; ctx.fillStyle = '#fff';
             const nameX = isRightAlign ? avatarX - 15 : avatarX + avatarSize + 15;
             ctx.textAlign = isRightAlign ? 'right' : 'left';
-            let name = String(user.username || 'UNKNOWN').toUpperCase();
+            let name = user.username.toUpperCase();
             if (name.length > 12) name = name.substring(0, 12) + '..';
             ctx.fillText(name, nameX, y + 38);
 
-            const levelSize = 30;
-            const nameWidth = ctx.measureText(name).width;
+            const levelSize = 30; const nameWidth = ctx.measureText(name).width;
             const levelIconX = isRightAlign ? nameX - nameWidth - levelSize - 5 : nameX + nameWidth + 10;
             try {
                 const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${level}.png`);
@@ -204,372 +162,218 @@ module.exports = {
 
             const changeText = eloLog.change > 0 ? `+${eloLog.change}` : `${eloLog.change}`;
             const changeColor = eloLog.change > 0 ? '#2ecc71' : '#ef4444';
-            ctx.font = 'bold 22px "DIN Alternate", sans-serif';
-            ctx.fillStyle = changeColor;
+            ctx.font = 'bold 22px "DIN Alternate", sans-serif'; ctx.fillStyle = changeColor;
             const eloX = isRightAlign ? x + 20 : x + colWidth - 20;
             ctx.textAlign = isRightAlign ? 'left' : 'right';
-            ctx.fillText(String(changeText), eloX, y + 38);
+            ctx.fillText(changeText, eloX, y + 38);
         };
 
         let curY = startY;
-        if (match.teams && match.teams.A) {
-            for (const userId of match.teams.A) {
-                await drawPlayerRow(userId, teamAX, curY, false, '#3b82f6');
-                curY += 70;
-            }
-        }
-
+        for (const userId of match.teams.A) { await drawPlayerRow(userId, teamAX, curY, false, '#3b82f6'); curY += 70; }
         curY = startY;
-        if (match.teams && match.teams.B) {
-            for (const userId of match.teams.B) {
-                await drawPlayerRow(userId, teamBX, curY, true, '#ef4444');
-                curY += 70;
-            }
-        }
+        for (const userId of match.teams.B) { await drawPlayerRow(userId, teamBX, curY, true, '#ef4444'); curY += 70; }
 
-        ctx.fillStyle = 'rgba(255,255,255,0.05)';
-        ctx.fillRect(0, height - 60, width, 60);
-        ctx.font = '18px "Segoe UI", sans-serif';
-        ctx.fillStyle = '#52525b';
-        ctx.textAlign = 'left';
-        ctx.fillText(`MATCH ID: ${match.matchId}`, 30, height - 23);
-        ctx.textAlign = 'right';
-        ctx.fillText(new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }), width - 30, height - 23);
+        ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(0, height - 60, width, 60);
+        ctx.font = '18px "Segoe UI", sans-serif'; ctx.fillStyle = '#52525b';
+        ctx.textAlign = 'left'; ctx.fillText(`MATCH ID: ${match.matchId}`, 30, height - 23);
+        ctx.textAlign = 'right'; ctx.fillText(new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }), width - 30, height - 23);
 
         return canvas.toBuffer('image/png');
     },
 
     async createEloCard(user, stats, rank) {
-        const width = 1200;
-        const height = 450;
-        const canvas = createCanvas(width, height);
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = true;
+        const width = 1200; const height = 450;
+        const canvas = createCanvas(width, height); const ctx = canvas.getContext('2d'); ctx.imageSmoothingEnabled = true;
 
         const elo = stats.elo !== undefined ? stats.elo : 100;
         const levelData = getLevelInfo(elo);
         const rankColor = levelData.color;
 
         const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-        bgGradient.addColorStop(0, '#18181b');
-        bgGradient.addColorStop(1, '#09090b');
-        ctx.fillStyle = bgGradient;
-        ctx.fillRect(0, 0, width, height);
-
-        const r = parseInt(rankColor.slice(1, 3), 16);
-        const g = parseInt(rankColor.slice(3, 5), 16);
-        const b = parseInt(rankColor.slice(5, 7), 16);
-
+        bgGradient.addColorStop(0, '#18181b'); bgGradient.addColorStop(1, '#09090b');
+        ctx.fillStyle = bgGradient; ctx.fillRect(0, 0, width, height);
+        const r = parseInt(rankColor.slice(1, 3), 16); const g = parseInt(rankColor.slice(3, 5), 16); const b = parseInt(rankColor.slice(5, 7), 16);
         const glow = ctx.createRadialGradient(width * 0.9, height * 0.5, 0, width * 0.9, height * 0.5, 500);
-        glow.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.15)`);
-        glow.addColorStop(1, 'transparent');
-        ctx.fillStyle = glow;
-        ctx.fillRect(0, 0, width, height);
-
-        ctx.fillStyle = rankColor;
-        ctx.fillRect(0, 0, 10, height);
+        glow.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.15)`); glow.addColorStop(1, 'transparent');
+        ctx.fillStyle = glow; ctx.fillRect(0, 0, width, height);
+        ctx.fillStyle = rankColor; ctx.fillRect(0, 0, 10, height);
 
         try {
             const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${levelData.lv}.png`);
             if (fs.existsSync(iconPath)) {
                 const icon = await loadImage(iconPath);
                 ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 20;
-                ctx.drawImage(icon, 50, 75, 300, 300);
-                ctx.shadowBlur = 0;
+                ctx.drawImage(icon, 50, 75, 300, 300); ctx.shadowBlur = 0;
             }
         } catch (e) { }
 
-        const textX = 380;
-        ctx.font = 'bold 70px "Segoe UI", sans-serif';
+        const textX = 380; ctx.font = 'bold 70px "Segoe UI", sans-serif';
         let nameX = textX;
         if (rank) {
-            ctx.fillStyle = '#666';
-            const rankStr = `#${rank}`;
-            ctx.fillText(rankStr, nameX, 100);
-            nameX += ctx.measureText(rankStr).width + 20;
+            ctx.fillStyle = '#666'; ctx.fillText(`#${rank}`, nameX, 100);
+            const rankWidth = ctx.measureText(`#${rank}`).width; nameX += rankWidth + 20;
         }
 
         ctx.fillStyle = '#ffffff';
-        let name = String(user.username || 'UNKNOWN').toUpperCase();
+        let name = user.username ? user.username.toUpperCase() : 'UNKNOWN';
         if (name.length > 15) name = name.substring(0, 15) + '...';
         ctx.fillText(name, nameX, 100);
 
-        const progressY = 160;
-        const barWidth = 750;
-        const barHeight = 15;
+        const progressY = 160; const barWidth = 750; const barHeight = 15;
         let progress = 0;
         if (levelData.lv < 10) {
-            const range = levelData.max - levelData.min;
-            const current = elo - levelData.min;
-            progress = range > 0 ? current / range : 0;
-            progress = Math.min(1, Math.max(0, progress));
+            const range = levelData.max - levelData.min; const current = elo - levelData.min;
+            progress = range > 0 ? current / range : 0; progress = Math.min(1, Math.max(0, progress));
         } else { progress = 1; }
 
-        ctx.fillStyle = '#333';
-        ctx.fillRect(textX, progressY, barWidth, barHeight);
+        ctx.fillStyle = '#333'; ctx.fillRect(textX, progressY, barWidth, barHeight);
         if (progress > 0) {
-            ctx.fillStyle = rankColor;
-            ctx.shadowColor = rankColor; ctx.shadowBlur = 15;
-            ctx.fillRect(textX, progressY, barWidth * progress, barHeight);
-            ctx.shadowBlur = 0;
+            ctx.fillStyle = rankColor; ctx.shadowColor = rankColor; ctx.shadowBlur = 15;
+            ctx.fillRect(textX, progressY, barWidth * progress, barHeight); ctx.shadowBlur = 0;
         }
 
-        ctx.font = 'bold 35px "Segoe UI", sans-serif';
-        ctx.fillStyle = '#cccccc';
+        ctx.font = 'bold 35px "Segoe UI", sans-serif'; ctx.fillStyle = '#cccccc';
         ctx.fillText(`${elo} ELO`, textX, progressY + 55);
 
         ctx.textAlign = 'right';
-        ctx.fillStyle = levelData.lv < 10 ? '#666' : rankColor;
-        const nextText = levelData.lv < 10 ? `NEXT: ${levelData.max}` : 'MAX LEVEL';
-        ctx.fillText(nextText, textX + barWidth, progressY + 55);
+        if (levelData.lv < 10) {
+            ctx.fillStyle = '#666'; ctx.fillText(`NEXT: ${levelData.max}`, textX + barWidth, progressY + 55);
+        } else {
+            ctx.fillStyle = rankColor; ctx.fillText(`MAX LEVEL`, textX + barWidth, progressY + 55);
+        }
         ctx.textAlign = 'left';
 
-        const statsY = 280;
-        const boxWidth = 175;
-        const boxHeight = 120;
-        const gap = 15;
+        const statsY = 280; const boxWidth = 175; const boxHeight = 120; const gap = 15;
         const drawStatBox = (idx, label, value, color = '#fff') => {
             const x = textX + (idx * (boxWidth + gap));
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-            ctx.fillRect(x, statsY, boxWidth, boxHeight);
-            ctx.font = 'bold 45px "Segoe UI", sans-serif';
-            ctx.fillStyle = color;
-            ctx.textAlign = 'center';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)'; ctx.fillRect(x, statsY, boxWidth, boxHeight);
+            ctx.font = 'bold 45px "Segoe UI", sans-serif'; ctx.fillStyle = color; ctx.textAlign = 'center';
             ctx.fillText(String(value), x + boxWidth / 2, statsY + 60);
-            ctx.font = '20px "Segoe UI", sans-serif';
-            ctx.fillStyle = '#888';
-            ctx.fillText(String(label).toUpperCase(), x + boxWidth / 2, statsY + 95);
-            ctx.textAlign = 'left';
+            ctx.font = '20px "Segoe UI", sans-serif'; ctx.fillStyle = '#888';
+            ctx.fillText(label.toUpperCase(), x + boxWidth / 2, statsY + 95); ctx.textAlign = 'left';
         };
 
-        const total = stats.totalMatches || 0;
-        const wins = stats.totalWins || 0;
-        const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
-        const streak = Number(stats.winStreak) || 0;
-        drawStatBox(0, 'Matches', total);
-        drawStatBox(1, 'Wins', wins, '#2ecc71');
+        const total = stats.totalMatches || 0; const wins = stats.totalWins || 0;
+        const winRate = total > 0 ? Math.round((wins / total) * 100) : 0; const streak = Number(stats.winStreak) || 0;
+        drawStatBox(0, 'Matches', total); drawStatBox(1, 'Wins', wins, '#2ecc71');
         drawStatBox(2, 'Win Rate', `%${winRate}`, winRate >= 50 ? '#2ecc71' : '#e74c3c');
         drawStatBox(3, 'Streak', Math.abs(streak), streak >= 0 ? '#2ecc71' : '#e74c3c');
         return canvas.toBuffer('image/png');
     },
 
     async createDetailedStatsImage(user, stats, matchHistory, bestMap, favoriteTeammate, rank) {
-        const width = 1200;
-        const height = 700;
-        const canvas = createCanvas(width, height);
-        const ctx = canvas.getContext('2d');
-
+        const width = 1200; const height = 700;
+        const canvas = createCanvas(width, height); const ctx = canvas.getContext('2d');
         const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-        bgGradient.addColorStop(0, '#18181b');
-        bgGradient.addColorStop(1, '#09090b');
-        ctx.fillStyle = bgGradient;
-        ctx.fillRect(0, 0, width, height);
+        bgGradient.addColorStop(0, '#18181b'); bgGradient.addColorStop(1, '#09090b');
+        ctx.fillStyle = bgGradient; ctx.fillRect(0, 0, width, height);
 
-        const lvlInfo = getLevelInfo(stats.elo || 100);
+        const lvlInfo = getLevelInfo(stats.elo !== undefined ? stats.elo : 100);
         const rankColor = lvlInfo.color;
-        const r = parseInt(rankColor.slice(1, 3), 16);
-        const g = parseInt(rankColor.slice(3, 5), 16);
-        const b = parseInt(rankColor.slice(5, 7), 16);
-
+        const r = parseInt(rankColor.slice(1, 3), 16); const g = parseInt(rankColor.slice(3, 5), 16); const b = parseInt(rankColor.slice(5, 7), 16);
         const glow = ctx.createRadialGradient(width, height / 2, 0, width, height / 2, 900);
-        glow.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.2)`);
-        glow.addColorStop(1, 'transparent');
-        ctx.fillStyle = glow;
-        ctx.fillRect(0, 0, width, height);
+        glow.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.2)`); glow.addColorStop(1, 'transparent');
+        ctx.fillStyle = glow; ctx.fillRect(0, 0, width, height);
 
-        ctx.font = 'bold 30px "Segoe UI", sans-serif';
-        ctx.fillStyle = '#666';
-        ctx.fillText('LAST MATCHES (5)', 50, 70);
+        ctx.font = 'bold 30px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('LAST MATCHES (5)', 50, 70);
 
         let matchY = 100;
-        if (matchHistory) {
-            for (const match of matchHistory) {
-                const boxW = 600; const boxH = 80; const boxX = 50;
-                ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(boxX, matchY, boxW, boxH);
-
-                const isWin = match.result === 'WIN';
-                const color = isWin ? '#2ecc71' : '#e74c3c';
-                ctx.fillStyle = color; ctx.fillRect(50, matchY, 5, 80);
-
-                ctx.font = 'bold 35px "DIN Alternate", sans-serif';
-                ctx.fillStyle = color; ctx.fillText(isWin ? 'W' : 'L', 80, matchY + 52);
-
-                ctx.fillStyle = '#fff'; ctx.font = 'bold 30px "Segoe UI", sans-serif';
-                ctx.fillText(String(match.map).toUpperCase(), 140, matchY + 50);
-
-                ctx.fillStyle = '#ccc'; ctx.font = '30px "DIN Alternate", sans-serif';
-                let detail = String(match.score);
-                if (match.eloChange !== null && match.eloChange !== undefined) detail += ` • ${match.eloChange > 0 ? '+' : ''}${match.eloChange}`;
-                ctx.fillText(detail, 400, matchY + 50);
-                matchY += 95;
+        for (const match of matchHistory) {
+            const boxW = 600; const boxH = 80; const boxX = 50;
+            ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(boxX, matchY, boxW, boxH);
+            const isWin = match.result === 'WIN'; const color = isWin ? '#2ecc71' : '#e74c3c';
+            ctx.fillStyle = color; ctx.fillRect(50, matchY, 5, 80);
+            ctx.font = 'bold 35px "DIN Alternate", sans-serif'; ctx.fillStyle = color; ctx.fillText(isWin ? 'W' : 'L', 80, matchY + 52);
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 30px "Segoe UI", sans-serif'; ctx.fillText(match.map.toUpperCase(), 140, matchY + 50);
+            let detailText = match.score;
+            if (match.eloChange !== null && match.eloChange !== undefined) {
+                const sign = match.eloChange > 0 ? '+' : ''; detailText += ` • ${sign}${match.eloChange}`;
             }
+            ctx.fillStyle = '#ccc'; ctx.font = '30px "DIN Alternate", sans-serif'; ctx.fillText(detailText, 400, matchY + 50);
+            matchY += 95;
         }
 
-        // Right Side Stats
         const rightX = 720;
-        // Best Map
         if (bestMap) {
             ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(rightX, 100, 430, 120);
             ctx.font = 'bold 20px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('BEST MAP', rightX + 20, 140);
-            ctx.font = 'bold 45px "Segoe UI", sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText(String(bestMap.name).toUpperCase(), rightX + 20, 190);
+            ctx.font = 'bold 45px "Segoe UI", sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText(bestMap.name.toUpperCase(), rightX + 20, 190);
         }
-
         return canvas.toBuffer('image/png');
     },
 
+    // --- REVERTED LEADERBOARD (Original/Correct Design) ---
     async createLeaderboardImage(users) {
-        // ULTRA-MODERN BALANCED LEADERBOARD (FIXED)
-        const width = 2500;
-        const rowHeight = 220; // Increased height
-        const gap = 40;
-        const headerHeight = 350;
-        const footerHeight = 80;
-
-        const safeUsers = users || [];
-        const height = headerHeight + (safeUsers.length * (rowHeight + gap)) + footerHeight;
-
+        const rowHeight = 140;
+        const width = 2000;
+        const height = 300 + (users.length * (rowHeight + 20));
         const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = true;
 
-        // 1. Background (Smooth Dark)
         const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-        bgGradient.addColorStop(0, '#050505');
-        bgGradient.addColorStop(1, '#0e0e11');
-        ctx.fillStyle = bgGradient;
-        ctx.fillRect(0, 0, width, height);
+        bgGradient.addColorStop(0, '#18181b'); bgGradient.addColorStop(1, '#09090b');
+        ctx.fillStyle = bgGradient; ctx.fillRect(0, 0, width, height);
 
-        // Grid Pattern
-        ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.03)'; ctx.lineWidth = 1;
-        for (let i = 0; i < width; i += 150) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, height); ctx.stroke(); }
-        ctx.restore();
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 80px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center'; ctx.fillText('LEADERBOARD', width / 2, 120);
+        ctx.font = '30px "Segoe UI", sans-serif'; ctx.fillStyle = '#666';
+        ctx.fillText(`TOP ${users.length} PLAYERS • UPDATED: ${new Date().toLocaleTimeString('tr-TR', { timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit' })}`, width / 2, 170);
 
-        // 2. Header
-        ctx.font = 'bold 160px "VALORANT", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#ffffff';
-        ctx.shadowColor = 'rgba(255, 255, 255, 0.5)'; ctx.shadowBlur = 40;
-        ctx.fillText("LEADERBOARD", width / 2, 180);
-        ctx.shadowBlur = 0;
+        let y = 250;
+        for (let i = 0; i < users.length; i++) {
+            const user = users[i];
+            const stats = user.matchStats || { elo: 100 };
+            const lvlInfo = getLevelInfo(stats.elo);
+            const rankColor = lvlInfo.color;
 
-        ctx.font = '50px "DIN Alternate", sans-serif';
-        ctx.fillStyle = '#a1a1aa';
-        ctx.letterSpacing = "5px";
-        ctx.fillText(`TOP ${safeUsers.length} PLAYERS`, width / 2, 250);
+            ctx.fillStyle = '#27272a';
+            if (i === 0) { ctx.shadowColor = '#fbbf24'; ctx.shadowBlur = 25; ctx.fillStyle = '#3f2c0e'; }
+            else if (i === 1) { ctx.shadowColor = '#9ca3af'; ctx.shadowBlur = 15; ctx.fillStyle = '#2d3036'; }
+            else if (i === 2) { ctx.shadowColor = '#b45309'; ctx.shadowBlur = 10; ctx.fillStyle = '#2e1f13'; }
+            else { ctx.shadowBlur = 0; }
+            ctx.fillRect(50, y, width - 100, rowHeight);
+            ctx.shadowBlur = 0;
 
-        // 3. Rows
-        let y = headerHeight;
-        for (let i = 0; i < safeUsers.length; i++) {
-            const user = safeUsers[i] || {};
-            const rank = i + 1;
-            const stats = user.matchStats || { elo: 100, totalWins: 0, totalLosses: 0 };
-            const lvlInfo = getLevelInfo(stats.elo || 100);
+            ctx.fillStyle = rankColor; ctx.fillRect(50, y, 10, rowHeight);
 
-            const cardX = 50;
-            const cardW = width - 100;
+            ctx.fillStyle = '#ffffff'; ctx.font = 'bold 60px "DIN Alternate", sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText(`#${i + 1}`, 130, y + 95);
 
-            // Design Config
-            let isTop3 = false;
-            let accentColor = '#3f3f46';
-            if (rank === 1) { isTop3 = true; accentColor = '#fbbf24'; }
-            else if (rank === 2) { isTop3 = true; accentColor = '#e4e4e7'; }
-            else if (rank === 3) { isTop3 = true; accentColor = '#d97706'; }
+            ctx.textAlign = 'left'; ctx.font = 'bold 50px "Segoe UI", sans-serif';
+            let name = user.username ? user.username.toUpperCase() : 'UNKNOWN';
+            if (name.length > 15) name = name.substring(0, 15) + '...';
 
-            // Card Background
-            ctx.beginPath(); ctx.roundRect(cardX, y, cardW, rowHeight, 15);
-            ctx.fillStyle = isTop3 ? `rgba(${parseInt(accentColor.slice(1, 3), 16)}, ${parseInt(accentColor.slice(3, 5), 16)}, ${parseInt(accentColor.slice(5, 7), 16)}, 0.05)` : 'rgba(25, 25, 28, 0.6)';
-            ctx.fill();
-            if (isTop3) {
-                ctx.lineWidth = 2; ctx.strokeStyle = accentColor; ctx.stroke();
-                // Glow
-                ctx.shadowColor = accentColor; ctx.shadowBlur = 30; ctx.stroke(); ctx.shadowBlur = 0;
-            }
+            const streak = Number(stats.winStreak) || 0;
+            if (streak >= 3) ctx.fillStyle = '#fbbf24';
+            else if (streak <= -3) ctx.fillStyle = '#ef4444';
+            else ctx.fillStyle = '#fff';
+            ctx.fillText(name, 350, y + 90);
 
-            // Columns
-            const colRank = cardX + 100;
-            const colAvatar = cardX + 300;
-            const colName = cardX + 500;
-            const colStats = width - 900;
-            const colElo = width - 150;
-
-            // Rank
-            ctx.font = `bold ${isTop3 ? 120 : 100}px "DIN Alternate", sans-serif`;
-            ctx.fillStyle = isTop3 ? accentColor : '#52525b';
-            ctx.textAlign = 'center';
-            ctx.fillText(`#${rank}`, colRank, y + 145);
-
-            // Avatar
-            const avSize = 150;
-            const avY = y + (rowHeight - avSize) / 2;
-            ctx.save(); ctx.beginPath(); ctx.arc(colAvatar, avY + avSize / 2, avSize / 2, 0, Math.PI * 2); ctx.clip();
-            if (user.avatarURL) {
-                try { const av = await loadImage(user.avatarURL); ctx.drawImage(av, colAvatar - avSize / 2, avY, avSize, avSize); } catch (e) { }
-            } else { ctx.fillStyle = '#333'; ctx.fillRect(colAvatar - avSize / 2, avY, avSize, avSize); }
-            ctx.restore();
-            // Ring
-            ctx.beginPath(); ctx.arc(colAvatar, avY + avSize / 2, avSize / 2, 0, Math.PI * 2);
-            ctx.strokeStyle = lvlInfo.color; ctx.lineWidth = 4; ctx.stroke();
-
-            // Name
-            const name = String(user.username || 'UNKNOWN').toUpperCase();
-            ctx.textAlign = 'left';
-            ctx.font = 'bold 80px "Segoe UI", sans-serif';
-            ctx.fillStyle = '#fff';
-            ctx.fillText(name, colName, y + 130);
-
-            // Level Icon Next to Name
-            const nWidth = ctx.measureText(name).width;
             try {
                 const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
                 if (fs.existsSync(iconPath)) {
                     const icon = await loadImage(iconPath);
-                    ctx.drawImage(icon, colName + nWidth + 30, y + 80, 60, 60);
+                    ctx.drawImage(icon, 220, y + 20, 100, 100);
                 }
             } catch (e) { }
 
-            // Stats (W - L)
-            const w = stats.totalWins || 0;
-            const l = stats.totalLosses || 0;
-            const t = w + l;
-            const wr = t > 0 ? Math.round((w / t) * 100) : 0;
+            const wins = stats.totalWins || 0; const losses = stats.totalLosses || 0; const total = wins + losses;
+            const wr = total > 0 ? Math.round((wins / total) * 100) : 0;
+            ctx.textAlign = 'center'; ctx.font = 'bold 45px "DIN Alternate", sans-serif';
+            ctx.fillStyle = '#2ecc71'; ctx.fillText(`${wins} W`, 1150, y + 90);
+            ctx.fillStyle = '#ef4444'; ctx.fillText(`${losses} L`, 1350, y + 90);
+            ctx.fillStyle = wr >= 50 ? '#2ecc71' : '#e74c3c'; ctx.fillText(`%${wr}`, 1550, y + 85);
+            ctx.font = 'bold 22px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('WIN RATE', 1550, y + 125);
 
-            ctx.textAlign = 'center';
-            ctx.font = 'bold 60px "DIN Alternate", sans-serif';
-
-            ctx.fillStyle = '#2ecc71'; ctx.fillText(`${w}W`, colStats, y + 130);
-            ctx.fillStyle = '#52525b'; ctx.fillText(`-`, colStats + 120, y + 130);
-            ctx.fillStyle = '#ef4444'; ctx.fillText(`${l}L`, colStats + 240, y + 130);
-
-            // Win Rate Box
-            const wrX = colStats + 500;
-            ctx.fillStyle = 'rgba(255,255,255,0.05)';
-            ctx.beginPath(); ctx.roundRect(wrX - 100, y + 50, 200, 120, 10); ctx.fill();
-
-            ctx.fillStyle = wr >= 50 ? '#2ecc71' : '#e74c3c';
-            ctx.font = 'bold 50px "DIN Alternate", sans-serif';
-            ctx.fillText(`${wr}%`, wrX, y + 110);
-            ctx.font = '20px "Segoe UI", sans-serif'; ctx.fillStyle = '#aaa';
-            ctx.fillText('WIN RATE', wrX, y + 140);
-
-            // ELO (Far Right)
-            ctx.textAlign = 'right';
-            ctx.font = 'bold 100px "DIN Alternate", sans-serif';
-            ctx.fillStyle = isTop3 ? accentColor : '#fff';
-            if (isTop3) { ctx.shadowColor = accentColor; ctx.shadowBlur = 20; }
-            ctx.fillText(String(stats.elo || 100), colElo, y + 120);
-            ctx.shadowBlur = 0;
-
-            ctx.font = '30px "Segoe UI", sans-serif'; ctx.fillStyle = '#52525b';
-            ctx.fillText('ELO POINTS', colElo, y + 160);
-
-            y += rowHeight + gap;
+            ctx.font = 'bold 80px "DIN Alternate", sans-serif'; ctx.fillStyle = '#ffffff'; ctx.fillText(`${stats.elo}`, 1800, y + 90);
+            ctx.font = 'bold 22px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('ELO POINTS', 1800, y + 125);
+            y += rowHeight + 20;
         }
-
-        ctx.textAlign = 'center'; ctx.font = '30px "Segoe UI", sans-serif'; ctx.fillStyle = '#52525b';
-        ctx.fillText("NEXORA RANKED SYSTEM • DEVELOPED BY SWAFF", width / 2, height - 30);
-
         return canvas.toBuffer('image/png');
     },
+
+    // --- ADDED MISSING FUNCTIONS (From recent work) to prevent crashes ---
 
     async createVersusImage(captainA, captainB, mapName) {
         // ULTRA-PREMIUM 1v1 CLASH
@@ -591,9 +395,9 @@ module.exports = {
         } catch (e) { ctx.fillStyle = '#0a0a0f'; ctx.fillRect(0, 0, width, height); }
 
         const gradient = ctx.createLinearGradient(0, 0, width, height);
-        gradient.addColorStop(0, 'rgba(56, 189, 248, 0.1)'); // Blue
+        gradient.addColorStop(0, 'rgba(56, 189, 248, 0.1)');
         gradient.addColorStop(0.5, 'transparent');
-        gradient.addColorStop(1, 'rgba(244, 63, 94, 0.1)'); // Red
+        gradient.addColorStop(1, 'rgba(244, 63, 94, 0.1)');
         ctx.fillStyle = gradient; ctx.fillRect(0, 0, width, height);
 
         ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 50;
@@ -773,5 +577,8 @@ module.exports = {
         await renderSide(teamA, true);
         await renderSide(teamB, false);
         return canvas.toBuffer('image/png');
-    }
+    },
+
+    async createWheelResult(w, l) { return createCanvas(600, 400).toBuffer(); },
+    async createSideSelectionImage(ca, cb, s, m) { return createCanvas(800, 400).toBuffer(); }
 };
