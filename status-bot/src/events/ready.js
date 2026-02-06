@@ -12,7 +12,6 @@ module.exports = {
     async execute(client) {
         logger.success(`📈 Nexora Status Bot Devrede: ${client.user.tag}`);
 
-        // 1. Durum Ayarı (Streaming)
         // 1. Durum Ayarı (Dinamik - Yayınlıyor)
         const activities = [
             { name: 'discord.gg/nexorahub', type: 1, url: 'https://www.twitch.tv/swaffval' },
@@ -76,7 +75,7 @@ module.exports = {
                             messages: topMsg.map(u => ({ userId: u.odasi, totalMessages: u.totalMessages })),
                             voice: topVoice.map(u => ({ userId: u.odasi, totalVoiceMinutes: u.totalVoiceMinutes })),
                             stats: {
-                                trackedUsers: allUsers.length,
+                                trackedUsers: guild.memberCount, // DÜZELTME: Toplam sunucu üyesi
                                 totalMessages: totalMsgCount,
                                 totalVoice: totalVoiceCount
                             }
