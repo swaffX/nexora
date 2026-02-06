@@ -732,7 +732,7 @@ module.exports = {
             ctx.shadowBlur = 0;
 
             // 2. Avatar
-            const avSize = 140; // Bigger Avatar
+            const avSize = 130; // Slightly smaller
             const avX = cardX + 250;
             const avY = y + (rowHeight - avSize) / 2;
 
@@ -752,19 +752,21 @@ module.exports = {
 
             // 3. Username
             ctx.textAlign = 'left';
-            ctx.font = 'bold 80px "Segoe UI", sans-serif';
+            ctx.font = 'bold 70px "Segoe UI", sans-serif'; // Reduced from 80
             ctx.fillStyle = '#ffffff';
             let name = user.username ? user.username.toUpperCase() : 'UNKNOWN';
-            if (name.length > 14) name = name.substring(0, 14) + '..';
 
-            const nameX = avX + avSize + 50;
+            // Truncate logic to prevent overlap
+            if (name.length > 12) name = name.substring(0, 12) + '..';
+
+            const nameX = avX + avSize + 40;
             const nameY = y + 130;
             ctx.fillText(name, nameX, nameY);
 
             // 4. Level Icon
             const nameW = ctx.measureText(name).width;
-            const iconSize = 90;
-            const iconX = nameX + nameW + 40;
+            const iconSize = 80; // Reduced from 90
+            const iconX = nameX + nameW + 30;
 
             try {
                 const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
@@ -775,7 +777,8 @@ module.exports = {
             } catch (e) { }
 
             // 5. Stats Section (Floating Right)
-            const statsStart = width - 1000; // Moved significantly left to prevent overlap
+            // Restore previous logic but with better spacing
+            const statsStart = width - 950;
 
             // Win/Loss/WR Container
             const w = stats.totalWins || 0;
@@ -783,25 +786,25 @@ module.exports = {
             const t = w + l;
             const wr = t > 0 ? Math.round((w / t) * 100) : 0;
 
-            ctx.font = 'bold 70px "DIN Alternate", sans-serif'; // Slightly larger
+            ctx.font = 'bold 50px "DIN Alternate", sans-serif'; // Restored to 50px (was 70)
             ctx.textAlign = 'center';
 
             // Wins
             ctx.fillStyle = '#2ecc71';
-            ctx.fillText(`${w} W`, statsStart, y + 125);
+            ctx.fillText(`${w} W`, statsStart, y + 120);
 
-            // Losses (increased gap)
+            // Losses
             ctx.fillStyle = '#ef4444';
-            ctx.fillText(`${l} L`, statsStart + 220, y + 125);
+            ctx.fillText(`${l} L`, statsStart + 160, y + 120);
 
-            // WR (increased gap)
+            // WR
             ctx.textAlign = 'right';
             ctx.fillStyle = wr >= 50 ? '#2ecc71' : '#e74c3c';
-            ctx.fillText(`${wr}%`, statsStart + 580, y + 125);
+            ctx.fillText(`${wr}%`, statsStart + 480, y + 120);
 
-            ctx.font = 'bold 28px "Segoe UI", sans-serif';
+            ctx.font = 'bold 24px "Segoe UI", sans-serif';
             ctx.fillStyle = '#71717a';
-            ctx.fillText("WIN RATE", statsStart + 580, y + 165);
+            ctx.fillText("WIN RATE", statsStart + 480, y + 160);
 
             // 6. ELO (Far Right)
             const eloX = width - 100;
