@@ -775,7 +775,7 @@ module.exports = {
             } catch (e) { }
 
             // 5. Stats Section (Floating Right)
-            const statsStart = width - 800; // Moved left (was 650)
+            const statsStart = width - 1000; // Moved significantly left to prevent overlap
 
             // Win/Loss/WR Container
             const w = stats.totalWins || 0;
@@ -783,25 +783,25 @@ module.exports = {
             const t = w + l;
             const wr = t > 0 ? Math.round((w / t) * 100) : 0;
 
-            ctx.font = 'bold 65px "DIN Alternate", sans-serif'; // Increased size (was 55)
+            ctx.font = 'bold 70px "DIN Alternate", sans-serif'; // Slightly larger
             ctx.textAlign = 'center';
 
             // Wins
             ctx.fillStyle = '#2ecc71';
             ctx.fillText(`${w} W`, statsStart, y + 125);
 
-            // Losses
+            // Losses (increased gap)
             ctx.fillStyle = '#ef4444';
-            ctx.fillText(`${l} L`, statsStart + 180, y + 125);
+            ctx.fillText(`${l} L`, statsStart + 220, y + 125);
 
-            // WR
+            // WR (increased gap)
             ctx.textAlign = 'right';
             ctx.fillStyle = wr >= 50 ? '#2ecc71' : '#e74c3c';
-            ctx.fillText(`${wr}%`, statsStart + 450, y + 125);
+            ctx.fillText(`${wr}%`, statsStart + 580, y + 125);
 
-            ctx.font = 'bold 26px "Segoe UI", sans-serif';
+            ctx.font = 'bold 28px "Segoe UI", sans-serif';
             ctx.fillStyle = '#71717a';
-            ctx.fillText("WIN RATE", statsStart + 450, y + 165);
+            ctx.fillText("WIN RATE", statsStart + 580, y + 165);
 
             // 6. ELO (Far Right)
             const eloX = width - 100;
