@@ -95,18 +95,13 @@ module.exports = {
             const usersWithNames = [];
             for (const doc of finalTopUsers) {
                 let username = `Player ${doc.odasi.substring(0, 4)}`;
-                let avatarURL = null;
                 try {
                     const user = await client.users.fetch(doc.odasi).catch(() => null);
-                    if (user) {
-                        username = user.username;
-                        avatarURL = user.displayAvatarURL({ extension: 'png', size: 128, forceStatic: true });
-                    }
+                    if (user) username = user.username;
                 } catch (e) { }
 
                 usersWithNames.push({
                     username: username || 'Unknown',
-                    avatarURL: avatarURL,
                     odasi: doc.odasi,
                     matchStats: doc.matchStats
                 });
