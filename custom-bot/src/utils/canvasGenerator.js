@@ -498,7 +498,6 @@ module.exports = {
             if (match.eloChange !== null && match.eloChange !== undefined) {
                 const sign = match.eloChange > 0 ? '+' : '';
                 detailText += ` • ${sign}${match.eloChange}`;
-                if (match.newElo) detailText += ` • ${match.newElo} ELO`;
             }
 
             ctx.fillStyle = '#ccc';
@@ -528,7 +527,7 @@ module.exports = {
         // Fav Duo
         if (favoriteTeammate) {
             ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(rightX, 240, 430, 120);
-            ctx.font = 'bold 20px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('FAVORITE DUO', rightX + 20, 280);
+            ctx.font = 'bold 20px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('PLAYED MOST TEAMMATE', rightX + 20, 280);
             if (favoriteTeammate.avatarURL) {
                 try {
                     const avatar = await loadImage(favoriteTeammate.avatarURL);
