@@ -25,7 +25,7 @@ module.exports = {
                 'Fracture': { banned: true, bannedBy: 'Vote' },
                 'Icebox': { banned: true, bannedBy: 'Vote' },
                 'Abyss': { banned: true, bannedBy: 'Vote' },
-                'Train': { banned: true, bannedBy: 'Vote' }
+                'Corrode': { banned: true, bannedBy: 'Vote' }
             };
 
             const selectedMap = 'Pearl';
