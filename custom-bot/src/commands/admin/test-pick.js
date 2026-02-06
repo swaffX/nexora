@@ -20,7 +20,12 @@ module.exports = {
                 'Split': { banned: true, bannedBy: 'Vote' },
                 'Pearl': { banned: false }, // SELECTED (WINNER)
                 'Lotus': { banned: true, bannedBy: 'Vote' },
-                'Sunset': { banned: true, bannedBy: 'Vote' }
+                'Sunset': { banned: true, bannedBy: 'Vote' },
+                'Breeze': { banned: true, bannedBy: 'Vote' },
+                'Fracture': { banned: true, bannedBy: 'Vote' },
+                'Icebox': { banned: true, bannedBy: 'Vote' },
+                'Abyss': { banned: true, bannedBy: 'Vote' },
+                'Train': { banned: true, bannedBy: 'Vote' }
             };
 
             const selectedMap = 'Pearl';
