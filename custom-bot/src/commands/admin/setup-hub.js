@@ -66,31 +66,20 @@ module.exports = {
                 voiceChatIds.push(vc.id);
             }
 
-            // 2. İçeriği Hazırla (Premium Markdown Tasarım)
+            // 2. İçeriği Hazırla
             const defaultDescription = [
-                '# 🏆 RANKED ARENA',
-                '**Rekabetin kalbi burada atıyor!**',
+                '**REKABETÇİ ARENA**',
                 '',
-                'Sıralamada yükselmek, ELO kazanmak ve şampiyonluğunu kanıtlamak için mücadeleye katıl.',
+                'Sıralamada yükselmek için mücadeleye katıl.',
+                'İlgili lobi ses kanalına gir ve maçı başlat.',
                 '',
-                '```yaml',
-                'Lobiler: 🟢 Aktif',
-                'Mod: 5v5 Competitive',
-                'Harita: Seçmeli (Veto)',
-                'Anti-Cheat: 🛡️ Korumalı',
-                '```',
-                '',
-                '> **Nasıl Oynarım?**',
-                '> Aşağıdaki ses kanallarından birine gir ve **Lobi Kur** butonuna bas.',
-                '',
-                '<a:welcome3:1246429706346303489> **İyi oyunlar!**'
+                '<a:welcome3:1246429706346303489> **İyi şanslar.**'
             ].join('\n');
 
             const embed = new EmbedBuilder()
-                .setColor(0x2B2D31) // Discord Dark Theme Background (Embedle bütünleşir)
+                .setColor(0x000000)
                 .setDescription(customText ? customText : defaultDescription)
-                .setImage(PANEL_GIF)
-                .setFooter({ text: 'Nexora Competitive System', iconURL: interaction.guild.iconURL() });
+                .setImage(PANEL_GIF);
 
             const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId(`lobby_start_1_${voiceChatIds[0]}`).setLabel('Lobi 1 Kur').setStyle(ButtonStyle.Success).setEmoji(BTN_EMOJI),
