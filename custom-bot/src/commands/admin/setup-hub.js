@@ -3,7 +3,11 @@ const { SlashCommandBuilder, PermissionFlagsBits, ChannelType, EmbedBuilder, Act
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('setup-hub')
-        .setDescription('Merkezi Lobi Sistemini Kurar (Kategori, Kanallar ve Panel)'),
+        .setDescription('Merkezi Lobi Panelini Yönetir (Otomatik Güncelleme)')
+        .addStringOption(option =>
+            option.setName('yazi')
+                .setDescription('Paneldeki açıklamayı değiştirir (Boş bırakılırsa varsayılan kullanılır)')
+        ),
     async execute(interaction) {
         // Sadece Admin
         if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
@@ -12,75 +16,90 @@ module.exports = {
 
         const categoryId = '1463883244436197397';
         const guild = interaction.guild;
-        const category = await guild.channels.fetch(categoryId).catch(() => null);
+        const customText = interaction.options.getString('yazi');
 
-        if (!category) {
-            return interaction.reply({ content: `❌ Kategori bulunamadı! ID: ${categoryId}`, ephemeral: true });
-        }
+        // Görseller
+        const PANEL_GIF = 'https://cdn.discordapp.com/attachments/531892263652032522/1464235225818075147/standard_2.gif?ex=69872fd2&is=6985de52&hm=73ce403ba2061e8071b2affcbc754b71f8e1d63e6a4be6a8e8558ac1f3a2fca6&';
+        const BTN_EMOJI = '<a:welcome3:1246429706346303489>';
 
         await interaction.deferReply({ ephemeral: true });
 
         try {
-            // 1. Maç Paneli (Metin)
-            const panelChannel = await guild.channels.create({
-                name: '🕹️-maç-panel',
-                type: ChannelType.GuildText,
-                parent: category.id,
-                permissionOverwrites: [
-                    {
-                        id: guild.roles.everyone.id,
-                        deny: [PermissionFlagsBits.SendMessages],
-                        allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory]
-                    }
-                ]
-            });
-
-            // 2. Lobi Ses Kanalları
-            const voiceChannels = [];
-            for (let i = 1; i <= 3; i++) {
-                const searchName = `🔊 Lobi ${i} Bekleme`;
-                // Varsa tekrar oluşturma (opsiyonel ama temiz olsun diye direkt oluşturuyoruz)
-                const vc = await guild.channels.create({
-                    name: searchName,
-                    type: ChannelType.GuildVoice,
-                    parent: category.id,
-                    userLimit: 10 // Kullanıcı isteği (görselde 99, metinde belirtmemiş ama genelde 10)
-                });
-                voiceChannels.push({ id: vc.id, name: searchName, index: i });
+            const category = await guild.channels.fetch(categoryId).catch(() => null);
+            if (!category) {
+                return interaction.editReply({ content: `❌ Kategori bulunamadı! ID: ${categoryId}` });
             }
 
-            // 3. Panel Mesajını Gönder
+            // 1. Kanalları Kontrol Et / Oluştur (Eğer silindiyse tamir et)
+            let panelChannel = category.children.cache.find(c => c.name === '🕹️-maç-panel' && c.type === ChannelType.GuildText);
+
+            // Eğer panel kanalı yoksa oluştur
+            if (!panelChannel) {
+                panelChannel = await guild.channels.create({
+                    name: '🕹️-maç-panel',
+                    type: ChannelType.GuildText,
+                    parent: category.id,
+                    permissionOverwrites: [
+                        {
+                            id: guild.roles.everyone.id,
+                            deny: [PermissionFlagsBits.SendMessages],
+                            allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory]
+                        }
+                    ]
+                });
+            }
+
+            // Ses Kanalları ve ID Toplama
+            let voiceChatIds = [];
+            for (let i = 1; i <= 3; i++) {
+                let searchName = `🔊 Lobi ${i} Bekleme`;
+                let vc = category.children.cache.find(c => c.name === searchName && c.type === ChannelType.GuildVoice);
+
+                if (!vc) {
+                    vc = await guild.channels.create({
+                        name: searchName,
+                        type: ChannelType.GuildVoice,
+                        parent: category.id,
+                        userLimit: 10
+                    });
+                }
+                voiceChatIds.push(vc.id);
+            }
+
+            // 2. İçeriği Hazırla
+            const defaultDescription = [
+                '**REKABETÇİ ARENA**',
+                '',
+                'Sıralamada yükselmek için mücadeleye katıl.',
+                'İlgili lobi ses kanalına gir ve maçı başlat.',
+                '',
+                '<a:welcome3:1246429706346303489> **İyi şanslar.**'
+            ].join('\n');
+
             const embed = new EmbedBuilder()
-                .setColor(0xF1C40F) // Gold
-                .setTitle('🏆 RANKED LOBİ PANELİ')
-                .setDescription(
-                    'Maç oluşturmak için aşağıdaki butonları kullanın.\n\n' +
-                    '**Nasıl Çalışır?**\n' +
-                    '1. Arkadaşlarınızla boş bir **Lobi Bekleme** kanalına girin.\n' +
-                    '2. Bulunduğunuz lobinin butonuna **(Lobi X Kur)** basın.\n' +
-                    '3. Bot sizi özel maç odasına taşıyacaktır.\n\n' +
-                    '**Aktif Lobiler:**\n' +
-                    `1️⃣ <#${voiceChannels[0].id}>\n` +
-                    `2️⃣ <#${voiceChannels[1].id}>\n` +
-                    `3️⃣ <#${voiceChannels[2].id}>`
-                )
-                .setFooter({ text: 'Nexora Ranked System • Made by Swaff' })
-                .setImage('https://media.discordapp.net/attachments/1213149999035228200/1242549144887754853/line.png?ex=6643aece&is=66425d4e&hm=2e728c70725206987771761765ad818787f06533722513413554694464673678&'); // Örnek çizgi
+                .setColor(0x000000)
+                .setDescription(customText ? customText : defaultDescription)
+                .setImage(PANEL_GIF);
 
             const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId(`lobby_start_1_${voiceChannels[0].id}`).setLabel('Lobi 1 Kur').setStyle(ButtonStyle.Success).setEmoji('🎮'),
-                new ButtonBuilder().setCustomId(`lobby_start_2_${voiceChannels[1].id}`).setLabel('Lobi 2 Kur').setStyle(ButtonStyle.Success).setEmoji('🎮'),
-                new ButtonBuilder().setCustomId(`lobby_start_3_${voiceChannels[2].id}`).setLabel('Lobi 3 Kur').setStyle(ButtonStyle.Success).setEmoji('🎮')
+                new ButtonBuilder().setCustomId(`lobby_start_1_${voiceChatIds[0]}`).setLabel('Lobi 1 Kur').setStyle(ButtonStyle.Success).setEmoji(BTN_EMOJI),
+                new ButtonBuilder().setCustomId(`lobby_start_2_${voiceChatIds[1]}`).setLabel('Lobi 2 Kur').setStyle(ButtonStyle.Success).setEmoji(BTN_EMOJI),
+                new ButtonBuilder().setCustomId(`lobby_start_3_${voiceChatIds[2]}`).setLabel('Lobi 3 Kur').setStyle(ButtonStyle.Success).setEmoji(BTN_EMOJI)
             );
 
-            await panelChannel.send({ embeds: [embed], components: [row] });
+            // 3. Mesajı Bul ve Güncelle
+            const messages = await panelChannel.messages.fetch({ limit: 10 }).catch(() => new Map());
+            const existingPanel = messages.find(m => m.author.id === interaction.client.user.id && m.components.length > 0);
 
-            // 4. Sonuç Raporu
-            let report = `✅ **Kurulum Tamamlandı!**\n\n**Panel Kanalı:** <#${panelChannel.id}>\n\n**Ses Kanalları:**\n`;
-            voiceChannels.forEach(vc => report += `- ${vc.name}: \`${vc.id}\`\n`);
-            report += `\n⚠️ **ÖNEMLİ:** Bu ID'leri \`src/handlers/match/constants.js\` veya ilgili config dosyasına kaydetmeniz gerekebilir (Otomasyon için butonlara ID'leri gömdüm, ekstra kayda gerek yok).`;
-
-            await interaction.editReply(report);
+            if (existingPanel) {
+                // Güncelle
+                await existingPanel.edit({ embeds: [embed], components: [row] });
+                await interaction.editReply(`✅ **Panel Güncellendi!**\nYazı başarıyla değiştirildi.`);
+            } else {
+                // Yeni Gönder
+                await panelChannel.send({ embeds: [embed], components: [row] });
+                await interaction.editReply(`✅ **Panel Oluşturuldu!**\n<#${panelChannel.id}>`);
+            }
 
         } catch (error) {
             console.error(error);
