@@ -265,9 +265,7 @@ module.exports = {
             const teamAData = await fetchTeamData(match.teamA);
             const teamBData = await fetchTeamData(match.teamB);
 
-            const rosterBuffer = await canvasGenerator.createRosterImage(teamAData, teamBData);
-            rosterAttachment = new AttachmentBuilder(rosterBuffer, { name: 'roster.png' });
-
+            // Roster Image Removed as per request
         } catch (e) { console.error('Roster Gen Error:', e); }
 
 
@@ -344,13 +342,7 @@ module.exports = {
         if (mapAttachment) payload.files.push(mapAttachment);
 
         // Roster'ı ikinci embed olarak ekle
-        if (rosterAttachment) {
-            payload.files.push(rosterAttachment);
-            const rosterEmbed = new EmbedBuilder()
-                .setColor(0x2B2D31)
-                .setImage('attachment://roster.png');
-            payload.embeds.push(rosterEmbed);
-        }
+        // Roster image removed
 
         await channel.send(payload);
     },
