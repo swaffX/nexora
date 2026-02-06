@@ -58,7 +58,7 @@ module.exports = {
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`match_side_ATTACK_${match.matchId}`).setLabel('SALDIRI (Attack)').setStyle(ButtonStyle.Danger).setEmoji('🗡️'),
             new ButtonBuilder().setCustomId(`match_side_DEFEND_${match.matchId}`).setLabel('SAVUNMA (Defend)').setStyle(ButtonStyle.Success).setEmoji('🛡️'),
-            new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('İptal').setStyle(ButtonStyle.Secondary).setEmoji('🛑')
+            new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('Maçı İptal Et').setStyle(ButtonStyle.Danger).setEmoji('🛑')
         );
 
         const payload = {
@@ -329,8 +329,8 @@ module.exports = {
                     .setEmoji('🏁'),
                 new ButtonBuilder()
                     .setCustomId(`match_cancel_${match.matchId}`)
-                    .setLabel('İptal')
-                    .setStyle(ButtonStyle.Secondary)
+                    .setLabel('Maçı İptal Et')
+                    .setStyle(ButtonStyle.Danger)
                     .setEmoji('🛑')
             );
 

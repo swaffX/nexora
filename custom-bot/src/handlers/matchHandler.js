@@ -181,6 +181,32 @@ module.exports = {
                     break;
                 }
 
+                case 'cancel': { // match_cancel_MATCHID
+                    const mCancel = await Match.findOne({ matchId: parts[2] });
+                    if (!mCancel) return interaction.reply({ content: 'Maç bulunamadı.', flags: require('discord.js').MessageFlags.Ephemeral });
+
+                    // Yetki Kontrolü: Host, Admin veya Yetkili Rol
+                    const REQUIRED_ROLE_ID = '1463875325019557920';
+                    const isHost = interaction.user.id === mCancel.hostId;
+                    const isAdmin = interaction.member.permissions.has(require('discord.js').PermissionFlagsBits.Administrator);
+                    const hasRole = interaction.member.roles.cache.has(REQUIRED_ROLE_ID);
+
+                    if (!isHost && !isAdmin && !hasRole) {
+                        return interaction.reply({ content: '❌ Bu işlemi sadece Maç Sahibi veya Yetkili yapabilir.', flags: require('discord.js').MessageFlags.Ephemeral });
+                    }
+
+                    await interaction.reply({ content: '🚫 Maç iptal ediliyor...', flags: require('discord.js').MessageFlags.Ephemeral });
+
+                    // Force End (Cleanup + Delete Channel)
+                    await manager.forceEndMatch(interaction.guild, mCancel.matchId, `İptal eden: ${interaction.user.username}`);
+
+                    // Metin Kanalını Manuel Sil (Manager silmezse diye garanti)
+                    if (interaction.channel) {
+                        setTimeout(() => interaction.channel.delete().catch(() => { }), 2000);
+                    }
+                    break;
+                }
+
                 case 'endmatch':
                     await game.endMatch(interaction);
                     break;
