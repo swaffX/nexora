@@ -1,5 +1,6 @@
 const { createCanvas, loadImage } = require('canvas');
 const path = require('path');
+// Match System Visuals v2.0 - Updated Leaderboard, Versus, Turn, Pick, Roster
 const fs = require('fs');
 const eloService = require('../services/eloService');
 
@@ -602,12 +603,12 @@ module.exports = {
     },
 
     async createLeaderboardImage(users) {
-        // Modern Premium Leaderboard Design
-        const width = 1500;
-        const rowHeight = 130;
-        const gap = 20;
-        const headerHeight = 250;
-        const footerHeight = 60;
+        // REVISED MODERN WIDE LEADERBOARD
+        const width = 2000; // Genişletildi
+        const rowHeight = 150; // Biraz daha yüksek
+        const gap = 25;
+        const headerHeight = 300;
+        const footerHeight = 80;
 
         const height = headerHeight + (users.length * (rowHeight + gap)) + footerHeight;
 
@@ -615,47 +616,49 @@ module.exports = {
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = true;
 
-        // 1. Background (Dark Gradient)
+        // 1. Background (Dark Tech Gradient)
         const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-        bgGradient.addColorStop(0, '#0f0f11');
-        bgGradient.addColorStop(1, '#050505');
+        bgGradient.addColorStop(0, '#09090b'); // Zinc-950
+        bgGradient.addColorStop(1, '#000000');
         ctx.fillStyle = bgGradient;
         ctx.fillRect(0, 0, width, height);
 
-        // Grid Pattern Overlay (Optional, sleek look)
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
-        for (let i = 0; i < height; i += 40) ctx.fillRect(0, i, width, 1);
-        for (let i = 0; i < width; i += 40) ctx.fillRect(i, 0, 1, height);
+        // Subtle Grid Overlay
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.015)';
+        for (let i = 0; i < height; i += 50) ctx.fillRect(0, i, width, 1);
+        for (let i = 0; i < width; i += 50) ctx.fillRect(i, 0, 1, height);
 
-        // 2. Header
-        // Header Background Glow
-        const headerGlow = ctx.createLinearGradient(0, 0, width, 0);
-        headerGlow.addColorStop(0, 'rgba(0,0,0,0)');
-        headerGlow.addColorStop(0.5, 'rgba(255, 255, 255, 0.03)');
-        headerGlow.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = headerGlow;
-        ctx.fillRect(0, 0, width, headerHeight - 20);
+        // 2. Header Content
+        // Top Glow
+        const topGlow = ctx.createRadialGradient(width / 2, 0, 0, width / 2, 0, 800);
+        topGlow.addColorStop(0, 'rgba(255, 255, 255, 0.05)');
+        topGlow.addColorStop(1, 'transparent');
+        ctx.fillStyle = topGlow;
+        ctx.fillRect(0, 0, width, headerHeight);
 
-        // Red Accent Line
+        // Accent Line
         ctx.fillStyle = '#ef4444';
-        ctx.fillRect(0, headerHeight - 10, width, 4);
+        ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 15;
+        ctx.fillRect(0, headerHeight - 5, width, 5);
+        ctx.shadowBlur = 0;
 
         // Title
         ctx.textAlign = 'center';
-        ctx.font = 'bold 90px "VALORANT", sans-serif';
+        ctx.font = 'bold 110px "VALORANT", sans-serif'; // Bigger Title
         ctx.fillStyle = '#fff';
-        ctx.shadowColor = '#fff'; ctx.shadowBlur = 25;
-        ctx.fillText("LEADERBOARD", width / 2, 130);
+        ctx.shadowColor = 'rgba(255,255,255,0.5)'; ctx.shadowBlur = 30;
+        ctx.fillText("LEADERBOARD", width / 2, 140);
         ctx.shadowBlur = 0;
 
-        ctx.font = '30px "Segoe UI", sans-serif';
-        ctx.fillStyle = '#888';
-        ctx.fillText(`SEASON 1  •  TOP ${users.length} PLAYERS`, width / 2, 185);
-        ctx.font = 'italic 20px "Segoe UI", sans-serif';
-        ctx.fillStyle = '#555';
-        ctx.fillText(`UPDATED: ${new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`, width / 2, 215);
+        ctx.font = '35px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#a1a1aa';
+        ctx.fillText(`SEASON 1  •  TOP ${users.length} PLAYERS`, width / 2, 200);
 
-        // 3. Render User Rows
+        ctx.font = 'italic 22px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#52525b';
+        ctx.fillText(`UPDATED: ${new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`, width / 2, 240);
+
+        // 3. Render List
         let y = headerHeight + 20;
 
         for (let i = 0; i < users.length; i++) {
@@ -664,64 +667,73 @@ module.exports = {
             const stats = user.matchStats || { elo: 100, totalWins: 0, totalLosses: 0, winStreak: 0 };
             const lvlInfo = getLevelInfo(stats.elo);
 
-            // Row Metrics
+            // Card Layout
             const cardX = 50;
-            const cardW = width - 100;
+            const cardW = width - 100; // Full width card
 
-            // Theme Colors based on Rank
-            let themeColor = '#3f3f46'; // Default Zinc-700
-            let textColor = '#d4d4d8';
-            let glowColor = 'transparent';
+            // Themes
+            let themeColor = '#52525b'; // Default Gray
+            let textColor = '#e4e4e7';
+            let bgColor = '#18181b';
             let isTop3 = false;
 
             if (rank === 1) {
-                themeColor = '#fbbf24'; glowColor = '#d97706'; textColor = '#fbbf24'; isTop3 = true; // Gold
+                themeColor = '#fbbf24'; textColor = '#fbbf24'; bgColor = '#282010'; isTop3 = true; // Gold
             } else if (rank === 2) {
-                themeColor = '#e5e7eb'; glowColor = '#9ca3af'; textColor = '#f3f4f6'; isTop3 = true; // Silver
+                themeColor = '#e5e7eb'; textColor = '#f3f4f6'; bgColor = '#202022'; isTop3 = true; // Silver
             } else if (rank === 3) {
-                themeColor = '#ca8a04'; glowColor = '#854d0e'; textColor = '#fcd34d'; isTop3 = true; // Bronze
+                themeColor = '#d97706'; textColor = '#fcd34d'; bgColor = '#2a1e10'; isTop3 = true; // Bronze
             }
 
-            // --- DRAW CARD ---
+            // Draw Card Background
             ctx.beginPath();
-            ctx.roundRect(cardX, y, cardW, rowHeight, 15);
-            ctx.fillStyle = '#18181b'; // Card base
+            ctx.roundRect(cardX, y, cardW, rowHeight, 10);
+            const cardGrad = ctx.createLinearGradient(cardX, y, cardX + cardW, y);
+            if (isTop3) {
+                cardGrad.addColorStop(0, bgColor);
+                cardGrad.addColorStop(1, '#0c0c0e');
+            } else {
+                cardGrad.addColorStop(0, '#18181b');
+                cardGrad.addColorStop(1, '#101012');
+            }
+            ctx.fillStyle = cardGrad;
             ctx.fill();
 
-            // Glow/Border for Top 3
+            // Border/Glow for Top 3
             if (isTop3) {
-                ctx.shadowColor = glowColor; ctx.shadowBlur = 15;
-                ctx.lineWidth = 2; ctx.strokeStyle = themeColor;
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = themeColor;
+                ctx.shadowColor = themeColor; ctx.shadowBlur = 10;
                 ctx.stroke();
                 ctx.shadowBlur = 0;
 
-                // Left accent bar
+                // Left Accent Bar
                 ctx.fillStyle = themeColor;
-                ctx.beginPath(); ctx.roundRect(cardX, y, 12, rowHeight, [15, 0, 0, 15]); ctx.fill();
+                ctx.beginPath(); ctx.roundRect(cardX, y, 10, rowHeight, [10, 0, 0, 10]); ctx.fill();
             } else {
-                // Default left bar (Darker)
+                // Default Left Bar
                 ctx.fillStyle = '#27272a';
-                ctx.beginPath(); ctx.roundRect(cardX, y, 8, rowHeight, [15, 0, 0, 15]); ctx.fill();
+                ctx.beginPath(); ctx.roundRect(cardX, y, 8, rowHeight, [10, 0, 0, 10]); ctx.fill();
             }
 
-            // --- CONTENT ---
+            // --- DATA ---
 
-            // 1. Rank Number
+            // 1. Rank (#1)
             ctx.textAlign = 'center';
-            ctx.font = 'bold 70px "DIN Alternate", sans-serif';
-            ctx.fillStyle = isTop3 ? textColor : '#52525b';
-            if (isTop3) { ctx.shadowColor = glowColor; ctx.shadowBlur = 10; }
-            ctx.fillText(`#${rank}`, cardX + 80, y + 90);
+            ctx.font = 'bold 80px "DIN Alternate", sans-serif';
+            ctx.fillStyle = isTop3 ? textColor : '#71717a';
+            if (isTop3) { ctx.shadowColor = themeColor; ctx.shadowBlur = 15; }
+            ctx.fillText(`#${rank}`, cardX + 90, y + 105);
             ctx.shadowBlur = 0;
 
             // 2. Avatar
-            const avatarSize = 90;
-            const avatarX = cardX + 160;
+            const avatarSize = 100;
+            const avatarX = cardX + 200;
             const avatarY = y + (rowHeight - avatarSize) / 2;
 
-            // Avatar Placeholder Circle
-            ctx.beginPath(); ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2 + 2, 0, Math.PI * 2);
-            ctx.fillStyle = isTop3 ? themeColor : '#333'; ctx.fill();
+            // Hexagon/Circle Frame
+            ctx.beginPath(); ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2 + 4, 0, Math.PI * 2);
+            ctx.fillStyle = isTop3 ? themeColor : '#27272a'; ctx.fill();
 
             if (user.avatarURL) {
                 try {
@@ -735,16 +747,19 @@ module.exports = {
 
             // 3. Username
             ctx.textAlign = 'left';
-            ctx.font = 'bold 50px "Segoe UI", sans-serif';
+            ctx.font = 'bold 60px "Segoe UI", sans-serif';
             ctx.fillStyle = '#fff';
             let name = user.username ? user.username.toUpperCase() : 'UNKNOWN';
-            if (name.length > 12) name = name.substring(0, 12) + '...';
-            ctx.fillText(name, avatarX + avatarSize + 30, y + 82);
+            // Daha az truncate, yerimiz var
+            if (name.length > 15) name = name.substring(0, 15) + '..';
 
-            // 4. Level Icon
+            const nameX = avatarX + avatarSize + 40;
+            ctx.fillText(name, nameX, y + 95);
+
+            // 4. Level Icon (Next to Name)
             const nameWidth = ctx.measureText(name).width;
-            const iconX = avatarX + avatarSize + 30 + nameWidth + 20;
-            const iconSize = 60;
+            const iconX = nameX + nameWidth + 25;
+            const iconSize = 70;
             try {
                 const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
                 if (fs.existsSync(iconPath)) {
@@ -753,65 +768,368 @@ module.exports = {
                 }
             } catch (e) { }
 
-            // 5. Stats (W - L - WR)
+            // 5. Stats (W - L - WR) - Align Right-Center
+            // Total area width for stats ~600px
+            const statsEndX = width - 400; // ELO starts at width-350
+
             const wins = stats.totalWins || 0;
             const losses = stats.totalLosses || 0;
             const total = wins + losses;
             const wr = total > 0 ? Math.round((wins / total) * 100) : 0;
 
-            // Stats Group
-            const statsX = width - 450; // Align from right side
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 45px "DIN Alternate", sans-serif';
 
             // Wins
-            ctx.textAlign = 'center';
-            ctx.font = 'bold 35px "DIN Alternate", sans-serif';
             ctx.fillStyle = '#2ecc71';
-            ctx.fillText(`${wins}W`, statsX, y + 78);
+            ctx.fillText(`${wins}W`, statsEndX - 350, y + 90);
 
-            // Splitter
-            ctx.fillStyle = '#333'; ctx.fillRect(statsX + 40, y + 40, 2, 50);
-
-            // Losses
+            // Loss
             ctx.fillStyle = '#ef4444';
-            ctx.fillText(`${losses}L`, statsX + 90, y + 78);
-
-            // Splitter
-            ctx.fillStyle = '#333'; ctx.fillRect(statsX + 140, y + 40, 2, 50);
+            ctx.fillText(`${losses}L`, statsEndX - 230, y + 90);
 
             // WR
+            ctx.textAlign = 'right';
             ctx.fillStyle = wr >= 50 ? '#2ecc71' : '#e74c3c';
-            ctx.fillText(`%${wr}`, statsX + 210, y + 78);
-            ctx.font = '16px "Segoe UI", sans-serif'; ctx.fillStyle = '#666';
-            ctx.fillText('WIN RATE', statsX + 210, y + 105);
+            ctx.fillText(`%${wr}`, statsEndX - 50, y + 90);
+            ctx.font = 'bold 20px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#71717a';
+            ctx.fillText("WIN RATE", statsEndX - 50, y + 120);
 
             // 6. ELO Points (Far Right)
-            const eloX = width - 100;
+            // Fixed Position to avoid overlap
+            const eloAreaX = width - 80;
+            const eloCenterY = y + rowHeight / 2;
+
             ctx.textAlign = 'right';
-            ctx.font = 'bold 65px "DIN Alternate", sans-serif';
+            ctx.font = 'bold 75px "DIN Alternate", sans-serif';
             ctx.fillStyle = '#fff';
-            ctx.fillText(`${stats.elo}`, eloX, y + 80);
-            ctx.font = 'bold 20px "Segoe UI", sans-serif'; ctx.fillStyle = isTop3 ? themeColor : '#888';
-            ctx.fillText('ELO POINTS', eloX, y + 110);
+            // ELO Number
+            ctx.fillText(`${stats.elo}`, eloAreaX, eloCenterY + 15);
+
+            // Label (Below or Side?) -> Below is risky for height. Side is better if space.
+            // But user said "overlap". Let's put label cleanly below with smaller font.
+            ctx.font = 'bold 22px "Segoe UI", sans-serif';
+            ctx.fillStyle = isTop3 ? themeColor : '#71717a';
+            ctx.fillText("ELO", eloAreaX, eloCenterY + 45);
 
             y += rowHeight + gap;
         }
 
-        // Footer Text
+        // Footer
         ctx.textAlign = 'center';
-        ctx.font = '20px "Segoe UI", sans-serif';
-        ctx.fillStyle = '#333';
-        ctx.fillText("NEXORA RANKED SYSTEM • DEVELOPED BY SWAFF", width / 2, height - 25);
+        ctx.font = '22px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#52525b';
+        ctx.fillText("NEXORA RANKED SYSTEM  •  SEASON 1  •  DEVELOPED BY SWAFF", width / 2, height - 30);
 
         return canvas.toBuffer();
     },
 
-    // VERSUS & OTHERS (Simplified)
-    async createVersusImage(teamA, teamB, mapName) {
-        const width = 1920; const height = 1080; const canvas = createCanvas(width, height); const ctx = canvas.getContext('2d');
-        const g = ctx.createLinearGradient(0, 0, width, 0); g.addColorStop(0, '#000044'); g.addColorStop(1, '#440000'); ctx.fillStyle = g; ctx.fillRect(0, 0, width, height);
-        ctx.fillStyle = '#fff'; ctx.font = '200px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('VS', width / 2, height / 2);
+    // --- ADVANCED MATCH VISUALIZATIONS ---
+
+    async createVersusImage(captainA, captainB, mapName) {
+        const width = 1920;
+        const height = 1080;
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext('2d');
+
+        // 1. Map Background
+        try {
+            const assetsPath = path.join(__dirname, '..', '..', 'assets', 'maps');
+            let p = path.join(assetsPath, `${mapName}.png`);
+            if (!fs.existsSync(p)) p = path.join(assetsPath, `${mapName.toLowerCase()}.png`);
+
+            if (fs.existsSync(p)) {
+                const bg = await loadImage(p);
+                ctx.drawImage(bg, 0, 0, width, height);
+            } else {
+                ctx.fillStyle = '#1e1e2e'; ctx.fillRect(0, 0, width, height);
+            }
+        } catch (e) {
+            ctx.fillStyle = '#1e1e2e'; ctx.fillRect(0, 0, width, height);
+        }
+
+        // 2. Overlays (Diagonal Split)
+        // Global Darken
+        ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(0, 0, width, height);
+
+        // Team A Side (Left - Blueish)
+        const gradA = ctx.createLinearGradient(0, 0, width / 2, height);
+        gradA.addColorStop(0, 'rgba(56, 189, 248, 0.4)'); // Sky Blue
+        gradA.addColorStop(1, 'rgba(30, 58, 138, 0.6)'); // Dark Blue
+
+        ctx.beginPath();
+        ctx.moveTo(0, 0); ctx.lineTo(width / 2 + 100, 0);
+        ctx.lineTo(width / 2 - 100, height); ctx.lineTo(0, height);
+        ctx.fillStyle = gradA; ctx.fill();
+
+        // Team B Side (Right - Reddish)
+        const gradB = ctx.createLinearGradient(width / 2, 0, width, height);
+        gradB.addColorStop(0, 'rgba(248, 113, 113, 0.4)'); // Red
+        gradB.addColorStop(1, 'rgba(153, 27, 27, 0.6)'); // Dark Red
+
+        ctx.beginPath();
+        ctx.moveTo(width / 2 + 100, 0); ctx.lineTo(width, 0);
+        ctx.lineTo(width, height); ctx.lineTo(width / 2 - 100, height);
+        ctx.fillStyle = gradB; ctx.fill();
+
+        // VS Separator Line
+        ctx.lineWidth = 15;
+        ctx.strokeStyle = '#fff';
+        ctx.shadowColor = '#000'; ctx.shadowBlur = 20;
+        ctx.beginPath();
+        ctx.moveTo(width / 2 + 100, -10);
+        ctx.lineTo(width / 2 - 100, height + 10);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // VS Text
+        ctx.textAlign = 'center';
+        ctx.font = 'bold italic 150px "VALORANT", sans-serif';
+        ctx.fillStyle = '#fff';
+        ctx.shadowColor = '#000'; ctx.shadowBlur = 30;
+        ctx.fillText("VS", width / 2, height / 2 + 50);
+        ctx.shadowBlur = 0;
+
+        // --- DRAW CAPTAINS ---
+        const drawCaptain = async (captain, isLeft) => {
+            const cx = isLeft ? width * 0.25 : width * 0.75;
+            const cy = height / 2;
+            const align = isLeft ? 'left' : 'right';
+
+            // Avatar Glow
+            const glowColor = isLeft ? '#38bdf8' : '#f87171';
+
+            // Avatar
+            const avatarSize = 300;
+            const user = captain.user || {};
+            const avatarUrl = user.displayAvatarURL ? user.displayAvatarURL({ extension: 'png', size: 512 }) :
+                (user.avatarURL ? user.avatarURL : user.avatar);
+
+            if (avatarUrl) {
+                try {
+                    const avatar = await loadImage(avatarUrl);
+                    ctx.save();
+                    ctx.beginPath(); ctx.arc(cx, cy - 50, avatarSize / 2, 0, Math.PI * 2); ctx.clip();
+                    ctx.drawImage(avatar, cx - avatarSize / 2, cy - 50 - avatarSize / 2, avatarSize, avatarSize);
+                    ctx.restore();
+
+                    // Ring
+                    ctx.beginPath(); ctx.arc(cx, cy - 50, avatarSize / 2, 0, Math.PI * 2);
+                    ctx.lineWidth = 10; ctx.strokeStyle = glowColor;
+                    ctx.shadowColor = glowColor; ctx.shadowBlur = 30;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                } catch (e) { }
+            }
+
+            // Name
+            const name = captain.name ? captain.name.toUpperCase() : (user.username ? user.username.toUpperCase() : 'UNKNOWN');
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 80px "VALORANT", sans-serif';
+            ctx.fillStyle = '#fff';
+            ctx.shadowColor = '#000'; ctx.shadowBlur = 10;
+            ctx.fillText(name, cx, cy + 160);
+
+            // ELO & Level
+            const stats = captain.stats || { elo: 100 };
+            const lvlInfo = getLevelInfo(stats.elo);
+
+            ctx.font = 'bold 50px "DIN Alternate", sans-serif';
+            ctx.fillStyle = '#ddd';
+            ctx.fillText(`${stats.elo} ELO`, cx, cy + 220);
+
+            // Level Icon
+            try {
+                const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
+                if (fs.existsSync(iconPath)) {
+                    const icon = await loadImage(iconPath);
+                    const iSize = 80;
+                    ctx.drawImage(icon, cx - iSize / 2, cy + 240, iSize, iSize);
+                }
+            } catch (e) { }
+        };
+
+        if (captainA) await drawCaptain(captainA, true);
+        if (captainB) await drawCaptain(captainB, false);
+
         return canvas.toBuffer();
     },
-    async createSideSelectionImage(ca, cb, s, m) { return createCanvas(800, 400).toBuffer(); },
-    async createWheelResult(w, l) { return createCanvas(600, 400).toBuffer(); }
+
+    async createMapVetoImage(mapStates, selectedMap, statusText) {
+        const width = 1920;
+        const height = 600;
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext('2d');
+
+        // Background
+        ctx.fillStyle = '#121212'; ctx.fillRect(0, 0, width, height);
+
+        // Header
+        ctx.font = 'bold 60px "VALORANT", sans-serif';
+        ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+        ctx.fillText(statusText || "MAP SELECTION", width / 2, 80);
+
+        const maps = Object.keys(mapStates);
+        const cardW = 220;
+        const cardH = 350;
+        const gap = 30;
+        const startX = (width - (maps.length * (cardW + gap) - gap)) / 2;
+        const startY = 150;
+
+        for (let i = 0; i < maps.length; i++) {
+            const mapName = maps[i];
+            const state = mapStates[mapName];
+            const x = startX + i * (cardW + gap);
+            const y = startY;
+
+            // Card Shape
+            ctx.save();
+            ctx.beginPath();
+            ctx.roundRect(x, y, cardW, cardH, 15);
+            ctx.clip();
+
+            // Map Image
+            try {
+                const assetsPath = path.join(__dirname, '..', '..', 'assets', 'maps');
+                let p = path.join(assetsPath, `${mapName}.png`);
+                if (!fs.existsSync(p)) p = path.join(assetsPath, `${mapName.toLowerCase()}.png`);
+
+                if (fs.existsSync(p)) {
+                    const img = await loadImage(p);
+                    ctx.drawImage(img, x, y, cardW, cardH);
+                } else {
+                    ctx.fillStyle = '#333'; ctx.fillRect(x, y, cardW, cardH);
+                }
+            } catch (e) {
+                ctx.fillStyle = '#333'; ctx.fillRect(x, y, cardW, cardH);
+            }
+
+            // Overlay based on state
+            if (mapName === selectedMap) {
+                // Selected (Winner)
+                ctx.strokeStyle = '#2ecc71';
+                ctx.lineWidth = 10;
+                ctx.strokeRect(x, y, cardW, cardH);
+
+                ctx.fillStyle = 'rgba(46, 204, 113, 0.2)';
+                ctx.fillRect(x, y, cardW, cardH);
+            } else if (state.banned) {
+                // Banned
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; // Darken
+                ctx.fillRect(x, y, cardW, cardH);
+
+                // Red Stripe
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.8)';
+                ctx.translate(x + cardW / 2, y + cardH / 2);
+                ctx.rotate(-Math.PI / 4);
+                ctx.fillRect(-cardW, -20, cardW * 2, 40);
+
+                // Text
+                ctx.font = 'bold 40px sans-serif';
+                ctx.fillStyle = '#fff';
+                ctx.textAlign = 'center';
+                ctx.fillText("BANNED", 0, 15);
+
+                ctx.rotate(Math.PI / 4);
+                ctx.translate(-(x + cardW / 2), -(y + cardH / 2));
+            }
+
+            ctx.restore();
+
+            // Map Name
+            ctx.font = 'bold 30px "DIN Alternate", sans-serif';
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+            ctx.fillText(mapName.toUpperCase(), x + cardW / 2, y + cardH + 40);
+        }
+
+        return canvas.toBuffer();
+    },
+
+    async createRosterImage(teamA, teamB) {
+        const width = 1920;
+        const height = 900;
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext('2d');
+
+        // Layout Constants
+        const centerY = height / 2;
+        const startY = 200;
+        const rowH = 120;
+
+        // Background
+        const grad = ctx.createLinearGradient(0, 0, width, height);
+        grad.addColorStop(0, '#0f172a'); grad.addColorStop(1, '#1e293b');
+        ctx.fillStyle = grad; ctx.fillRect(0, 0, width, height);
+
+        // Center Divider
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(width / 2, 50); ctx.lineTo(width / 2, height - 50); ctx.stroke();
+
+        // Headers
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 80px "VALORANT", sans-serif';
+
+        ctx.fillStyle = '#38bdf8'; // Team A Blue
+        ctx.fillText("TEAM A", width * 0.25, 120);
+
+        ctx.fillStyle = '#f87171'; // Team B Red
+        ctx.fillText("TEAM B", width * 0.75, 120);
+
+        const drawPlayer = async (player, index, isLeft) => {
+            const x = isLeft ? 100 : width - 100;
+            const y = startY + (index * (rowH + 20));
+            const w = (width / 2) - 200;
+            const align = isLeft ? 'left' : 'right';
+
+            // Card
+            ctx.fillStyle = 'rgba(255,255,255,0.05)';
+            ctx.beginPath(); ctx.roundRect(isLeft ? x : width / 2 + 100, y, w, rowH, 10); ctx.fill();
+
+            const pX = isLeft ? x : width / 2 + 100;
+
+            // Avatar
+            const avSize = 90;
+            const avX = isLeft ? pX + 20 : pX + w - avSize - 20;
+            const avY = y + (rowH - avSize) / 2;
+
+            if (player.avatarURL) {
+                try {
+                    const av = await loadImage(player.avatarURL);
+                    ctx.save();
+                    ctx.beginPath(); ctx.arc(avX + avSize / 2, avY + avSize / 2, avSize / 2, 0, Math.PI * 2); ctx.clip();
+                    ctx.drawImage(av, avX, avY, avSize, avSize);
+                    ctx.restore();
+                } catch (e) { }
+            }
+
+            // Name
+            const name = player.username ? player.username.toUpperCase() : 'UNKNOWN';
+            ctx.font = 'bold 45px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = isLeft ? 'left' : 'right';
+            const textX = isLeft ? avX + avSize + 30 : avX - 30;
+            ctx.fillText(name, textX, y + 80);
+
+            // Level Icon
+            const lvlInfo = getLevelInfo(player.stats ? player.stats.elo : 100);
+            try {
+                const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
+                if (fs.existsSync(iconPath)) {
+                    const icon = await loadImage(iconPath);
+                    const iSize = 50;
+                    const iX = isLeft ? textX + ctx.measureText(name).width + 20 : textX - ctx.measureText(name).width - iSize - 20;
+                    ctx.drawImage(icon, iX, y + 35, iSize, iSize);
+                }
+            } catch (e) { }
+        };
+
+        for (let i = 0; i < 5; i++) {
+            if (teamA[i]) await drawPlayer(teamA[i], i, true);
+            if (teamB[i]) await drawPlayer(teamB[i], i, false);
+        }
+
+        return canvas.toBuffer();
+    }
 };
