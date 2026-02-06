@@ -418,12 +418,12 @@ module.exports = {
     },
 
     async createLeaderboardImage(users) {
-        // ULTRA-WIDE PREMIUM LEADERBOARD (FIXED SPACING & SAFETY)
+        // ULTRA-MODERN BALANCED LEADERBOARD (FIXED)
         const width = 2500;
-        const rowHeight = 200;
-        const gap = 35;
-        const headerHeight = 400;
-        const footerHeight = 100;
+        const rowHeight = 220; // Increased height
+        const gap = 40;
+        const headerHeight = 350;
+        const footerHeight = 80;
 
         const safeUsers = users || [];
         const height = headerHeight + (safeUsers.length * (rowHeight + gap)) + footerHeight;
@@ -432,153 +432,142 @@ module.exports = {
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = true;
 
-        // 1. Background
+        // 1. Background (Smooth Dark)
         const bgGradient = ctx.createLinearGradient(0, 0, width, height);
         bgGradient.addColorStop(0, '#050505');
-        bgGradient.addColorStop(0.5, '#0a0a0c');
-        bgGradient.addColorStop(1, '#050505');
+        bgGradient.addColorStop(1, '#0e0e11');
         ctx.fillStyle = bgGradient;
         ctx.fillRect(0, 0, width, height);
 
-        // Overlay
-        ctx.save(); ctx.globalAlpha = 0.03; ctx.fillStyle = '#ffffff';
-        for (let i = 0; i < width; i += 100) {
-            for (let j = 0; j < height; j += 100) {
-                if ((i + j) % 200 === 0) ctx.fillRect(i, j, 5, 5);
-            }
-        }
+        // Grid Pattern
+        ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.03)'; ctx.lineWidth = 1;
+        for (let i = 0; i < width; i += 150) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, height); ctx.stroke(); }
         ctx.restore();
 
         // 2. Header
-        const headerGlow = ctx.createLinearGradient(0, 0, 0, headerHeight);
-        headerGlow.addColorStop(0, 'rgba(255, 255, 255, 0.05)');
-        headerGlow.addColorStop(1, 'transparent');
-        ctx.fillStyle = headerGlow;
-        ctx.fillRect(0, 0, width, headerHeight);
-
+        ctx.font = 'bold 160px "VALORANT", sans-serif';
         ctx.textAlign = 'center';
-        ctx.font = 'bold 150px "VALORANT", sans-serif';
         ctx.fillStyle = '#ffffff';
-        ctx.shadowColor = 'rgba(255, 255, 255, 0.4)'; ctx.shadowBlur = 40;
-        ctx.fillText("LEADERBOARD", width / 2, 200);
+        ctx.shadowColor = 'rgba(255, 255, 255, 0.5)'; ctx.shadowBlur = 40;
+        ctx.fillText("LEADERBOARD", width / 2, 180);
         ctx.shadowBlur = 0;
 
         ctx.font = '50px "DIN Alternate", sans-serif';
         ctx.fillStyle = '#a1a1aa';
-        ctx.letterSpacing = "10px";
-        ctx.fillText(`SEASON 1  //  TOP ${safeUsers.length} PLAYERS`, width / 2, 280);
-
-        ctx.fillStyle = '#ef4444';
-        ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 20;
-        ctx.fillRect(width / 2 - 150, 330, 300, 8);
-        ctx.shadowBlur = 0;
+        ctx.letterSpacing = "5px";
+        ctx.fillText(`TOP ${safeUsers.length} PLAYERS`, width / 2, 250);
 
         // 3. Rows
-        let y = headerHeight + 20;
+        let y = headerHeight;
         for (let i = 0; i < safeUsers.length; i++) {
             const user = safeUsers[i] || {};
             const rank = i + 1;
             const stats = user.matchStats || { elo: 100, totalWins: 0, totalLosses: 0 };
             const lvlInfo = getLevelInfo(stats.elo || 100);
 
-            const cardX = 80;
-            const cardW = width - 160;
+            const cardX = 50;
+            const cardW = width - 100;
 
+            // Design Config
             let isTop3 = false;
-            let themeColor = '#3f3f46';
-            let glowColor = 'transparent';
-            let rankFontColor = '#71717a';
+            let accentColor = '#3f3f46';
+            if (rank === 1) { isTop3 = true; accentColor = '#fbbf24'; }
+            else if (rank === 2) { isTop3 = true; accentColor = '#e4e4e7'; }
+            else if (rank === 3) { isTop3 = true; accentColor = '#d97706'; }
 
-            if (rank === 1) { isTop3 = true; themeColor = '#fbbf24'; glowColor = '#b45309'; rankFontColor = '#fbbf24'; }
-            else if (rank === 2) { isTop3 = true; themeColor = '#e4e4e7'; glowColor = '#52525b'; rankFontColor = '#e4e4e7'; }
-            else if (rank === 3) { isTop3 = true; themeColor = '#d97706'; glowColor = '#78350f'; rankFontColor = '#d97706'; }
-
-            ctx.beginPath(); ctx.roundRect(cardX, y, cardW, rowHeight, 20);
-            const cardGrad = ctx.createLinearGradient(cardX, y, cardX + cardW, y);
+            // Card Background
+            ctx.beginPath(); ctx.roundRect(cardX, y, cardW, rowHeight, 15);
+            ctx.fillStyle = isTop3 ? `rgba(${parseInt(accentColor.slice(1, 3), 16)}, ${parseInt(accentColor.slice(3, 5), 16)}, ${parseInt(accentColor.slice(5, 7), 16)}, 0.05)` : 'rgba(25, 25, 28, 0.6)';
+            ctx.fill();
             if (isTop3) {
-                cardGrad.addColorStop(0, 'rgba(20, 20, 23, 0.9)');
-                cardGrad.addColorStop(1, 'rgba(10, 10, 12, 0.95)');
-            } else {
-                cardGrad.addColorStop(0, '#121214');
-                cardGrad.addColorStop(1, '#0e0e10');
-            }
-            ctx.fillStyle = cardGrad; ctx.fill();
-
-            if (isTop3) {
-                ctx.lineWidth = 4; ctx.strokeStyle = themeColor;
-                ctx.shadowColor = glowColor; ctx.shadowBlur = 25;
-                ctx.stroke(); ctx.shadowBlur = 0;
-                ctx.fillStyle = themeColor;
-                ctx.beginPath(); ctx.roundRect(cardX, y + 20, 15, rowHeight - 40, 10); ctx.fill();
-            } else {
-                ctx.fillStyle = '#27272a';
-                ctx.beginPath(); ctx.roundRect(cardX, y + 20, 10, rowHeight - 40, 10); ctx.fill();
+                ctx.lineWidth = 2; ctx.strokeStyle = accentColor; ctx.stroke();
+                // Glow
+                ctx.shadowColor = accentColor; ctx.shadowBlur = 30; ctx.stroke(); ctx.shadowBlur = 0;
             }
 
+            // Columns
+            const colRank = cardX + 100;
+            const colAvatar = cardX + 300;
+            const colName = cardX + 500;
+            const colStats = width - 900;
+            const colElo = width - 150;
+
+            // Rank
+            ctx.font = `bold ${isTop3 ? 120 : 100}px "DIN Alternate", sans-serif`;
+            ctx.fillStyle = isTop3 ? accentColor : '#52525b';
             ctx.textAlign = 'center';
-            ctx.font = 'bold 110px "DIN Alternate", sans-serif';
-            ctx.fillStyle = rankFontColor;
-            if (isTop3) { ctx.shadowColor = themeColor; ctx.shadowBlur = 20; }
-            ctx.fillText(`#${rank}`, cardX + 120, y + 145);
-            ctx.shadowBlur = 0;
+            ctx.fillText(`#${rank}`, colRank, y + 145);
 
-            const avSize = 140; const avX = cardX + 250; const avY = y + (rowHeight - avSize) / 2;
-            ctx.beginPath(); ctx.arc(avX + avSize / 2, avY + avSize / 2, avSize / 2 + 5, 0, Math.PI * 2);
-            ctx.fillStyle = isTop3 ? themeColor : '#27272a'; ctx.fill();
-
+            // Avatar
+            const avSize = 150;
+            const avY = y + (rowHeight - avSize) / 2;
+            ctx.save(); ctx.beginPath(); ctx.arc(colAvatar, avY + avSize / 2, avSize / 2, 0, Math.PI * 2); ctx.clip();
             if (user.avatarURL) {
-                try {
-                    const av = await loadImage(user.avatarURL);
-                    ctx.save(); ctx.beginPath(); ctx.arc(avX + avSize / 2, avY + avSize / 2, avSize / 2, 0, Math.PI * 2); ctx.clip();
-                    ctx.drawImage(av, avX, avY, avSize, avSize); ctx.restore();
-                } catch (e) { }
-            }
+                try { const av = await loadImage(user.avatarURL); ctx.drawImage(av, colAvatar - avSize / 2, avY, avSize, avSize); } catch (e) { }
+            } else { ctx.fillStyle = '#333'; ctx.fillRect(colAvatar - avSize / 2, avY, avSize, avSize); }
+            ctx.restore();
+            // Ring
+            ctx.beginPath(); ctx.arc(colAvatar, avY + avSize / 2, avSize / 2, 0, Math.PI * 2);
+            ctx.strokeStyle = lvlInfo.color; ctx.lineWidth = 4; ctx.stroke();
 
-            ctx.textAlign = 'left'; ctx.font = 'bold 80px "Segoe UI", sans-serif'; ctx.fillStyle = '#ffffff';
-            let name = String(user.username || 'UNKNOWN').toUpperCase();
-            if (name.length > 14) name = name.substring(0, 14) + '..';
-            const nameX = avX + avSize + 50;
-            ctx.fillText(name, nameX, y + 130);
+            // Name
+            const name = String(user.username || 'UNKNOWN').toUpperCase();
+            ctx.textAlign = 'left';
+            ctx.font = 'bold 80px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#fff';
+            ctx.fillText(name, colName, y + 130);
 
-            const nameW = ctx.measureText(name).width; const iconSize = 90; const iconX = nameX + nameW + 40;
+            // Level Icon Next to Name
+            const nWidth = ctx.measureText(name).width;
             try {
                 const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
                 if (fs.existsSync(iconPath)) {
                     const icon = await loadImage(iconPath);
-                    ctx.drawImage(icon, iconX, y + (rowHeight - iconSize) / 2, iconSize, iconSize);
+                    ctx.drawImage(icon, colName + nWidth + 30, y + 80, 60, 60);
                 }
             } catch (e) { }
 
-            // STATS GROUP - MOVED LEFT
-            const statsStart = width - 900;
+            // Stats (W - L)
             const w = stats.totalWins || 0;
             const l = stats.totalLosses || 0;
             const t = w + l;
             const wr = t > 0 ? Math.round((w / t) * 100) : 0;
 
-            ctx.font = 'bold 55px "DIN Alternate", sans-serif'; ctx.textAlign = 'center';
-            ctx.fillStyle = '#2ecc71'; ctx.fillText(`${w} W`, statsStart, y + 120);
-            ctx.fillStyle = '#ef4444'; ctx.fillText(`${l} L`, statsStart + 180, y + 120);
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 60px "DIN Alternate", sans-serif';
 
-            ctx.textAlign = 'right'; ctx.fillStyle = wr >= 50 ? '#2ecc71' : '#e74c3c';
-            ctx.fillText(`${wr}%`, statsStart + 450, y + 120);
+            ctx.fillStyle = '#2ecc71'; ctx.fillText(`${w}W`, colStats, y + 130);
+            ctx.fillStyle = '#52525b'; ctx.fillText(`-`, colStats + 120, y + 130);
+            ctx.fillStyle = '#ef4444'; ctx.fillText(`${l}L`, colStats + 240, y + 130);
 
-            ctx.font = 'bold 24px "Segoe UI", sans-serif';
-            ctx.fillStyle = '#71717a';
-            ctx.fillText("WIN RATE", statsStart + 450, y + 160);
+            // Win Rate Box
+            const wrX = colStats + 500;
+            ctx.fillStyle = 'rgba(255,255,255,0.05)';
+            ctx.beginPath(); ctx.roundRect(wrX - 100, y + 50, 200, 120, 10); ctx.fill();
 
-            // ELO GROUP - FAR RIGHT
-            const eloX = width - 90;
-            ctx.textAlign = 'right'; ctx.font = 'bold 90px "DIN Alternate", sans-serif'; ctx.fillStyle = '#ffffff';
-            ctx.fillText(String(stats.elo || 100), eloX, y + 115);
-            ctx.font = 'bold 28px "Segoe UI", sans-serif'; ctx.fillStyle = isTop3 ? themeColor : '#71717a';
-            ctx.fillText("ELO POINTS", eloX, y + 160);
+            ctx.fillStyle = wr >= 50 ? '#2ecc71' : '#e74c3c';
+            ctx.font = 'bold 50px "DIN Alternate", sans-serif';
+            ctx.fillText(`${wr}%`, wrX, y + 110);
+            ctx.font = '20px "Segoe UI", sans-serif'; ctx.fillStyle = '#aaa';
+            ctx.fillText('WIN RATE', wrX, y + 140);
+
+            // ELO (Far Right)
+            ctx.textAlign = 'right';
+            ctx.font = 'bold 100px "DIN Alternate", sans-serif';
+            ctx.fillStyle = isTop3 ? accentColor : '#fff';
+            if (isTop3) { ctx.shadowColor = accentColor; ctx.shadowBlur = 20; }
+            ctx.fillText(String(stats.elo || 100), colElo, y + 120);
+            ctx.shadowBlur = 0;
+
+            ctx.font = '30px "Segoe UI", sans-serif'; ctx.fillStyle = '#52525b';
+            ctx.fillText('ELO POINTS', colElo, y + 160);
 
             y += rowHeight + gap;
         }
 
         ctx.textAlign = 'center'; ctx.font = '30px "Segoe UI", sans-serif'; ctx.fillStyle = '#52525b';
-        ctx.fillText("NEXORA RANKED SYSTEM • DEVELOPED BY SWAFF", width / 2, height - 25);
+        ctx.fillText("NEXORA RANKED SYSTEM • DEVELOPED BY SWAFF", width / 2, height - 30);
+
         return canvas.toBuffer('image/png');
     },
 
