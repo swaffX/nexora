@@ -55,6 +55,20 @@ module.exports = {
                 return interaction.editReply({ content: `❌ Kategori bulunamadı! (ID: ${MATCH_CATEGORY_ID})` });
             }
 
+            // --- GÜVENLİK KONTROLLERİ (RİSK ÖNLEME) ---
+
+            // 1. Kategori Doluluğu (Discord 50 Kanal Limiti)
+            // Cache her zaman güncel olmayabilir, fetch yapıp saymak daha güvenlidir ama yavaştır. Cache yeterli.
+            if (category.children.cache.size >= 47) {
+                return interaction.editReply({ content: '❌ **Sistem Uyarısı:** Bu lobi kategorisi kapasitesini doldurmak üzere (Max 50 Kanal). Lütfen devam eden maçların bitmesini bekleyin.' });
+            }
+
+            // 2. Bot Yetkileri
+            const botMember = guild.members.me;
+            if (!botMember.permissions.has([PermissionsBitField.Flags.ManageChannels, PermissionsBitField.Flags.MoveMembers, PermissionsBitField.Flags.ManageRoles])) {
+                return interaction.editReply({ content: '❌ **Kritik Hata:** Botun `Manage Channels`, `Move Members` veya `Manage Roles` yetkisi eksik!' });
+            }
+
             // Ses Kanalındaki Üyeleri Getir (İzinler için)
             const voiceChannel = guild.channels.cache.get(REQUIRED_VOICE_ID);
             const voiceMembers = voiceChannel ? voiceChannel.members.filter(m => !m.user.bot) : new Map();

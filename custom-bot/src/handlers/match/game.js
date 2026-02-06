@@ -181,10 +181,17 @@ module.exports = {
                         await member.voice.setChannel(channelB).catch(e => console.log(`Move error B: ${e.message}`));
                     }
                 }
+
+            } else {
+                throw new Error("Kategori bulunamadı, ses kanalları açılamadı.");
             }
-        } catch (e) {
-            console.error("Voice Channel Error:", e);
-            channel.send("⚠️ Ses kanalları oluşturulurken veya taşınırken bir hata oluştu.");
+
+        } catch (error) {
+            console.error("Match Start Critical Error (Voice):", error);
+            await channel.send(`❌ **Sistem Hatası:** Ses kanalları oluşturulurken bir sorun oluştu.\nDetay: \`${error.message}\`\n\nMaç başlatılamadı. Lütfen tekrar deneyin veya yetkiliye bildirin.`);
+
+            // Maçı iptal etme veya SETUP'a döndürme şansı
+            return; // Exit function, do not proceed to PLAYING state
         }
         // -----------------------------------------------------
 
