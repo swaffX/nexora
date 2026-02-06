@@ -448,7 +448,7 @@ module.exports = {
         await interaction.update({ content: description, components: [], embeds: [] });
         setTimeout(() => interaction.message.delete().catch(() => { }), 5000);
 
-        // Draftı Başlat
+        // Draft Sistemini Başlat
         const draftHandler = require('./draft');
         await draftHandler.startDraftMode(interaction, match);
     },

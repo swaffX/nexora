@@ -127,7 +127,7 @@ module.exports = {
                     name: `🔷 Team ${captainAName} (${sideA})`,
                     type: ChannelType.GuildVoice,
                     parent: parentCategory.id,
-                    userLimit: 5,
+                    userLimit: 0,
                     permissionOverwrites: [
                         {
                             id: guild.roles.everyone.id,
@@ -146,7 +146,7 @@ module.exports = {
                     name: `🟥 Team ${captainBName} (${sideB})`,
                     type: ChannelType.GuildVoice,
                     parent: parentCategory.id,
-                    userLimit: 5,
+                    userLimit: 0,
                     permissionOverwrites: [
                         {
                             id: guild.roles.everyone.id,

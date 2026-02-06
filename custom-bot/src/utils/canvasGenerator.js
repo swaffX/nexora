@@ -961,8 +961,16 @@ module.exports = {
     },
 
     async createMapVetoImage(mapStates, selectedMap, statusText) {
-        const width = 1920;
+        const maps = Object.keys(mapStates);
+        const cardW = 220;
+        const cardH = 350;
+        const gap = 30;
+
+        // Dinamik Genişlik (Haritaların sığması için)
+        const totalContentWidth = maps.length * (cardW + gap) + 100;
+        const width = Math.max(2000, totalContentWidth); // Min 2000px
         const height = 600;
+
         const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
 
@@ -974,10 +982,7 @@ module.exports = {
         ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
         ctx.fillText(statusText || "MAP SELECTION", width / 2, 80);
 
-        const maps = Object.keys(mapStates);
-        const cardW = 220;
-        const cardH = 350;
-        const gap = 30;
+        // Start X Update
         const startX = (width - (maps.length * (cardW + gap) - gap)) / 2;
         const startY = 150;
 
@@ -1133,6 +1138,140 @@ module.exports = {
             if (teamA[i]) await drawPlayer(teamA[i], i, true);
             if (teamB[i]) await drawPlayer(teamB[i], i, false);
         }
+
+        return canvas.toBuffer('image/png');
+    },
+
+    async createWheelResult(winner, loser) {
+        const { createCanvas, loadImage } = require('@napi-rs/canvas');
+        const width = 800;
+        const height = 400;
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext('2d');
+
+        // Arka Plan (Dark)
+        ctx.fillStyle = '#2B2D31';
+        ctx.fillRect(0, 0, width, height);
+
+        // Kazanan Efekti (Gradient)
+        const gradient = ctx.createLinearGradient(0, 0, width, 0);
+        const winColor = winner.team === 'A' ? 'rgba(52, 152, 219, ' : 'rgba(231, 76, 60, '; // Blue or Red
+        gradient.addColorStop(0, winColor + '0.2)');
+        gradient.addColorStop(0.5, 'rgba(0,0,0,0)');
+        gradient.addColorStop(1, winColor + '0.1)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+
+        // Header
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 30px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('KURA SONUCU', width / 2, 50);
+
+        // WINNER Avatar
+        const avSize = 120;
+        const avX = (width / 2) - (avSize / 2);
+        const avY = 100;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(avX + avSize / 2, avY + avSize / 2, avSize / 2, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+
+        // Avatar Load
+        try {
+            const avatarUrl = winner.user.displayAvatarURL ? winner.user.displayAvatarURL({ extension: 'png', forceStatic: true }) : null;
+            if (avatarUrl) {
+                const avatar = await loadImage(avatarUrl);
+                ctx.drawImage(avatar, avX, avY, avSize, avSize);
+            }
+        } catch (e) { }
+        ctx.restore();
+
+        // Border Colors
+        ctx.beginPath();
+        ctx.arc(avX + avSize / 2, avY + avSize / 2, avSize / 2, 0, Math.PI * 2);
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = winner.team === 'A' ? '#3498DB' : '#E74C3C';
+        ctx.stroke();
+
+        // Winner Text
+        ctx.fillStyle = winner.team === 'A' ? '#3498DB' : '#E74C3C'; // Team Color
+        ctx.font = 'bold 50px "Segoe UI", sans-serif';
+        ctx.fillText(winner.name.toUpperCase(), width / 2, 280);
+
+        // Subtext
+        ctx.fillStyle = '#AAAAAA';
+        ctx.font = '30px "Segoe UI", sans-serif';
+        ctx.fillText('SEÇİM HAKKINI KAZANDI', width / 2, 330);
+
+        return canvas.toBuffer('image/png');
+    },
+
+    async createSideSelectionImage(captainA, captainB, selectorId, mapName) {
+        const { createCanvas, loadImage } = require('@napi-rs/canvas');
+        const fs = require('fs');
+        const path = require('path');
+
+        const width = 1000;
+        const height = 500;
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext('2d');
+
+        // Background (Dark)
+        ctx.fillStyle = '#111';
+        ctx.fillRect(0, 0, width, height);
+
+        // Map Background (Faint)
+        try {
+            const assetsPath = path.join(__dirname, '..', '..', 'assets', 'maps');
+            let p = path.join(assetsPath, `${mapName}.png`);
+            if (!fs.existsSync(p)) p = path.join(assetsPath, `${mapName.toLowerCase()}.png`);
+
+            if (fs.existsSync(p)) {
+                const img = await loadImage(p);
+                ctx.save();
+                ctx.globalAlpha = 0.3;
+                ctx.drawImage(img, 0, 0, width, height);
+                ctx.restore();
+            }
+        } catch (e) { }
+
+        // Header
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 40px "VALORANT", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`SIDE SELECTION - ${mapName.toUpperCase()}`, width / 2, 60);
+
+        // Selector Info
+        const selectorName = (selectorId === captainA.id) ? captainA.name : captainB.name;
+        ctx.font = '30px sans-serif';
+        ctx.fillStyle = '#f1c40f'; // Gold
+        ctx.fillText(`${selectorName.toUpperCase()} IS CHOOSING...`, width / 2, 110);
+
+        // Boxes
+        const boxY = 180;
+        const boxW = 350;
+        const boxH = 250;
+
+        // ATTACK (Red)
+        ctx.fillStyle = 'rgba(231, 76, 60, 0.8)';
+        ctx.fillRect(100, boxY, boxW, boxH);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 50px sans-serif';
+        ctx.fillText("ATTACK", 100 + boxW / 2, boxY + boxH / 2 + 15);
+
+        // DEFEND (Blue/Cyan)
+        ctx.fillStyle = 'rgba(52, 152, 219, 0.8)';
+        ctx.fillRect(width - 100 - boxW, boxY, boxW, boxH);
+        ctx.fillStyle = '#fff';
+        ctx.fillText("DEFEND", width - 100 - boxW + boxW / 2, boxY + boxH / 2 + 15);
+
+        // "OR"
+        ctx.fillStyle = '#888';
+        ctx.font = 'italic 30px sans-serif';
+        ctx.fillText("OR", width / 2, boxY + boxH / 2 + 10);
 
         return canvas.toBuffer('image/png');
     }
