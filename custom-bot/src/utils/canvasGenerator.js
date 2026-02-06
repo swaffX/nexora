@@ -603,12 +603,12 @@ module.exports = {
     },
 
     async createLeaderboardImage(users) {
-        // REVISED MODERN WIDE LEADERBOARD
-        const width = 2000; // Genişletildi
-        const rowHeight = 150; // Biraz daha yüksek
-        const gap = 25;
-        const headerHeight = 300;
-        const footerHeight = 80;
+        // ULTRA-WIDE PREMIUM LEADERBOARD (Stats Aesthetic)
+        const width = 2500;
+        const rowHeight = 200;
+        const gap = 35;
+        const headerHeight = 400;
+        const footerHeight = 100;
 
         const height = headerHeight + (users.length * (rowHeight + gap)) + footerHeight;
 
@@ -616,150 +616,156 @@ module.exports = {
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = true;
 
-        // 1. Background (Dark Tech Gradient)
+        // 1. Background (Deep Premium Dark)
         const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-        bgGradient.addColorStop(0, '#09090b'); // Zinc-950
-        bgGradient.addColorStop(1, '#000000');
+        bgGradient.addColorStop(0, '#050505');
+        bgGradient.addColorStop(0.5, '#0a0a0c');
+        bgGradient.addColorStop(1, '#050505');
         ctx.fillStyle = bgGradient;
         ctx.fillRect(0, 0, width, height);
 
-        // Subtle Grid Overlay
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.015)';
-        for (let i = 0; i < height; i += 50) ctx.fillRect(0, i, width, 1);
-        for (let i = 0; i < width; i += 50) ctx.fillRect(i, 0, 1, height);
+        // Hexagon Pattern Overlay (Subtle Tech Feel)
+        ctx.save();
+        ctx.globalAlpha = 0.03;
+        ctx.fillStyle = '#ffffff';
+        for (let i = 0; i < width; i += 100) {
+            for (let j = 0; j < height; j += 100) {
+                if ((i + j) % 200 === 0) ctx.fillRect(i, j, 5, 5);
+            }
+        }
+        ctx.restore();
 
-        // 2. Header Content
-        // Top Glow
-        const topGlow = ctx.createRadialGradient(width / 2, 0, 0, width / 2, 0, 800);
-        topGlow.addColorStop(0, 'rgba(255, 255, 255, 0.05)');
-        topGlow.addColorStop(1, 'transparent');
-        ctx.fillStyle = topGlow;
+        // 2. Header (Cinematic)
+        // Glow
+        const headerGlow = ctx.createLinearGradient(0, 0, 0, headerHeight);
+        headerGlow.addColorStop(0, 'rgba(255, 255, 255, 0.05)');
+        headerGlow.addColorStop(1, 'transparent');
+        ctx.fillStyle = headerGlow;
         ctx.fillRect(0, 0, width, headerHeight);
-
-        // Accent Line
-        ctx.fillStyle = '#ef4444';
-        ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 15;
-        ctx.fillRect(0, headerHeight - 5, width, 5);
-        ctx.shadowBlur = 0;
 
         // Title
         ctx.textAlign = 'center';
-        ctx.font = 'bold 110px "VALORANT", sans-serif'; // Bigger Title
-        ctx.fillStyle = '#fff';
-        ctx.shadowColor = 'rgba(255,255,255,0.5)'; ctx.shadowBlur = 30;
-        ctx.fillText("LEADERBOARD", width / 2, 140);
+        ctx.font = 'bold 150px "VALORANT", sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = 'rgba(255, 255, 255, 0.4)'; ctx.shadowBlur = 40;
+        ctx.fillText("LEADERBOARD", width / 2, 200);
         ctx.shadowBlur = 0;
 
-        ctx.font = '35px "Segoe UI", sans-serif';
+        // Subtitle
+        ctx.font = '50px "DIN Alternate", sans-serif';
         ctx.fillStyle = '#a1a1aa';
-        ctx.fillText(`SEASON 1  •  TOP ${users.length} PLAYERS`, width / 2, 200);
+        ctx.letterSpacing = "10px";
+        ctx.fillText(`SEASON 1  //  TOP ${users.length} PLAYERS`, width / 2, 280);
 
-        ctx.font = 'italic 22px "Segoe UI", sans-serif';
-        ctx.fillStyle = '#52525b';
-        ctx.fillText(`UPDATED: ${new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`, width / 2, 240);
+        // Accent Bar
+        ctx.fillStyle = '#ef4444';
+        ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 20;
+        ctx.fillRect(width / 2 - 150, 330, 300, 8);
+        ctx.shadowBlur = 0;
 
-        // 3. Render List
+        // 3. Render Rows
         let y = headerHeight + 20;
 
         for (let i = 0; i < users.length; i++) {
             const user = users[i];
             const rank = i + 1;
-            const stats = user.matchStats || { elo: 100, totalWins: 0, totalLosses: 0, winStreak: 0 };
+            const stats = user.matchStats || { elo: 100, totalWins: 0, totalLosses: 0 };
             const lvlInfo = getLevelInfo(stats.elo);
 
-            // Card Layout
-            const cardX = 50;
-            const cardW = width - 100; // Full width card
+            const cardX = 80;
+            const cardW = width - 160;
 
             // Themes
-            let themeColor = '#52525b'; // Default Gray
-            let textColor = '#e4e4e7';
-            let bgColor = '#18181b';
             let isTop3 = false;
+            let themeColor = '#3f3f46';
+            let glowColor = 'transparent';
+            let rankFontColor = '#71717a';
 
             if (rank === 1) {
-                themeColor = '#fbbf24'; textColor = '#fbbf24'; bgColor = '#282010'; isTop3 = true; // Gold
+                isTop3 = true; themeColor = '#fbbf24'; glowColor = '#b45309'; rankFontColor = '#fbbf24'; // Gold
             } else if (rank === 2) {
-                themeColor = '#e5e7eb'; textColor = '#f3f4f6'; bgColor = '#202022'; isTop3 = true; // Silver
+                isTop3 = true; themeColor = '#e4e4e7'; glowColor = '#52525b'; rankFontColor = '#e4e4e7'; // Silver
             } else if (rank === 3) {
-                themeColor = '#d97706'; textColor = '#fcd34d'; bgColor = '#2a1e10'; isTop3 = true; // Bronze
+                isTop3 = true; themeColor = '#d97706'; glowColor = '#78350f'; rankFontColor = '#d97706'; // Bronze
             }
 
-            // Draw Card Background
+            // Card Shape & Background
             ctx.beginPath();
-            ctx.roundRect(cardX, y, cardW, rowHeight, 10);
+            ctx.roundRect(cardX, y, cardW, rowHeight, 20);
+
+            // Glass/Dark Gradient
             const cardGrad = ctx.createLinearGradient(cardX, y, cardX + cardW, y);
             if (isTop3) {
-                cardGrad.addColorStop(0, bgColor);
-                cardGrad.addColorStop(1, '#0c0c0e');
+                cardGrad.addColorStop(0, 'rgba(20, 20, 23, 0.9)');
+                cardGrad.addColorStop(1, 'rgba(10, 10, 12, 0.95)');
             } else {
-                cardGrad.addColorStop(0, '#18181b');
-                cardGrad.addColorStop(1, '#101012');
+                cardGrad.addColorStop(0, '#121214');
+                cardGrad.addColorStop(1, '#0e0e10');
             }
             ctx.fillStyle = cardGrad;
             ctx.fill();
 
-            // Border/Glow for Top 3
+            // Border & Glow
             if (isTop3) {
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 4;
                 ctx.strokeStyle = themeColor;
-                ctx.shadowColor = themeColor; ctx.shadowBlur = 10;
+                ctx.shadowColor = glowColor; ctx.shadowBlur = 25;
                 ctx.stroke();
                 ctx.shadowBlur = 0;
 
-                // Left Accent Bar
+                // Left Active Bar
                 ctx.fillStyle = themeColor;
-                ctx.beginPath(); ctx.roundRect(cardX, y, 10, rowHeight, [10, 0, 0, 10]); ctx.fill();
+                ctx.beginPath(); ctx.roundRect(cardX, y + 20, 15, rowHeight - 40, 10); ctx.fill();
             } else {
-                // Default Left Bar
                 ctx.fillStyle = '#27272a';
-                ctx.beginPath(); ctx.roundRect(cardX, y, 8, rowHeight, [10, 0, 0, 10]); ctx.fill();
+                ctx.beginPath(); ctx.roundRect(cardX, y + 20, 10, rowHeight - 40, 10); ctx.fill();
             }
 
-            // --- DATA ---
+            // --- DATA RENDERING ---
 
             // 1. Rank (#1)
             ctx.textAlign = 'center';
-            ctx.font = 'bold 80px "DIN Alternate", sans-serif';
-            ctx.fillStyle = isTop3 ? textColor : '#71717a';
-            if (isTop3) { ctx.shadowColor = themeColor; ctx.shadowBlur = 15; }
-            ctx.fillText(`#${rank}`, cardX + 90, y + 105);
+            ctx.font = 'bold 110px "DIN Alternate", sans-serif'; // Huge Rank
+            ctx.fillStyle = rankFontColor;
+            if (isTop3) { ctx.shadowColor = themeColor; ctx.shadowBlur = 20; }
+            ctx.fillText(`#${rank}`, cardX + 120, y + 145);
             ctx.shadowBlur = 0;
 
             // 2. Avatar
-            const avatarSize = 100;
-            const avatarX = cardX + 200;
-            const avatarY = y + (rowHeight - avatarSize) / 2;
+            const avSize = 140; // Bigger Avatar
+            const avX = cardX + 250;
+            const avY = y + (rowHeight - avSize) / 2;
 
-            // Hexagon/Circle Frame
-            ctx.beginPath(); ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2 + 4, 0, Math.PI * 2);
+            // Avatar Background/Border
+            ctx.beginPath(); ctx.arc(avX + avSize / 2, avY + avSize / 2, avSize / 2 + 5, 0, Math.PI * 2);
             ctx.fillStyle = isTop3 ? themeColor : '#27272a'; ctx.fill();
 
             if (user.avatarURL) {
                 try {
-                    const avatar = await loadImage(user.avatarURL);
+                    const av = await loadImage(user.avatarURL);
                     ctx.save();
-                    ctx.beginPath(); ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2); ctx.clip();
-                    ctx.drawImage(avatar, avatarX, avatarY, avatarSize, avatarSize);
+                    ctx.beginPath(); ctx.arc(avX + avSize / 2, avY + avSize / 2, avSize / 2, 0, Math.PI * 2); ctx.clip();
+                    ctx.drawImage(av, avX, avY, avSize, avSize);
                     ctx.restore();
                 } catch (e) { }
             }
 
             // 3. Username
             ctx.textAlign = 'left';
-            ctx.font = 'bold 60px "Segoe UI", sans-serif';
-            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 80px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#ffffff';
             let name = user.username ? user.username.toUpperCase() : 'UNKNOWN';
-            // Daha az truncate, yerimiz var
-            if (name.length > 15) name = name.substring(0, 15) + '..';
+            if (name.length > 14) name = name.substring(0, 14) + '..';
 
-            const nameX = avatarX + avatarSize + 40;
-            ctx.fillText(name, nameX, y + 95);
+            const nameX = avX + avSize + 50;
+            const nameY = y + 130;
+            ctx.fillText(name, nameX, nameY);
 
-            // 4. Level Icon (Next to Name)
-            const nameWidth = ctx.measureText(name).width;
-            const iconX = nameX + nameWidth + 25;
-            const iconSize = 70;
+            // 4. Level Icon
+            const nameW = ctx.measureText(name).width;
+            const iconSize = 90;
+            const iconX = nameX + nameW + 40;
+
             try {
                 const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
                 if (fs.existsSync(iconPath)) {
@@ -768,59 +774,54 @@ module.exports = {
                 }
             } catch (e) { }
 
-            // 5. Stats (W - L - WR) - Align Right-Center
-            // Total area width for stats ~600px
-            const statsEndX = width - 400; // ELO starts at width-350
+            // 5. Stats Section (Floating Right)
+            const statsStart = width - 650;
 
-            const wins = stats.totalWins || 0;
-            const losses = stats.totalLosses || 0;
-            const total = wins + losses;
-            const wr = total > 0 ? Math.round((wins / total) * 100) : 0;
+            // Win/Loss/WR Container
+            const w = stats.totalWins || 0;
+            const l = stats.totalLosses || 0;
+            const t = w + l;
+            const wr = t > 0 ? Math.round((w / t) * 100) : 0;
 
+            ctx.font = 'bold 55px "DIN Alternate", sans-serif';
             ctx.textAlign = 'center';
-            ctx.font = 'bold 45px "DIN Alternate", sans-serif';
 
             // Wins
             ctx.fillStyle = '#2ecc71';
-            ctx.fillText(`${wins}W`, statsEndX - 350, y + 90);
+            ctx.fillText(`${w} W`, statsStart, y + 120);
 
-            // Loss
+            // Losses
             ctx.fillStyle = '#ef4444';
-            ctx.fillText(`${losses}L`, statsEndX - 230, y + 90);
+            ctx.fillText(`${l} L`, statsStart + 160, y + 120);
 
             // WR
             ctx.textAlign = 'right';
             ctx.fillStyle = wr >= 50 ? '#2ecc71' : '#e74c3c';
-            ctx.fillText(`%${wr}`, statsEndX - 50, y + 90);
-            ctx.font = 'bold 20px "Segoe UI", sans-serif';
+            ctx.fillText(`${wr}%`, statsStart + 400, y + 120);
+
+            ctx.font = 'bold 24px "Segoe UI", sans-serif';
             ctx.fillStyle = '#71717a';
-            ctx.fillText("WIN RATE", statsEndX - 50, y + 120);
+            ctx.fillText("WIN RATE", statsStart + 400, y + 160);
 
-            // 6. ELO Points (Far Right)
-            // Fixed Position to avoid overlap
-            const eloAreaX = width - 80;
-            const eloCenterY = y + rowHeight / 2;
-
+            // 6. ELO (Far Right)
+            const eloX = width - 100;
             ctx.textAlign = 'right';
-            ctx.font = 'bold 75px "DIN Alternate", sans-serif';
-            ctx.fillStyle = '#fff';
-            // ELO Number
-            ctx.fillText(`${stats.elo}`, eloAreaX, eloCenterY + 15);
+            ctx.font = 'bold 90px "DIN Alternate", sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(`${stats.elo}`, eloX, y + 115);
 
-            // Label (Below or Side?) -> Below is risky for height. Side is better if space.
-            // But user said "overlap". Let's put label cleanly below with smaller font.
-            ctx.font = 'bold 22px "Segoe UI", sans-serif';
+            ctx.font = 'bold 28px "Segoe UI", sans-serif';
             ctx.fillStyle = isTop3 ? themeColor : '#71717a';
-            ctx.fillText("ELO", eloAreaX, eloCenterY + 45);
+            ctx.fillText("ELO POINTS", eloX, y + 160);
 
             y += rowHeight + gap;
         }
 
-        // Footer
+        // Footer Text
         ctx.textAlign = 'center';
-        ctx.font = '22px "Segoe UI", sans-serif';
+        ctx.font = '30px "Segoe UI", sans-serif';
         ctx.fillStyle = '#52525b';
-        ctx.fillText("NEXORA RANKED SYSTEM  •  SEASON 1  •  DEVELOPED BY SWAFF", width / 2, height - 30);
+        ctx.fillText("NEXORA RANKED SYSTEM • DEVELOPED BY SWAFF", width / 2, height - 25);
 
         return canvas.toBuffer();
     },
