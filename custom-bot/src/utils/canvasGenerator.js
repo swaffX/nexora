@@ -281,7 +281,7 @@ module.exports = {
         ctx.textAlign = 'right';
         ctx.fillText(new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }), width - 30, height - 23);
 
-        return canvas.toBuffer();
+        return canvas.toBuffer('image/png');
     },
 
     async createEloCard(user, stats, rank) {
@@ -405,7 +405,7 @@ module.exports = {
         drawStatBox(1, 'Wins', wins, '#2ecc71');
         drawStatBox(2, 'Win Rate', `%${winRate}`, winRate >= 50 ? '#2ecc71' : '#e74c3c');
         drawStatBox(3, 'Streak', Math.abs(streak), streak >= 0 ? '#2ecc71' : '#e74c3c');
-        return canvas.toBuffer();
+        return canvas.toBuffer('image/png');
     },
 
     async createDetailedStatsImage(user, stats, matchHistory, bestMap, favoriteTeammate, rank) {
@@ -599,7 +599,7 @@ module.exports = {
                 ctx.drawImage(icon, iconX, footerMid - (iconSize / 2), iconSize, iconSize);
             }
         } catch (e) { }
-        return canvas.toBuffer();
+        return canvas.toBuffer('image/png');
     },
 
     async createLeaderboardImage(users) {
@@ -823,7 +823,7 @@ module.exports = {
         ctx.fillStyle = '#52525b';
         ctx.fillText("NEXORA RANKED SYSTEM • DEVELOPED BY SWAFF", width / 2, height - 25);
 
-        return canvas.toBuffer();
+        return canvas.toBuffer('image/png');
     },
 
     // --- ADVANCED MATCH VISUALIZATIONS ---
@@ -954,7 +954,7 @@ module.exports = {
         if (captainA) await drawCaptain(captainA, true);
         if (captainB) await drawCaptain(captainB, false);
 
-        return canvas.toBuffer();
+        return canvas.toBuffer('image/png');
     },
 
     async createMapVetoImage(mapStates, selectedMap, statusText) {
@@ -1044,7 +1044,7 @@ module.exports = {
             ctx.fillText(mapName.toUpperCase(), x + cardW / 2, y + cardH + 40);
         }
 
-        return canvas.toBuffer();
+        return canvas.toBuffer('image/png');
     },
 
     async createRosterImage(teamA, teamB) {
@@ -1131,6 +1131,6 @@ module.exports = {
             if (teamB[i]) await drawPlayer(teamB[i], i, false);
         }
 
-        return canvas.toBuffer();
+        return canvas.toBuffer('image/png');
     }
 };
