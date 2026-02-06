@@ -36,6 +36,40 @@ module.exports = {
         try {
             switch (action) {
                 // --- LOBBY ---
+                case 'start': { // lobby_start_ID_VOICEID
+                    const lobbyNum = parts[2] || '1';
+                    const voiceId = parts[3];
+
+                    // Ses Kanalı Kontrolü (Eğer voiceId varsa zorunlu)
+                    if (voiceId) {
+                        if (!interaction.member.voice.channel || interaction.member.voice.channel.id !== voiceId) {
+                            return interaction.reply({
+                                content: `❌ Lütfen önce **Lobi ${lobbyNum} Bekleme** ses kanalına (<#${voiceId}>) katılın!`,
+                                flags: require('discord.js').MessageFlags.Ephemeral
+                            });
+                        }
+                    }
+
+                    // Modal Aç
+                    const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
+                    const modal = new ModalBuilder()
+                        .setCustomId(`modal_create_match_${lobbyNum}_${voiceId}`) // VoiceID eklendi
+                        .setTitle(`Lobi ${lobbyNum}: Maç Oluştur`);
+
+                    const codeInput = new TextInputBuilder()
+                        .setCustomId('lobby_code')
+                        .setLabel("Valorant Lobi Kodu (6 Hane)")
+                        .setStyle(TextInputStyle.Short)
+                        .setPlaceholder('Örn: ABC123')
+                        .setMinLength(6)
+                        .setMaxLength(6)
+                        .setRequired(true);
+
+                    modal.addComponents(new ActionRowBuilder().addComponents(codeInput));
+                    await interaction.showModal(modal);
+                    break;
+                }
+
                 case 'create': {
                     // parts[2] = lobbyId (1, 2, 3)
                     const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');

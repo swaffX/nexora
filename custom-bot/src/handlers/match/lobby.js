@@ -7,7 +7,7 @@ const eloService = require('../../services/eloService');
 const canvasGenerator = require('../../utils/canvasGenerator');
 
 module.exports = {
-    async createLobby(interaction, targetLobbyId, initialLobbyCode = null) {
+    async createLobby(interaction, targetLobbyId, initialLobbyCode = null, overriddenVoiceId = null) {
         const REQUIRED_ROLE_ID = '1463875325019557920';
         const { MessageFlags, PermissionsBitField } = require('discord.js');
 
@@ -17,7 +17,17 @@ module.exports = {
         }
 
         // Lobi Configini Al
-        const lobbyConfig = getLobbyConfig(targetLobbyId);
+        let lobbyConfig = getLobbyConfig(targetLobbyId);
+
+        // Dinamik Override (Merkezi Hub Sistemi)
+        if (overriddenVoiceId) {
+            lobbyConfig = {
+                voiceId: overriddenVoiceId,
+                categoryId: interaction.channel.parentId, // Panel ile aynı kategoriye aç
+                name: `Lobby ${targetLobbyId}`
+            };
+        }
+
         if (!lobbyConfig) {
             return interaction.reply({ content: '❌ Geçersiz Lobi ID veya konfigürasyon bulunamadı.', flags: MessageFlags.Ephemeral });
         }

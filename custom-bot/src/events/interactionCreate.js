@@ -29,8 +29,8 @@ module.exports = {
         if (!customId) return;
 
         try {
-            // Match System
-            if (customId.startsWith('match_')) {
+            // Match System & Lobby Start
+            if (customId.startsWith('match_') || customId.startsWith('lobby_')) {
                 const matchHandler = require('../handlers/matchHandler');
                 await matchHandler.handleInteraction(interaction, client);
             }
@@ -49,10 +49,12 @@ module.exports = {
 
             // Lobby Code Submit (Admin Setup)
             if (customId.startsWith('modal_create_match_')) {
-                const lobbyId = customId.split('_')[3];
+                const parts = customId.split('_');
+                const lobbyId = parts[3];
+                const voiceId = parts[4]; // Artık voiceId modal ID'sinde
                 const code = interaction.fields.getTextInputValue('lobby_code');
                 const lobby = require('../handlers/match/lobby');
-                await lobby.createLobby(interaction, lobbyId, code);
+                await lobby.createLobby(interaction, lobbyId, code, voiceId);
             }
 
             // Tournament System (Opsiyonel - Modül yoksa atla)
