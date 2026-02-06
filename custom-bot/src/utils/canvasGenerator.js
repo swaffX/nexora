@@ -602,79 +602,206 @@ module.exports = {
     },
 
     async createLeaderboardImage(users) {
-        const rowHeight = 140;
-        const width = 2000;
-        const height = 300 + (users.length * (rowHeight + 20));
+        // Modern Premium Leaderboard Design
+        const width = 1500;
+        const rowHeight = 130;
+        const gap = 20;
+        const headerHeight = 250;
+        const footerHeight = 60;
+
+        const height = headerHeight + (users.length * (rowHeight + gap)) + footerHeight;
+
         const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = true;
 
+        // 1. Background (Dark Gradient)
         const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-        bgGradient.addColorStop(0, '#18181b'); bgGradient.addColorStop(1, '#09090b');
-        ctx.fillStyle = bgGradient; ctx.fillRect(0, 0, width, height);
+        bgGradient.addColorStop(0, '#0f0f11');
+        bgGradient.addColorStop(1, '#050505');
+        ctx.fillStyle = bgGradient;
+        ctx.fillRect(0, 0, width, height);
 
-        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 80px "Segoe UI", sans-serif';
-        ctx.textAlign = 'center'; ctx.fillText('LEADERBOARD', width / 2, 120);
-        ctx.font = '30px "Segoe UI", sans-serif'; ctx.fillStyle = '#666';
-        ctx.fillText(`TOP ${users.length} PLAYERS • UPDATED: ${new Date().toLocaleTimeString('tr-TR', { timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit' })}`, width / 2, 170);
+        // Grid Pattern Overlay (Optional, sleek look)
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
+        for (let i = 0; i < height; i += 40) ctx.fillRect(0, i, width, 1);
+        for (let i = 0; i < width; i += 40) ctx.fillRect(i, 0, 1, height);
 
-        let y = 250;
+        // 2. Header
+        // Header Background Glow
+        const headerGlow = ctx.createLinearGradient(0, 0, width, 0);
+        headerGlow.addColorStop(0, 'rgba(0,0,0,0)');
+        headerGlow.addColorStop(0.5, 'rgba(255, 255, 255, 0.03)');
+        headerGlow.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = headerGlow;
+        ctx.fillRect(0, 0, width, headerHeight - 20);
+
+        // Red Accent Line
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(0, headerHeight - 10, width, 4);
+
+        // Title
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 90px "VALORANT", sans-serif';
+        ctx.fillStyle = '#fff';
+        ctx.shadowColor = '#fff'; ctx.shadowBlur = 25;
+        ctx.fillText("LEADERBOARD", width / 2, 130);
+        ctx.shadowBlur = 0;
+
+        ctx.font = '30px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#888';
+        ctx.fillText(`SEASON 1  •  TOP ${users.length} PLAYERS`, width / 2, 185);
+        ctx.font = 'italic 20px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#555';
+        ctx.fillText(`UPDATED: ${new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`, width / 2, 215);
+
+        // 3. Render User Rows
+        let y = headerHeight + 20;
+
         for (let i = 0; i < users.length; i++) {
             const user = users[i];
-            const stats = user.matchStats || { elo: 100 };
+            const rank = i + 1;
+            const stats = user.matchStats || { elo: 100, totalWins: 0, totalLosses: 0, winStreak: 0 };
             const lvlInfo = getLevelInfo(stats.elo);
-            const rankColor = lvlInfo.color;
 
-            ctx.fillStyle = '#27272a';
-            if (i === 0) { ctx.shadowColor = '#fbbf24'; ctx.shadowBlur = 25; ctx.fillStyle = '#3f2c0e'; }
-            else if (i === 1) { ctx.shadowColor = '#9ca3af'; ctx.shadowBlur = 15; ctx.fillStyle = '#2d3036'; }
-            else if (i === 2) { ctx.shadowColor = '#b45309'; ctx.shadowBlur = 10; ctx.fillStyle = '#2e1f13'; }
-            else { ctx.shadowBlur = 0; }
-            ctx.fillRect(50, y, width - 100, rowHeight);
+            // Row Metrics
+            const cardX = 50;
+            const cardW = width - 100;
+
+            // Theme Colors based on Rank
+            let themeColor = '#3f3f46'; // Default Zinc-700
+            let textColor = '#d4d4d8';
+            let glowColor = 'transparent';
+            let isTop3 = false;
+
+            if (rank === 1) {
+                themeColor = '#fbbf24'; glowColor = '#d97706'; textColor = '#fbbf24'; isTop3 = true; // Gold
+            } else if (rank === 2) {
+                themeColor = '#e5e7eb'; glowColor = '#9ca3af'; textColor = '#f3f4f6'; isTop3 = true; // Silver
+            } else if (rank === 3) {
+                themeColor = '#ca8a04'; glowColor = '#854d0e'; textColor = '#fcd34d'; isTop3 = true; // Bronze
+            }
+
+            // --- DRAW CARD ---
+            ctx.beginPath();
+            ctx.roundRect(cardX, y, cardW, rowHeight, 15);
+            ctx.fillStyle = '#18181b'; // Card base
+            ctx.fill();
+
+            // Glow/Border for Top 3
+            if (isTop3) {
+                ctx.shadowColor = glowColor; ctx.shadowBlur = 15;
+                ctx.lineWidth = 2; ctx.strokeStyle = themeColor;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Left accent bar
+                ctx.fillStyle = themeColor;
+                ctx.beginPath(); ctx.roundRect(cardX, y, 12, rowHeight, [15, 0, 0, 15]); ctx.fill();
+            } else {
+                // Default left bar (Darker)
+                ctx.fillStyle = '#27272a';
+                ctx.beginPath(); ctx.roundRect(cardX, y, 8, rowHeight, [15, 0, 0, 15]); ctx.fill();
+            }
+
+            // --- CONTENT ---
+
+            // 1. Rank Number
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 70px "DIN Alternate", sans-serif';
+            ctx.fillStyle = isTop3 ? textColor : '#52525b';
+            if (isTop3) { ctx.shadowColor = glowColor; ctx.shadowBlur = 10; }
+            ctx.fillText(`#${rank}`, cardX + 80, y + 90);
             ctx.shadowBlur = 0;
 
-            ctx.fillStyle = rankColor; ctx.fillRect(50, y, 10, rowHeight);
+            // 2. Avatar
+            const avatarSize = 90;
+            const avatarX = cardX + 160;
+            const avatarY = y + (rowHeight - avatarSize) / 2;
 
-            ctx.fillStyle = '#ffffff'; ctx.font = 'bold 60px "DIN Alternate", sans-serif'; ctx.textAlign = 'center';
-            ctx.fillText(`#${i + 1}`, 130, y + 95);
+            // Avatar Placeholder Circle
+            ctx.beginPath(); ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2 + 2, 0, Math.PI * 2);
+            ctx.fillStyle = isTop3 ? themeColor : '#333'; ctx.fill();
 
-            ctx.textAlign = 'left'; ctx.font = 'bold 50px "Segoe UI", sans-serif';
+            if (user.avatarURL) {
+                try {
+                    const avatar = await loadImage(user.avatarURL);
+                    ctx.save();
+                    ctx.beginPath(); ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2); ctx.clip();
+                    ctx.drawImage(avatar, avatarX, avatarY, avatarSize, avatarSize);
+                    ctx.restore();
+                } catch (e) { }
+            }
+
+            // 3. Username
+            ctx.textAlign = 'left';
+            ctx.font = 'bold 50px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#fff';
             let name = user.username ? user.username.toUpperCase() : 'UNKNOWN';
-            if (name.length > 15) name = name.substring(0, 15) + '...';
+            if (name.length > 12) name = name.substring(0, 12) + '...';
+            ctx.fillText(name, avatarX + avatarSize + 30, y + 82);
 
-            const streak = Number(stats.winStreak) || 0;
-            if (streak >= 3) ctx.fillStyle = '#fbbf24';
-            else if (streak <= -3) ctx.fillStyle = '#ef4444';
-            else ctx.fillStyle = '#fff';
-            ctx.fillText(name, 350, y + 90);
-
+            // 4. Level Icon
+            const nameWidth = ctx.measureText(name).width;
+            const iconX = avatarX + avatarSize + 30 + nameWidth + 20;
+            const iconSize = 60;
             try {
                 const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
                 if (fs.existsSync(iconPath)) {
                     const icon = await loadImage(iconPath);
-                    ctx.drawImage(icon, 220, y + 20, 100, 100);
+                    ctx.drawImage(icon, iconX, y + (rowHeight - iconSize) / 2, iconSize, iconSize);
                 }
             } catch (e) { }
 
-            const wins = stats.totalWins || 0; const losses = stats.totalLosses || 0; const total = wins + losses;
+            // 5. Stats (W - L - WR)
+            const wins = stats.totalWins || 0;
+            const losses = stats.totalLosses || 0;
+            const total = wins + losses;
             const wr = total > 0 ? Math.round((wins / total) * 100) : 0;
-            ctx.textAlign = 'center'; ctx.font = 'bold 45px "DIN Alternate", sans-serif';
-            ctx.fillStyle = '#2ecc71'; ctx.fillText(`${wins} W`, 1150, y + 90);
-            ctx.fillStyle = '#ef4444'; ctx.fillText(`${losses} L`, 1350, y + 90);
-            ctx.fillStyle = wr >= 50 ? '#2ecc71' : '#e74c3c'; ctx.fillText(`%${wr}`, 1550, y + 85);
-            ctx.font = 'bold 22px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('WIN RATE', 1550, y + 125);
 
-            ctx.font = 'bold 80px "DIN Alternate", sans-serif'; ctx.fillStyle = '#ffffff'; ctx.fillText(`${stats.elo}`, 1800, y + 90);
-            ctx.font = 'bold 22px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('ELO POINTS', 1800, y + 125);
-            y += rowHeight + 20;
+            // Stats Group
+            const statsX = width - 450; // Align from right side
+
+            // Wins
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 35px "DIN Alternate", sans-serif';
+            ctx.fillStyle = '#2ecc71';
+            ctx.fillText(`${wins}W`, statsX, y + 78);
+
+            // Splitter
+            ctx.fillStyle = '#333'; ctx.fillRect(statsX + 40, y + 40, 2, 50);
+
+            // Losses
+            ctx.fillStyle = '#ef4444';
+            ctx.fillText(`${losses}L`, statsX + 90, y + 78);
+
+            // Splitter
+            ctx.fillStyle = '#333'; ctx.fillRect(statsX + 140, y + 40, 2, 50);
+
+            // WR
+            ctx.fillStyle = wr >= 50 ? '#2ecc71' : '#e74c3c';
+            ctx.fillText(`%${wr}`, statsX + 210, y + 78);
+            ctx.font = '16px "Segoe UI", sans-serif'; ctx.fillStyle = '#666';
+            ctx.fillText('WIN RATE', statsX + 210, y + 105);
+
+            // 6. ELO Points (Far Right)
+            const eloX = width - 100;
+            ctx.textAlign = 'right';
+            ctx.font = 'bold 65px "DIN Alternate", sans-serif';
+            ctx.fillStyle = '#fff';
+            ctx.fillText(`${stats.elo}`, eloX, y + 80);
+            ctx.font = 'bold 20px "Segoe UI", sans-serif'; ctx.fillStyle = isTop3 ? themeColor : '#888';
+            ctx.fillText('ELO POINTS', eloX, y + 110);
+
+            y += rowHeight + gap;
         }
-        return canvas.toBuffer();
-    },
 
-    async createLeaderboardImage_OLD(users) {
-        // ... (Keep this as fallback if needed)
-        const rowHeight = 150; const width = 2000; const height = (users.length * rowHeight) + 200;
-        const canvas = createCanvas(width, height); const ctx = canvas.getContext('2d'); ctx.fillStyle = '#181818'; ctx.fillRect(0, 0, width, height);
+        // Footer Text
+        ctx.textAlign = 'center';
+        ctx.font = '20px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#333';
+        ctx.fillText("NEXORA RANKED SYSTEM • DEVELOPED BY SWAFF", width / 2, height - 25);
+
         return canvas.toBuffer();
     },
 

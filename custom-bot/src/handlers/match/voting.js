@@ -162,6 +162,31 @@ module.exports = {
             // Sonuç mesajını 5 saniye sonra sil
             if (resMsg) setTimeout(() => resMsg.delete().catch(() => { }), 5000);
 
+            // --- MAP VETO IMAGE GENERATION ---
+            try {
+                const canvasGenerator = require('../../utils/canvasGenerator');
+                const mapStates = {};
+                // MAPS zaten import edilmiş durumda
+                MAPS.forEach(m => {
+                    const isSelected = m.name === match.selectedMap;
+                    mapStates[m.name] = {
+                        banned: !isSelected,
+                        bannedBy: isSelected ? null : 'ELENEN'
+                    };
+                });
+
+                const buffer = await canvasGenerator.createMapVetoImage(mapStates, match.selectedMap, 'OYLAMA SONUCU');
+                const attachment = new AttachmentBuilder(buffer, { name: 'map-veto.png' });
+
+                // Görseli gönder
+                const vetoMsg = await channel.send({ content: `✅ **Harita:** ${match.selectedMap}`, files: [attachment] });
+
+                // Görselin görünmesi için biraz bekle (Match Start başlamadan önce)
+                await new Promise(r => setTimeout(r, 4000));
+            } catch (e) {
+                console.error('Map Veto Image Gen Error:', e);
+            }
+
             // "KADROLAR BELİRLENDİ" Embed'ine Haritayı Ekle
             try {
                 if (match.draftMessageId) {

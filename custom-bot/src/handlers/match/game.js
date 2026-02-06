@@ -199,10 +199,13 @@ module.exports = {
         const nameA = `TEAM ${shortNameA}`;
         const nameB = `TEAM ${shortNameB}`;
 
-        // --- GÖRSEL HAZIRLIĞI (VERSUS CANVAS) ---
+        // --- GÖRSEL HAZIRLIĞI (VERSUS & ROSTER) ---
+        const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
         let mapAttachment = null;
         let mapImageName = 'versus.png';
+        let rosterAttachment = null;
 
+        // 1. VERSUS
         try {
             // Stats Çek
             const captainUserDataA = await User.findOne({ odasi: match.captainA, odaId: channel.guild.id });
@@ -222,10 +225,9 @@ module.exports = {
             }
         } catch (e) {
             console.error('Versus Image Gen Error:', e);
-            // Hata durumunda eski statik harita görseline fallback yapabiliriz ama şimdilik devam
         }
 
-        // Eğer Versus Canvas başarısız olursa, statik harita görselini dene
+        // Fallback: Versus başarısızsa statik harita
         if (!mapAttachment) {
             const assetsPath = path.join(__dirname, '..', '..', '..', 'assets', 'maps');
             const mapName = match.selectedMap || 'Unknown';
@@ -237,6 +239,29 @@ module.exports = {
                 mapImageName = `${mapName}.png`;
             }
         }
+
+        // 2. ROSTER
+        try {
+            const fetchTeamData = async (ids) => {
+                return Promise.all(ids.map(async (id) => {
+                    const m = await channel.guild.members.fetch(id).catch(() => null);
+                    const u = await User.findOne({ odasi: id, odaId: channel.guild.id });
+                    return {
+                        username: m ? m.displayName : 'Unknown',
+                        avatarURL: m ? m.user.displayAvatarURL({ extension: 'png', size: 128, forceStatic: true }) : null,
+                        level: u?.matchStats?.matchLevel || 1
+                    };
+                }));
+            };
+
+            const teamAData = await fetchTeamData(match.teamA);
+            const teamBData = await fetchTeamData(match.teamB);
+
+            const rosterBuffer = await canvasGenerator.createRosterImage(teamAData, teamBData);
+            rosterAttachment = new AttachmentBuilder(rosterBuffer, { name: 'roster.png' });
+
+        } catch (e) { console.error('Roster Gen Error:', e); }
+
 
         // --- ÖNCEKİ MESAJLARI TEMİZLE ---
         try {
@@ -304,11 +329,19 @@ module.exports = {
 
         const payload = {
             embeds: [embed],
-            components: [row]
+            components: [row],
+            files: []
         };
 
-        if (mapAttachment) {
-            payload.files = [mapAttachment];
+        if (mapAttachment) payload.files.push(mapAttachment);
+
+        // Roster'ı ikinci embed olarak ekle
+        if (rosterAttachment) {
+            payload.files.push(rosterAttachment);
+            const rosterEmbed = new EmbedBuilder()
+                .setColor(0x2B2D31)
+                .setImage('attachment://roster.png');
+            payload.embeds.push(rosterEmbed);
         }
 
         await channel.send(payload);
