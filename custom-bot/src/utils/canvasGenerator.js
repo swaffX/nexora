@@ -29,7 +29,260 @@ const getLevelInfo = (elo) => {
     return { lv: level, min, max, color: colors[level] || '#ffffff' };
 };
 
+// Yıldız Çizim Fonksiyonu (MVP için)
+function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius, color) {
+    let rot = Math.PI / 2 * 3;
+    let x = cx;
+    let y = cy;
+    let step = Math.PI / spikes;
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - outerRadius);
+    for (let i = 0; i < spikes; i++) {
+        x = cx + Math.cos(rot) * outerRadius;
+        y = cy + Math.sin(rot) * outerRadius;
+        ctx.lineTo(x, y);
+        rot += step;
+
+        x = cx + Math.cos(rot) * innerRadius;
+        y = cy + Math.sin(rot) * innerRadius;
+        ctx.lineTo(x, y);
+        rot += step;
+    }
+    ctx.lineTo(cx, cy - outerRadius);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    // Glow
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 10;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+}
+
 module.exports = {
+    async createMatchResultImage(match, eloChanges, playersData) {
+        // match: Match model object
+        // eloChanges: Array of { userId, change, newElo }
+        // playersData: Map or Object of { userId: { username, avatarURL } }
+
+        const width = 1200;
+        const height = 800;
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext('2d');
+
+        // 1. Arkaplan (Harita Resmi)
+        let mapBg = null;
+        try {
+            const assetsPath = path.join(__dirname, '..', '..', 'assets', 'maps');
+            // Try explicit filename first, then variations
+            let p = path.join(assetsPath, `${match.map}.png`);
+            if (!fs.existsSync(p)) p = path.join(assetsPath, `${match.map.toLowerCase()}.png`);
+            if (!fs.existsSync(p)) p = path.join(assetsPath, `${match.map.trim()}.png`);
+
+            if (fs.existsSync(p)) {
+                mapBg = await loadImage(p);
+            }
+        } catch (e) { console.log('Map load error', e); }
+
+        if (mapBg) {
+            // Cover fit
+            const scale = Math.max(width / mapBg.width, height / mapBg.height);
+            const w = mapBg.width * scale;
+            const h = mapBg.height * scale;
+            ctx.drawImage(mapBg, (width - w) / 2, (height - h) / 2, w, h);
+
+            // Dark Overlay
+            ctx.fillStyle = 'rgba(9, 9, 11, 0.85)'; // Koyu filtre
+            ctx.fillRect(0, 0, width, height);
+        } else {
+            // Fallback bg
+            const bgGradient = ctx.createLinearGradient(0, 0, width, height);
+            bgGradient.addColorStop(0, '#18181b');
+            bgGradient.addColorStop(1, '#09090b');
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, width, height);
+        }
+
+        // 2. Header (Skor)
+        ctx.textAlign = 'center';
+
+        // Map Name
+        ctx.font = 'bold 30px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#a1a1aa';
+        ctx.fillText(match.map.toUpperCase(), width / 2, 60);
+
+        // Score
+        ctx.font = 'bold 120px "DIN Alternate", sans-serif';
+
+        let scoreA = match.score.A;
+        let scoreB = match.score.B;
+        // Kazanan rengi
+        const colorA = scoreA > scoreB ? '#3b82f6' : (scoreA < scoreB ? '#ef4444' : '#fff');
+        const colorB = scoreB > scoreA ? '#3b82f6' : (scoreB < scoreA ? '#ef4444' : '#fff');
+
+        // Ortaya "-"
+        ctx.fillStyle = '#fff';
+        ctx.shadowColor = '#fff'; ctx.shadowBlur = 15;
+        ctx.fillText('-', width / 2, 160);
+        ctx.shadowBlur = 0;
+
+        // Score A (Left)
+        ctx.textAlign = 'right';
+        ctx.fillStyle = colorA;
+        ctx.shadowColor = colorA; ctx.shadowBlur = 30;
+        ctx.fillText(scoreA, width / 2 - 50, 160);
+        ctx.shadowBlur = 0;
+
+        // Score B (Right)
+        ctx.textAlign = 'left';
+        ctx.fillStyle = colorB;
+        ctx.shadowColor = colorB; ctx.shadowBlur = 30;
+        ctx.fillText(scoreB, width / 2 + 50, 160);
+        ctx.shadowBlur = 0;
+
+        // 3. Team Lists
+        const startY = 250;
+        const rowHeight = 80;
+        const colWidth = 500;
+        const teamAX = 80;
+        const teamBX = width - 80 - colWidth; // 1200 - 80 - 500 = 620
+
+        // Team Headers
+        ctx.textAlign = 'left';
+        ctx.font = 'bold 35px "VALORANT", sans-serif';
+
+        // Team A Header
+        ctx.fillStyle = '#3b82f6'; // Blue for Team A usually
+        ctx.shadowColor = '#3b82f6'; ctx.shadowBlur = 10;
+        ctx.fillText('TEAM A', teamAX, startY - 20);
+        ctx.shadowBlur = 0;
+
+        // Team B Header
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#ef4444'; // Red for Team B
+        ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 10;
+        ctx.fillText('TEAM B', teamBX + colWidth, startY - 20);
+        ctx.shadowBlur = 0;
+
+        // Function to draw player row
+        const drawPlayerRow = async (userId, x, y, isRightAlign, teamColor) => {
+            const user = playersData[userId] || { username: 'Unknown' };
+            const eloLog = eloChanges.find(l => l.userId === userId) || { change: 0, newElo: 100 };
+            const level = eloService.getLevelFromElo(eloLog.newElo);
+            const isMvp = (match.mvp === userId) || (match.loserMvp === userId);
+
+            // Arkaplan
+            const grad = ctx.createLinearGradient(x, y, x + colWidth, y);
+            if (isRightAlign) {
+                grad.addColorStop(0, 'rgba(0,0,0,0)');
+                grad.addColorStop(1, `rgba(${parseInt(teamColor.slice(1, 3), 16)}, ${parseInt(teamColor.slice(3, 5), 16)}, ${parseInt(teamColor.slice(5, 7), 16)}, 0.15)`);
+            } else {
+                grad.addColorStop(0, `rgba(${parseInt(teamColor.slice(1, 3), 16)}, ${parseInt(teamColor.slice(3, 5), 16)}, ${parseInt(teamColor.slice(5, 7), 16)}, 0.15)`);
+                grad.addColorStop(1, 'rgba(0,0,0,0)');
+            }
+            ctx.fillStyle = grad;
+            ctx.fillRect(x, y, colWidth, 60);
+
+            // MVP Border/Effect
+            if (isMvp) {
+                ctx.strokeStyle = '#fbbf24';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, y, colWidth, 60);
+                // Star Icon
+                const iconX = isRightAlign ? x + colWidth + 20 : x - 25;
+                drawStar(ctx, iconX, y + 30, 5, 12, 6, '#fbbf24');
+            }
+
+            // Avatar
+            const avatarSize = 46;
+            const avatarX = isRightAlign ? x + colWidth - 55 : x + 10;
+            const avatarY = y + 7;
+
+            if (user.avatarURL) {
+                try {
+                    const avatar = await loadImage(user.avatarURL);
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+                    ctx.clip();
+                    ctx.drawImage(avatar, avatarX, avatarY, avatarSize, avatarSize);
+                    ctx.restore();
+                } catch (e) { }
+            }
+
+            // Name
+            ctx.font = 'bold 22px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#fff';
+
+            const nameX = isRightAlign ? avatarX - 15 : avatarX + avatarSize + 15;
+            ctx.textAlign = isRightAlign ? 'right' : 'left';
+
+            let name = user.username.toUpperCase();
+            if (name.length > 12) name = name.substring(0, 12) + '..';
+
+            ctx.fillText(name, nameX, y + 38);
+
+            // Level Icon Draw
+            const levelSize = 30; // Icon boyutu
+            const nameWidth = ctx.measureText(name).width;
+            // İkon konumu: İsmin birim sağına (veya sol hizalıysa ona göre)
+            const levelIconX = isRightAlign
+                ? nameX - nameWidth - levelSize - 5
+                : nameX + nameWidth + 10;
+            const levelIconY = y + 15;
+
+            try {
+                const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${level}.png`);
+                if (fs.existsSync(iconPath)) {
+                    const icon = await loadImage(iconPath);
+                    ctx.drawImage(icon, levelIconX, levelIconY, levelSize, levelSize);
+                }
+            } catch (e) { }
+
+            // Elo Change
+            const changeText = eloLog.change > 0 ? `+${eloLog.change}` : `${eloLog.change}`;
+            const changeColor = eloLog.change > 0 ? '#2ecc71' : '#ef4444';
+
+            ctx.font = 'bold 22px "DIN Alternate", sans-serif';
+            ctx.fillStyle = changeColor;
+
+            // Sağdaysa ismin soluna, soldaysa ismin sağına (veya en uca)
+            // En uca koyalım daha düzenli olur.
+            const eloX = isRightAlign ? x + 20 : x + colWidth - 20;
+            ctx.textAlign = isRightAlign ? 'left' : 'right';
+            ctx.fillText(changeText, eloX, y + 38);
+        };
+
+        // Draw Team A (Left)
+        let curY = startY;
+        for (const userId of match.teams.A) {
+            await drawPlayerRow(userId, teamAX, curY, false, '#3b82f6');
+            curY += 70;
+        }
+
+        // Draw Team B (Right)
+        curY = startY;
+        for (const userId of match.teams.B) {
+            await drawPlayerRow(userId, teamBX, curY, true, '#ef4444');
+            curY += 70;
+        }
+
+        // Footer Info
+        ctx.fillStyle = 'rgba(255,255,255,0.05)';
+        ctx.fillRect(0, height - 60, width, 60);
+
+        ctx.font = '18px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#52525b';
+        ctx.textAlign = 'left';
+        ctx.fillText(`MATCH ID: ${match.matchId}`, 30, height - 23);
+
+        ctx.textAlign = 'right';
+        ctx.fillText(new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }), width - 30, height - 23);
+
+        return canvas.toBuffer();
+    },
+
     async createEloCard(user, stats, rank) {
         const width = 1200;
         const height = 450;
@@ -425,7 +678,7 @@ module.exports = {
         return canvas.toBuffer();
     },
 
-    // VERSUS & OTHERS (Simplified but visual)
+    // VERSUS & OTHERS (Simplified)
     async createVersusImage(teamA, teamB, mapName) {
         const width = 1920; const height = 1080; const canvas = createCanvas(width, height); const ctx = canvas.getContext('2d');
         const g = ctx.createLinearGradient(0, 0, width, 0); g.addColorStop(0, '#000044'); g.addColorStop(1, '#440000'); ctx.fillStyle = g; ctx.fillRect(0, 0, width, height);

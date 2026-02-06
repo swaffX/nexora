@@ -740,49 +740,59 @@ module.exports = {
             const logsChannel = interaction.guild.channels.cache.get(logsChannelId) || await interaction.guild.channels.fetch(logsChannelId).catch(() => null);
 
             if (logsChannel) {
-                const winnerTeamName = winnerTeam === 'A' ? 'Blue Team' : 'Red Team';
-                const mvpWinnerMention = match.mvpPlayerId ? `<@${match.mvpPlayerId}>` : 'Seçilmedi';
-                const mvpLoserMention = match.mvpLoserId ? `<@${match.mvpLoserId}>` : 'Seçilmedi';
+                const { AttachmentBuilder } = require('discord.js');
 
-                // Lobi Bilgisi (ID'den bulmaya çalış)
-                const { LOBBY_CONFIG } = require('./constants');
-                const lobbyInfo = Object.values(LOBBY_CONFIG).find(l => l.voiceId === match.lobbyVoiceId);
-                const lobbyName = lobbyInfo ? lobbyInfo.name : 'Unknown Lobby';
+                // Canvas için Oyuncu Verilerini Hazırla
+                const playersData = {};
+                const allPlayers = [...match.teamA, ...match.teamB];
 
-                // Süre
-                const durationMs = new Date() - match.createdAt;
-                const durationMinutes = Math.floor(durationMs / 60000);
+                try {
+                    // Toplu veri çekme (Member+User)
+                    const members = await interaction.guild.members.fetch({ user: allPlayers });
+                    members.forEach(m => {
+                        playersData[m.id] = {
+                            username: m.user.username,
+                            avatarURL: m.user.displayAvatarURL({ extension: 'png', size: 128, forceStatic: true })
+                        };
+                    });
+                } catch (e) { console.error('Member fetch failed for canvas', e); }
 
-                // ELO Değişim Metni
-                let eloChangesText = '';
-                for (const change of eloChanges) {
-                    const sign = change.change > 0 ? '+' : '';
-                    const level = eloService.getLevelFromElo(change.newElo);
-                    // Direkt emoji ID'si yerine formatlı stringi alalım (örn: <:level1:123...>)
-                    const emoji = eloService.LEVEL_EMOJIS[level] || '';
-
-                    eloChangesText += `${emoji} <@${change.userId}>: \`${change.oldElo}\` → \`${change.newElo}\` (**${sign}${change.change}**) [${change.reason}]\n`;
+                // Eksikleri manuel tamamla
+                for (const pid of allPlayers) {
+                    if (!playersData[pid]) {
+                        try {
+                            const u = await interaction.client.users.fetch(pid).catch(() => null);
+                            playersData[pid] = {
+                                username: u ? u.username : 'Unknown',
+                                avatarURL: u ? u.displayAvatarURL({ extension: 'png', size: 128, forceStatic: true }) : null
+                            };
+                        } catch (e) {
+                            playersData[pid] = { username: 'Unknown', avatarURL: null };
+                        }
+                    }
                 }
 
-                const logEmbed = new EmbedBuilder()
-                    .setColor(0x2B2D31)
-                    .setAuthor({ name: `Maç Sonucu • #${match.matchNumber || match.matchId}`, iconURL: interaction.guild.iconURL() })
-                    .setDescription(`**Skor:** ${match.scoreA} - ${match.scoreB}\n**Kazanan:** ${winnerTeam === 'DRAW' ? 'BERABERE' : winnerTeamName}`)
-                    .addFields(
-                        { name: '📍 Lobi', value: lobbyName, inline: true },
-                        { name: '🗺️ Harita', value: match.selectedMap || '?', inline: true },
-                        { name: '⏱️ Süre', value: `${durationMinutes} dk`, inline: true },
-                        { name: '⭐ Kazanan MVP', value: mvpWinnerMention, inline: true },
-                        { name: '💔 Kaybeden MVP', value: mvpLoserMention, inline: true },
-                        { name: '📊 Ortalamalar', value: `A: ${avgEloA} | B: ${avgEloB}`, inline: true },
-                        { name: `📈 ELO Değişimleri`, value: eloChangesText.length > 1000 ? eloChangesText.substring(0, 1000) + '...' : eloChangesText, inline: false },
-                        { name: `🔵 Team A (${match.scoreA})`, value: match.teamA.map(id => `<@${id}>`).join(', ') || 'Yok', inline: false },
-                        { name: `🔴 Team B (${match.scoreB})`, value: match.teamB.map(id => `<@${id}>`).join(', ') || 'Yok', inline: false }
-                    )
-                    .setFooter({ text: `Match ID: ${match.matchId}` })
-                    .setTimestamp();
+                // Canvas Veri Yapısı
+                const matchData = {
+                    score: { A: match.scoreA, B: match.scoreB },
+                    teams: { A: match.teamA, B: match.teamB },
+                    map: match.selectedMap || 'Unknown',
+                    matchId: match.matchId,
+                    mvp: match.mvpPlayerId,
+                    loserMvp: match.mvpLoserId
+                };
 
-                await logsChannel.send({ embeds: [logEmbed] });
+                try {
+                    const buffer = await canvasGenerator.createMatchResultImage(matchData, eloChanges, playersData);
+                    const attachment = new AttachmentBuilder(buffer, { name: 'match-result.png' });
+
+                    // Sadece görsel gönder
+                    await logsChannel.send({ files: [attachment] });
+                } catch (canvasErr) {
+                    console.error('Canvas Generation Failed:', canvasErr);
+                    // Hata durumunda basit mesaj
+                    await logsChannel.send(`Maç Sonucu #${match.matchNumber || match.matchId} (Görsel oluşturulamadı)`);
+                }
             }
         } catch (e) {
             console.error("Log error:", e);
