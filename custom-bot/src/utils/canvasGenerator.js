@@ -236,7 +236,7 @@ module.exports = {
         ctx.textAlign = 'right';
         ctx.fillText(new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }), width - 30, height - 23);
 
-        return canvas.toBuffer();
+        return canvas.toBuffer('image/png');
     },
 
     async createEloCard(user, stats, rank) {
@@ -350,7 +350,7 @@ module.exports = {
         drawStatBox(1, 'Wins', wins, '#2ecc71');
         drawStatBox(2, 'Win Rate', `%${winRate}`, winRate >= 50 ? '#2ecc71' : '#e74c3c');
         drawStatBox(3, 'Streak', Math.abs(streak), streak >= 0 ? '#2ecc71' : '#e74c3c');
-        return canvas.toBuffer();
+        return canvas.toBuffer('image/png');
     },
 
     async createDetailedStatsImage(user, stats, matchHistory, bestMap, favoriteTeammate, rank) {
@@ -414,7 +414,7 @@ module.exports = {
             ctx.font = 'bold 45px "Segoe UI", sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText(String(bestMap.name).toUpperCase(), rightX + 20, 190);
         }
 
-        return canvas.toBuffer();
+        return canvas.toBuffer('image/png');
     },
 
     async createLeaderboardImage(users) {
@@ -579,7 +579,7 @@ module.exports = {
 
         ctx.textAlign = 'center'; ctx.font = '30px "Segoe UI", sans-serif'; ctx.fillStyle = '#52525b';
         ctx.fillText("NEXORA RANKED SYSTEM • DEVELOPED BY SWAFF", width / 2, height - 25);
-        return canvas.toBuffer();
+        return canvas.toBuffer('image/png');
     },
 
     async createVersusImage(captainA, captainB, mapName) {
@@ -656,7 +656,7 @@ module.exports = {
 
         if (captainA) await drawCaptain(captainA, true);
         if (captainB) await drawCaptain(captainB, false);
-        return canvas.toBuffer();
+        return canvas.toBuffer('image/png');
     },
 
     async createMapVetoImage(mapStates, selectedMap, statusText) {
@@ -710,7 +710,7 @@ module.exports = {
             ctx.fillStyle = (mapName === selectedMap) ? '#22c55e' : (state.banned ? '#ef4444' : '#fff');
             ctx.fillText(mapName.toUpperCase(), x + cardW / 2, y + cardH + 40);
         }
-        return canvas.toBuffer();
+        return canvas.toBuffer('image/png');
     },
 
     async createRosterImage(teamA, teamB) {
@@ -783,6 +783,6 @@ module.exports = {
         };
         await renderSide(teamA, true);
         await renderSide(teamB, false);
-        return canvas.toBuffer();
+        return canvas.toBuffer('image/png');
     }
 };
