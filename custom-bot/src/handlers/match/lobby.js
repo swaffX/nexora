@@ -414,9 +414,10 @@ module.exports = {
 
         await interaction.update({ content: null, embeds: [animationEmbed], components: [] });
 
-        await new Promise(r => setTimeout(r, 4000));
+        // 3. Sonuç Belirle (Cryptographically Secure Random)
+        const crypto = require('crypto');
+        const winnerTeam = crypto.randomInt(0, 2) === 0 ? 'A' : 'B';
 
-        const winnerTeam = Math.random() < 0.5 ? 'A' : 'B';
         const winnerId = winnerTeam === 'A' ? match.captainA : match.captainB;
         const loserId = winnerTeam === 'A' ? match.captainB : match.captainA;
 
