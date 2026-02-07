@@ -410,7 +410,7 @@ module.exports = {
 
     async createDetailedStatsImage(user, stats, matchHistory, bestMap, favoriteTeammate, rank) {
         const width = 1200;
-        const height = 700;
+        const height = 850;
 
         const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
@@ -449,7 +449,7 @@ module.exports = {
                 if (fs.existsSync(p)) mapBg = await loadImage(p);
             } catch (e) { }
 
-            const boxW = 600;
+            const boxW = 500; // Harita resmini biraz küçültüyoruz ki yanına yazı sığsın
             const boxH = 80;
             const boxX = 50;
 
@@ -497,30 +497,37 @@ module.exports = {
             let detailText = match.score;
 
             ctx.fillStyle = '#ccc';
-            ctx.font = 'bold 32px "DIN Alternate", sans-serif';
+            ctx.font = 'bold 30px "DIN Alternate", sans-serif';
             ctx.shadowColor = '#000'; ctx.shadowBlur = 5;
             ctx.textAlign = 'center';
-            ctx.fillText(detailText, 380, matchY + 50);
+            ctx.fillText(detailText, 340, matchY + 50); // Skoru map üzerinde merkeze çektik
             ctx.shadowBlur = 0;
 
-            // ELO Change (Far Right)
+            // ELO Change (Harita Resminin Tam Sağ Dışı)
+            const infoX = boxX + boxW + 20; // x=570 civarı
             if (match.eloChange !== null && match.eloChange !== undefined) {
                 const sign = match.eloChange > 0 ? '+' : '';
                 const eloChangeText = `${sign}${match.eloChange}`;
-                ctx.fillStyle = match.eloChange > 0 ? '#2ecc71' : '#e74c3c';
-                ctx.font = 'bold 28px "DIN Alternate", sans-serif';
-                ctx.textAlign = 'right';
-                ctx.fillText(eloChangeText, 640, matchY + 35);
+                ctx.fillStyle = match.eloChange >= 0 ? '#2ecc71' : '#e74c3c';
+                ctx.font = 'bold 32px "DIN Alternate", sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText(eloChangeText, infoX, matchY + 35);
+            } else {
+                // Eğer ELO değişimi yoksa (eski maçlar)
+                ctx.fillStyle = '#666';
+                ctx.font = 'bold 24px "DIN Alternate", sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillText('N/A', infoX, matchY + 35);
             }
 
+            // Tarih (ELO değişiminin altı)
             ctx.font = 'italic 18px "Segoe UI", sans-serif';
             ctx.fillStyle = '#888';
-            ctx.textAlign = 'right';
-            ctx.shadowColor = '#000'; ctx.shadowBlur = 3;
-            ctx.fillText(match.date, 640, matchY + 65);
-            ctx.textAlign = 'left'; ctx.shadowBlur = 0;
+            ctx.textAlign = 'left';
+            ctx.fillText(match.date, infoX, matchY + 65);
+            ctx.textAlign = 'left';
 
-            matchY += 95;
+            matchY += 105;
         }
 
         const rightX = 720;
@@ -561,7 +568,7 @@ module.exports = {
         ctx.font = '30px "DIN Alternate", sans-serif'; ctx.fillStyle = '#fff'; ctx.textAlign = 'right'; ctx.fillText(`${w}W / ${l}L`, rightX + 410, 470); ctx.textAlign = 'left';
 
         // --- FOOTER (User Info & Rank) ---
-        const footerY = 560;
+        const footerY = 730;
         const footerBgStart = footerY - 20;
         const footerHeight = height - footerBgStart;
         const footerMid = footerBgStart + (footerHeight / 2);

@@ -58,6 +58,7 @@ module.exports = {
             // --- RANK HESAPLAMA ---
             const userRank = await User.countDocuments({
                 odaId: guildId,
+                'matchStats.totalMatches': { $gt: 0 },
                 'matchStats.elo': { $gt: stats.elo }
             }) + 1;
             // ---------------------
