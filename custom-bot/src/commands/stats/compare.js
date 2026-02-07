@@ -18,15 +18,21 @@ module.exports = {
                 .setRequired(true)),
 
     async execute(interaction) {
-        await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
+        // Ephemeral kaldırıldı, artık herkes görebilir.
+        await interaction.deferReply();
 
         try {
             const u1 = interaction.options.getUser('user1');
             const u2 = interaction.options.getUser('user2');
             const guildId = interaction.guild.id;
 
+            // Karşılaştırılan kullanıcılar
             const userDoc1 = await User.findOne({ odasi: u1.id, odaId: guildId });
             const userDoc2 = await User.findOne({ odasi: u2.id, odaId: guildId });
+
+            // Komutu kullanan kişi (Arkaplan için)
+            const executorDoc = await User.findOne({ odasi: interaction.user.id, odaId: guildId });
+            const currentBg = executorDoc?.backgroundImage || 'Default';
 
             const stats1 = userDoc1 ? userDoc1.matchStats : eloService.createDefaultStats();
             const stats2 = userDoc2 ? userDoc2.matchStats : eloService.createDefaultStats();
@@ -40,7 +46,7 @@ module.exports = {
                 avatar: u2.displayAvatarURL({ extension: 'png' })
             };
 
-            const buffer = await canvasGenerator.createCompareImage(user1Data, stats1, user2Data, stats2);
+            const buffer = await canvasGenerator.createCompareImage(user1Data, stats1, user2Data, stats2, currentBg);
             const attachment = new AttachmentBuilder(buffer, { name: 'compare.png' });
 
             await interaction.editReply({ files: [attachment] });

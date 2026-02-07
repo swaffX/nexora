@@ -44,60 +44,97 @@ async function handleInteraction(interaction, client) {
 async function handleStats(interaction, userDoc, guildId) {
     const stats = userDoc.matchStats || eloService.createDefaultStats();
 
-    const matches = await Match.find({
+    const historyMatches = await Match.find({
         status: 'FINISHED',
         odaId: guildId,
         $or: [{ teamA: userDoc.odasi }, { teamB: userDoc.odasi }]
-    }).sort({ createdAt: -1 }).limit(5);
+    }).sort({ createdAt: -1 });
 
-    const matchHistoryData = matches.map(m => {
-        const isTeamA = m.teamA.includes(userDoc.odasi);
-        const userResult = (isTeamA && m.winner === 'A') || (!isTeamA && m.winner === 'B') ? 'WIN' : 'LOSS';
+    const matchHistoryData = historyMatches.slice(0, 5).map(m => {
+        const safeTargetId = String(userDoc.odasi);
+        const isTeamA = m.teamA.some(id => String(id) === safeTargetId);
 
-        // Fix: eloChanges is an array, not a Map
-        const userEloLog = (m.eloChanges || []).find(log => log.userId === userDoc.odasi);
-        const eloChange = userEloLog ? userEloLog.change : 0;
+        let actualWinner = m.winner;
+        if (m.scoreA !== undefined && m.scoreB !== undefined) {
+            if (m.scoreA > m.scoreB) actualWinner = 'A';
+            else if (m.scoreB > m.scoreA) actualWinner = 'B';
+        }
 
-        const isMvp = m.mvpPlayerId === userDoc.odasi || m.mvpLoserId === userDoc.odasi;
+        const isWin = (actualWinner === 'A' && isTeamA) || (actualWinner === 'B' && !isTeamA);
+        const result = isWin ? 'WIN' : 'LOSS';
+        const myTeamScore = isTeamA ? m.scoreA : m.scoreB;
+        const enemyScore = isTeamA ? m.scoreB : m.scoreA;
 
-        const dateObj = new Date(m.finishedAt || m.createdAt);
+        let eloChangeVal = 0;
+        if (m.eloChanges && Array.isArray(m.eloChanges)) {
+            const log = m.eloChanges.find(l => String(l.userId) === safeTargetId);
+            if (log) eloChangeVal = log.change;
+        }
+
+        const isMvp = (String(m.mvpPlayerId) === safeTargetId || String(m.mvpLoserId) === safeTargetId);
+
+        const dateObj = new Date(m.createdAt);
         const diff = Date.now() - dateObj.getTime();
         const hours = Math.floor(diff / (1000 * 60 * 60));
         const days = Math.floor(hours / 24);
-        let timeStr = `${hours} saat önce`;
-        if (days > 0) timeStr = `${days} gün önce`;
+        let timeStr = `${hours}s önce`;
+        if (days > 0) timeStr = `${days}g önce`;
         if (hours === 0) timeStr = 'Az önce';
 
         return {
-            map: m.map || 'Unknown',
-            score: `${m.scoreA}-${m.scoreB}`,
-            result: userResult,
-            eloChange: eloChange || 0,
+            map: m.selectedMap || 'Unknown',
+            score: `${myTeamScore}-${enemyScore}`,
+            result: result,
+            eloChange: eloChangeVal,
             isMvp: isMvp,
             date: timeStr
         };
     });
 
-    const userRank = await User.countDocuments({
-        odaId: guildId,
-        'matchStats.elo': { $gt: stats.elo }
-    }) + 1;
-
-    // Simple Map/Teammate calculation
-    const allMatches = await Match.find({ status: 'FINISHED', odaId: guildId, $or: [{ teamA: userDoc.odasi }, { teamB: userDoc.odasi }] }).sort({ createdAt: -1 });
-    const maps = {};
     const teammates = {};
-    for (const m of allMatches) {
-        maps[m.map] = (maps[m.map] || 0) + 1;
-        const myTeam = m.teamA.includes(userDoc.odasi) ? m.teamA : m.teamB;
-        myTeam.forEach(pid => { if (pid !== userDoc.odasi) teammates[pid] = (teammates[pid] || 0) + 1; });
+    const mapStatsDict = {};
+
+    for (const m of historyMatches) {
+        const safeTargetId = String(userDoc.odasi);
+        const isTeamA = m.teamA.some(id => String(id) === safeTargetId);
+        const teamList = isTeamA ? m.teamA : m.teamB;
+
+        for (const pid of teamList) {
+            if (String(pid) === safeTargetId) continue;
+            teammates[pid] = (teammates[pid] || 0) + 1;
+        }
+
+        const mapName = m.selectedMap || 'Unknown';
+        if (!mapStatsDict[mapName]) mapStatsDict[mapName] = { wins: 0, total: 0 };
+        mapStatsDict[mapName].total++;
+
+        let actualWinner = m.winner;
+        if (m.scoreA !== undefined && m.scoreB !== undefined) {
+            if (m.scoreA > m.scoreB) actualWinner = 'A';
+            else if (m.scoreB > m.scoreA) actualWinner = 'B';
+        }
+        const isWin = (actualWinner === 'A' && isTeamA) || (actualWinner === 'B' && !isTeamA);
+        if (isWin) mapStatsDict[mapName].wins++;
     }
 
     let bestMapData = null;
-    let maxMapGames = 0;
-    for (const [mname, count] of Object.entries(maps)) {
-        if (count > maxMapGames) { maxMapGames = count; bestMapData = { name: mname, wr: 0 }; }
+    let bMapName = null;
+    let bWR = -1;
+
+    for (const [mname, data] of Object.entries(mapStatsDict)) {
+        if (data.total >= 3) {
+            const wr = (data.wins / data.total) * 100;
+            if (wr > bWR) { bWR = wr; bMapName = mname; }
+        }
     }
+    if (bWR === -1 && Object.keys(mapStatsDict).length > 0) {
+        bMapName = Object.keys(mapStatsDict).reduce((a, b) => mapStatsDict[a].total > mapStatsDict[b].total ? a : b);
+        const d = mapStatsDict[bMapName];
+        bWR = (d.wins / d.total) * 100;
+    }
+    if (bMapName) bestMapData = { name: bMapName, wr: Math.round(bWR) };
+
+    const userRank = await User.countDocuments({ odaId: guildId, 'matchStats.elo': { $gt: stats.elo } }) + 1;
 
     let favTeammateData = null;
     let maxDuoGames = 0;

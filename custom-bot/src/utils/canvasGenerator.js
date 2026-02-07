@@ -731,18 +731,35 @@ module.exports = {
         return canvas.toBuffer('image/png');
     },
 
-    async createCompareImage(user1, stats1, user2, stats2) {
+    async createCompareImage(user1, stats1, user2, stats2, currentBg = 'Default') {
         const width = 1200;
         const height = 700;
         const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
 
         // Arkaplan
-        const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
-        bgGrad.addColorStop(0, '#0c0c0e');
-        bgGrad.addColorStop(1, '#18181b');
-        ctx.fillStyle = bgGrad;
-        ctx.fillRect(0, 0, width, height);
+        let bgImg = null;
+        if (currentBg !== 'Default') {
+            try {
+                const mapPath = path.join(__dirname, '..', '..', 'assets', 'maps', `${currentBg}.png`);
+                if (fs.existsSync(mapPath)) bgImg = await loadImage(mapPath);
+            } catch (e) { }
+        }
+
+        if (bgImg) {
+            const scale = Math.max(width / bgImg.width, height / bgImg.height);
+            const w = bgImg.width * scale;
+            const h = bgImg.height * scale;
+            ctx.drawImage(bgImg, (width - w) / 2, (height - h) / 2, w, h);
+            ctx.fillStyle = 'rgba(9, 9, 11, 0.85)'; // Dark overlay
+            ctx.fillRect(0, 0, width, height);
+        } else {
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
+            bgGrad.addColorStop(0, '#0c0c0e');
+            bgGrad.addColorStop(1, '#18181b');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, width, height);
+        }
 
         // Header (VERSUS)
         ctx.font = 'bold 80px "VALORANT", sans-serif';
@@ -1984,19 +2001,13 @@ module.exports = {
         ctx.fillStyle = lineGrad;
         ctx.fillRect(width * 0.2, height - 80, width * 0.6, 2);
 
-        // Add 4 mini-icons placeholders to make it look "busy" and "modern"
-        const icons = ['📊', '📈', '🏆', '🎨'];
+        // Simple sleek bottom glow instead of emoji boxes
+        ctx.globalAlpha = 0.5;
+        ctx.font = 'bold 20px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.letterSpacing = '5px';
+        ctx.fillText('• STATS • RANK • TITLES • STYLE •', width / 2, height - 40);
         ctx.globalAlpha = 1;
-        ctx.font = '30px "Segoe UI", sans-serif';
-        icons.forEach((icon, i) => {
-            const x = (width / 2 - 150) + (i * 100);
-            ctx.fillStyle = 'rgba(255,255,255,0.1)';
-            ctx.beginPath();
-            ctx.roundRect(x - 30, height - 70, 60, 60, 10);
-            ctx.fill();
-            ctx.fillStyle = '#fff';
-            ctx.fillText(icon, x, height - 30);
-        });
 
         return canvas.toBuffer('image/png');
     }
