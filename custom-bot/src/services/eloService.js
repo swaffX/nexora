@@ -58,7 +58,33 @@ const ELO_CONFIG = {
         'Lotus': { path: 'lotus.png', name: 'Lotus' },
         'Pearl': { path: 'pearl.png', name: 'Pearl' },
         'Sunset': { path: 'sunset.png', name: 'Sunset' },
-        'Abyss': { path: 'abyss.png', name: 'Abyss' }
+        'Abyss': { path: 'abyss.png', name: 'Abyss' },
+    },
+    AGENTS: {
+        'Default': { path: null, name: 'Yok' },
+        'Astra': { path: 'astra.avif', name: 'Astra' },
+        'Breach': { path: 'breach.avif', name: 'Breach' },
+        'Brimstone': { path: 'brimstone.avif', name: 'Brimstone' },
+        'Chamber': { path: 'chamber.avif', name: 'Chamber' },
+        'Cypher': { path: 'cypher.avif', name: 'Cypher' },
+        'Deadlock': { path: 'deadlock.avif', name: 'Deadlock' },
+        'Fade': { path: 'fade.avif', name: 'Fade' },
+        'Gekko': { path: 'gekko.avif', name: 'Gekko' },
+        'Harbor': { path: 'harbor.avif', name: 'Harbor' },
+        'Iso': { path: 'iso.avif', name: 'Iso' },
+        'Jett': { path: 'jett.png', name: 'Jett' },
+        'Kayo': { path: 'kayo.png', name: 'Kayo' },
+        'Killjoy': { path: 'killjoy.avif', name: 'Killjoy' },
+        'Neon': { path: 'neon.avif', name: 'Neon' },
+        'Omen': { path: 'omen.avif', name: 'Omen' },
+        'Phoenix': { path: 'phoenix.avif', name: 'Phoenix' },
+        'Raze': { path: 'raze.png', name: 'Raze' },
+        'Reyna': { path: 'reyna.avif', name: 'Reyna' },
+        'Sage': { path: 'sage.avif', name: 'Sage' },
+        'Skye': { path: 'skye.avif', name: 'Skye' },
+        'Sova': { path: 'sova.avif', name: 'Sova' },
+        'Viper': { path: 'viper.png', name: 'Viper' },
+        'Yoru': { path: 'yoru.avif', name: 'Yoru' }
     }
 };
 

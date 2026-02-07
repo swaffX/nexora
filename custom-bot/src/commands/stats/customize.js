@@ -6,98 +6,129 @@ const eloService = require('../../services/eloService');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('customize')
-        .setDescription('Profil kartınızı (Title ve Arkaplan) kişiselleştirin.'),
+        .setDescription('Profil kartınızı (Title, Harita ve Ajan) kişiselleştirin.'),
 
     async execute(interaction) {
         await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
 
         const guildId = interaction.guild.id;
-        const userDoc = await User.findOne({ odasi: interaction.user.id, odaId: guildId });
+        let userDoc = await User.findOne({ odasi: interaction.user.id, odaId: guildId });
 
         if (!userDoc) {
             return interaction.editReply({ content: '❌ Kaydınız bulunamadı.' });
         }
 
-        const stats = userDoc.matchStats || {};
-        const myTitles = stats.titles || ['Rookie'];
-        const currentTitle = stats.activeTitle || 'Rookie';
-        const currentBg = userDoc.backgroundImage || 'Default';
+        const getUI = () => {
+            const stats = userDoc.matchStats || {};
+            const myTitles = stats.titles || ['Rookie'];
+            const currentTitle = stats.activeTitle || 'Rookie';
+            const currentBg = userDoc.backgroundImage || 'Default';
+            const currentAgent = userDoc.favoriteAgent || 'Default';
+            const currentMap = userDoc.favoriteMap || 'Default';
 
-        const embed = new EmbedBuilder()
-            .setTitle('🎨 Profil Kişiselleştirme')
-            .setDescription('Buradan ELO ve Stats kartlarınızın görünümünü değiştirebilirsiniz.')
-            .addFields(
-                { name: '📍 Aktif Ünvan', value: `\`${currentTitle}\``, inline: true },
-                { name: '🖼️ Arkaplan Teması', value: `\`${currentBg}\``, inline: true }
-            )
-            .setColor('#fbbf24')
-            .setFooter({ text: 'Değişiklik yapmak için aşağıdaki menüleri kullanın.' });
+            const embed = new EmbedBuilder()
+                .setTitle('🎨 Profil Kişiselleştirme')
+                .setDescription('Profil kartlarınızda (ELO/Stats) görünecek tercihlerinizi ayarlayın.')
+                .addFields(
+                    { name: '🏆 Ünvan', value: `\`${currentTitle}\``, inline: true },
+                    { name: '🖼️ Arkaplan', value: `\`${currentBg}\``, inline: true },
+                    { name: '👤 Favori Ajan', value: `\`${currentAgent}\``, inline: true },
+                    { name: '📍 Favori Harita', value: `\`${currentMap}\``, inline: true }
+                )
+                .setColor('#fbbf24')
+                .setFooter({ text: 'Değişiklik yapmak için aşağıdaki menüleri kullanın.' });
 
-        // Title Seçim Menüsü
-        const titleOptions = myTitles.map(t => ({
-            label: t,
-            value: `title_${t}`,
-            description: eloService.ELO_CONFIG.TITLES[t]?.description || 'Nexora Title',
-            emoji: '🏆',
-            default: t === currentTitle
-        }));
+            // 1. Ünvan Menüsü
+            const titleOptions = myTitles.map(t => ({
+                label: t,
+                value: `title_${t}`,
+                description: eloService.ELO_CONFIG.TITLES[t]?.description || 'Nexora Title',
+                emoji: '🏆',
+                default: t === currentTitle
+            }));
+            const titleRow = new ActionRowBuilder().addComponents(
+                new StringSelectMenuBuilder()
+                    .setCustomId('select_title')
+                    .setPlaceholder('Ünvan seçin...')
+                    .addOptions(titleOptions)
+            );
 
-        const titleRow = new ActionRowBuilder().addComponents(
-            new StringSelectMenuBuilder()
-                .setCustomId('select_title')
-                .setPlaceholder('Ünvan seçin...')
-                .addOptions(titleOptions)
-        );
+            // 2. Arkaplan Menüsü
+            const bgOptions = Object.keys(eloService.ELO_CONFIG.BACKGROUND_THEMES).slice(0, 25).map(bg => ({
+                label: bg,
+                value: `bg_${bg}`,
+                description: `${bg} temalı arkaplan.`,
+                emoji: '🖼️',
+                default: bg === currentBg
+            }));
+            const bgRow = new ActionRowBuilder().addComponents(
+                new StringSelectMenuBuilder()
+                    .setCustomId('select_bg')
+                    .setPlaceholder('Kart arkaplanı seçin...')
+                    .addOptions(bgOptions)
+            );
 
-        // Arkaplan Seçim Menüsü
-        const bgOptions = Object.keys(eloService.ELO_CONFIG.BACKGROUND_THEMES).map(bg => ({
-            label: bg,
-            value: `bg_${bg}`,
-            description: `${bg} temalı arkaplan.`,
-            emoji: '🖼️',
-            default: bg === currentBg
-        }));
+            // 3. Ajan Menüsü
+            const agentOptions = Object.keys(eloService.ELO_CONFIG.AGENTS).slice(0, 25).map(agent => ({
+                label: agent,
+                value: `agent_${agent}`,
+                description: `${agent} favori ajanın olarak görünsün.`,
+                emoji: '👤',
+                default: agent === currentAgent
+            }));
+            const agentRow = new ActionRowBuilder().addComponents(
+                new StringSelectMenuBuilder()
+                    .setCustomId('select_agent')
+                    .setPlaceholder('Favori ajan seçin...')
+                    .addOptions(agentOptions)
+            );
 
-        const bgRow = new ActionRowBuilder().addComponents(
-            new StringSelectMenuBuilder()
-                .setCustomId('select_bg')
-                .setPlaceholder('Arkaplan teması seçin...')
-                .addOptions(bgOptions)
-        );
+            // 4. Favori Harita Menüsü
+            // Filter out 'Default' for map selection if needed, but let's keep it consistent
+            const mapOptions = Object.keys(eloService.ELO_CONFIG.BACKGROUND_THEMES).slice(0, 25).map(map => ({
+                label: map,
+                value: `map_${map}`,
+                description: `Favori haritan ${map} olarak görünsün.`,
+                emoji: '📍',
+                default: map === currentMap
+            }));
+            const mapRow = new ActionRowBuilder().addComponents(
+                new StringSelectMenuBuilder()
+                    .setCustomId('select_map')
+                    .setPlaceholder('Favori harita seçin...')
+                    .addOptions(mapOptions)
+            );
 
-        const response = await interaction.editReply({
-            embeds: [embed],
-            components: [titleRow, bgRow]
-        });
+            return { embeds: [embed], components: [titleRow, bgRow, agentRow, mapRow] };
+        };
 
-        const collector = response.createMessageComponentCollector({ time: 120000 });
+        const response = await interaction.editReply(getUI());
+        const collector = response.createMessageComponentCollector({ time: 300000 }); // 5 dk
 
         collector.on('collect', async i => {
             if (i.customId === 'select_title') {
                 const selected = i.values[0].replace('title_', '');
                 userDoc.matchStats.activeTitle = selected;
                 await userDoc.save();
-
-                // Embed'i güncelle
-                embed.setFields(
-                    { name: '📍 Aktif Ünvan', value: `\`${selected}\``, inline: true },
-                    { name: '🖼️ Arkaplan Teması', value: `\`${userDoc.backgroundImage || 'Default'}\``, inline: true }
-                );
-
-                await i.update({ embeds: [embed] });
+                await i.update(getUI());
             }
             else if (i.customId === 'select_bg') {
                 const selected = i.values[0].replace('bg_', '');
                 userDoc.backgroundImage = selected;
                 await userDoc.save();
-
-                // Embed'i güncelle
-                embed.setFields(
-                    { name: '📍 Aktif Ünvan', value: `\`${userDoc.matchStats.activeTitle || 'Rookie'}\``, inline: true },
-                    { name: '🖼️ Arkaplan Teması', value: `\`${selected}\``, inline: true }
-                );
-
-                await i.update({ embeds: [embed] });
+                await i.update(getUI());
+            }
+            else if (i.customId === 'select_agent') {
+                const selected = i.values[0].replace('agent_', '');
+                userDoc.favoriteAgent = selected;
+                await userDoc.save();
+                await i.update(getUI());
+            }
+            else if (i.customId === 'select_map') {
+                const selected = i.values[0].replace('map_', '');
+                userDoc.favoriteMap = selected;
+                await userDoc.save();
+                await i.update(getUI());
             }
         });
     }

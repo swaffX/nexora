@@ -55,7 +55,9 @@ module.exports = {
             const userForCard = {
                 username: targetUser.username,
                 avatar: targetUser.displayAvatarURL({ extension: 'png' }),
-                backgroundImage: userDoc?.backgroundImage
+                backgroundImage: userDoc?.backgroundImage,
+                favoriteAgent: userDoc?.favoriteAgent,
+                favoriteMap: userDoc?.favoriteMap
             };
 
             // Pass userRank to generate visuals

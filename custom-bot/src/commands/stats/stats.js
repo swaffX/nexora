@@ -206,7 +206,9 @@ module.exports = {
             const userForCard = {
                 username: targetUser.username,
                 avatar: targetUser.displayAvatarURL({ extension: 'png' }),
-                backgroundImage: userDoc?.backgroundImage // NEW: Custom background
+                backgroundImage: userDoc?.backgroundImage, // NEW: Custom background
+                favoriteAgent: userDoc?.favoriteAgent,
+                favoriteMap: userDoc?.favoriteMap
             };
 
             // Pass rank to canvas

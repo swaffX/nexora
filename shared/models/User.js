@@ -100,6 +100,8 @@ const userSchema = new mongoose.Schema({
     reputation: { type: Number, default: 0 },
     bio: { type: String, default: 'Hakkımda bir şey yazılmamış.' },
     backgroundImage: { type: String, default: null }, // Canvas profili için arka plan URL
+    favoriteAgent: { type: String, default: null },
+    favoriteMap: { type: String, default: null },
 
     // Ses kanalı takibi
     voiceJoinedAt: { type: Date, default: null },
