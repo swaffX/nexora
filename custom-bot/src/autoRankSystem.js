@@ -2,6 +2,7 @@ const rankHandler = require('./handlers/rankHandler');
 const { User } = require('../../shared/models');
 const logger = require('../../shared/logger');
 
+// ELO Service ile uyumlu Level Hesaplayıcı
 const LEVEL_THRESHOLDS = [
     { max: 200, level: 1 }, { max: 400, level: 2 }, { max: 600, level: 3 },
     { max: 850, level: 4 }, { max: 1100, level: 5 }, { max: 1350, level: 6 },
@@ -18,8 +19,8 @@ function calculateLevel(elo) {
 }
 
 /**
- * Background Rank Synchronizer - RATE LIMIT PROOF
- * Opcode 8 hatasını engellemek için Members Fetch yerine Role Members kullanır.
+ * Background Rank Synchronizer - FULL REAL-TIME FEEDBACK
+ * Ses kaydındaki isteğe göre loglar ve çalışma mantığı optimize edildi.
  */
 module.exports = (client) => {
     const REQUIRED_VALORANT_ROLE = '1466189076347486268';
@@ -34,12 +35,12 @@ module.exports = (client) => {
     const ALL_LEVEL_ROLES = Object.values(LEVEL_ROLES);
 
     let isRunning = false;
-
-    // logger.info('[AutoRank] Safe Mode Rank System başlatıldı.');
+    let totalScans = 0;
 
     const runSync = async () => {
         if (isRunning) return;
         isRunning = true;
+        totalScans++;
 
         try {
             const guild = client.guilds.cache.get(GUILD_ID);
@@ -48,47 +49,35 @@ module.exports = (client) => {
                 return;
             }
 
-            // 1. ÜYE LİSTESİNİ ÇEKME YÖNTEMİ (KRİTİK DEĞİŞİKLİK)
-            // fetch() yerine cache'deki role bakıyoruz. Role cache'de yoksa sadece rolü çekiyoruz.
-            // Bu yöntem Opcode 8 (Chunk Request) göndermez.
+            // 1. ÜYE LİSTESİNİ ÇEKME
             let targetRole = guild.roles.cache.get(REQUIRED_VALORANT_ROLE);
 
-            if (!targetRole) {
-                // Eğer rol hafızada yoksa, SADECE bu rolü fetch et
-                targetRole = await guild.roles.fetch(REQUIRED_VALORANT_ROLE).catch(() => null);
+            // Periyodik olarak rolleri yenile (91 kişiyi güncel tutmak için)
+            if (totalScans % 5 === 0 || !targetRole) {
+                targetRole = await guild.roles.fetch(REQUIRED_VALORANT_ROLE, { force: true }).catch(() => null);
             }
 
             if (!targetRole) {
-                logger.error(`[AutoRank] Rol bulunamadı: ${REQUIRED_VALORANT_ROLE}`);
+                logger.error(`[AutoRank] Kritik Hata: Valorant rolü (ID: ${REQUIRED_VALORANT_ROLE}) bulunamadı. Burası çok önemli.`);
                 isRunning = false;
                 return;
             }
 
-            // Rolün üyelerini cache'den al. Eğer sayı eksikse (örn. bot yeni açıldıysa)
-            // yine de işlem yapmaya çalış ama tüm sunucuyu fetch ETME.
-            // Zamanla üyeler cache'e dolacaktır.
             const membersWithRole = targetRole.members;
 
-            if (membersWithRole.size === 0) {
-                // Hiç üye görünmüyorsa, bu seferlik mecburen güvenli bir fetch deneyelim
-                // Ama force: true yapmıyoruz, rate limit yememek için.
-                await guild.members.fetch({ limit: 10 }).catch(() => { });
-                isRunning = false;
-                return;
-            }
-
-            // 2. ELO BİLGİLERİ (Sadece bulduğumuz üyeler için)
+            // 2. ELO BİLGİLERİNİ ÇEK
             const memberIds = Array.from(membersWithRole.keys());
             const usersInDb = await User.find({
                 odasi: { $in: memberIds },
                 odaId: GUILD_ID
             }).select('odasi matchStats.elo');
 
-            const eloMap = new Map();
-            usersInDb.forEach(u => eloMap.set(u.odasi, u.matchStats?.elo ?? 200));
+            const eloMap = new Map(usersInDb.map(u => [u.odasi, u.matchStats?.elo ?? 200]));
 
             // 3. KONTROL
             const updates = [];
+            let okCount = 0;
+
             for (const member of membersWithRole.values()) {
                 const elo = eloMap.get(member.id) ?? 200;
                 const targetLevel = calculateLevel(elo);
@@ -98,33 +87,40 @@ module.exports = (client) => {
                 const hasExtraRoles = member.roles.cache.some(r => ALL_LEVEL_ROLES.includes(r.id) && r.id !== targetRoleId);
 
                 if (!hasCorrectRole || hasExtraRoles) {
-                    updates.push({ member, targetLevel });
+                    updates.push({ member, targetLevel, elo });
+                } else {
+                    okCount++;
                 }
             }
 
-            // 4. GÜNCELLEME
+            // --- SES KAYDINDA İSTENEN DETAYLI LOGLAMA ---
             if (updates.length > 0) {
-                logger.info(`[AutoRank] (${membersWithRole.size} kişiden) ${updates.length} güncelleme başlıyor...`);
+                logger.info(`[AutoRank] Tarama yapıldı: ${membersWithRole.size} oyuncu. (${okCount} Doğru Rolde | ${updates.length} Güncelleme Gerekiyor)`);
 
+                // 4. GÜNCELLEME
                 for (const update of updates) {
                     await rankHandler.syncRank(update.member, update.targetLevel);
-                    // Bekleme süresini artır (Daha güvenli)
-                    await new Promise(r => setTimeout(r, 1500));
+                    // Bekleme süresi (Rate limit koruması)
+                    await new Promise(r => setTimeout(r, 1200));
+                }
+            } else {
+                // Sadece arada bir log at ki çalıştığı belli olsun ama spam yapmasın
+                if (totalScans % 6 === 1) {
+                    logger.success(`[AutoRank] Real-Time Kontrol: ${membersWithRole.size} oyuncunun tamamı doğru rolde. Her şey yolunda.`);
                 }
             }
 
         } catch (error) {
-            if (error.message.includes('rate limited')) {
-                // logger.warn('[AutoRank] Rate Limit uyarısı - Biraz yavaşlıyoruz.');
-            } else {
+            if (!error.message.includes('rate limited')) {
                 logger.error(`[AutoRank Error]: ${error.message}`);
             }
         } finally {
             isRunning = false;
-            // 5 yerine 10 saniye bekle (Daha güvenli)
-            setTimeout(runSync, 10000);
+            // 5 saniyede bir tarama (Tam gerçek zamanlı)
+            setTimeout(runSync, 5000);
         }
     };
 
-    setTimeout(runSync, 5000);
+    // İlk tarama için kısa bir bekleme
+    setTimeout(runSync, 3000);
 };
