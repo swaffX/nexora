@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const matchSchema = new mongoose.Schema({
     matchId: { type: String, required: true, unique: true }, // Interaction ID
+    lobbyId: { type: String }, // '1', '2', '3' vs.
     guildId: { type: String, required: true },
     hostId: { type: String, required: true },
     channelId: { type: String, required: true }, // Komutun kullanıldığı kanal

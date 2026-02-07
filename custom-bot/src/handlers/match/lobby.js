@@ -100,6 +100,7 @@ module.exports = {
             // Veritabanı Kayıt
             const newMatch = new Match({
                 matchId: interaction.id,
+                lobbyId: targetLobbyId.toString(),
                 guildId: guild.id,
                 matchNumber: currentMatchNumber,
                 hostId: interaction.user.id,
@@ -121,13 +122,14 @@ module.exports = {
 
             const { AttachmentBuilder } = require('discord.js');
             const buffer = await canvasGenerator.createLobbySetupImage(canvasData);
-            const attachment = new AttachmentBuilder(buffer, { name: 'lobby-setup.png' });
+            const fileName = `lobby-setup-${Date.now()}.png`;
+            const attachment = new AttachmentBuilder(buffer, { name: fileName });
 
             const embed = new EmbedBuilder()
                 .setColor(0x1ABC9C)
                 .setTitle(`⚔️ [ NEXORA COMPETITIVE ]`)
                 .setDescription(`Kaptanları belirleyip takımları kurmaya başlayın.\n\n👑 **Host:** <@${interaction.user.id}>`)
-                .setImage('attachment://lobby-setup.png')
+                .setImage(`attachment://${fileName}`)
                 .setFooter({ text: 'Seçim menülerini kullanarak kaptanları atayın.' });
 
             // Kaptan Adayları
@@ -271,7 +273,7 @@ module.exports = {
             return interaction.reply({ content: '❌ Panel bulunamadı.', flags: MessageFlags.Ephemeral });
         }
 
-        const lobbyConfig = getLobbyConfig(match.matchId) || { name: 'Lobby' };
+        const lobbyConfig = getLobbyConfig(match.lobbyId) || { name: 'Lobby' };
 
         // Helper: Kaptan verisi çek
         const getCapData = async (id) => {
@@ -293,10 +295,11 @@ module.exports = {
         };
 
         const buffer = await canvasGenerator.createLobbySetupImage(canvasData);
-        const attachment = new AttachmentBuilder(buffer, { name: 'lobby-setup.png' });
+        const fileName = `lobby-setup-${Date.now()}.png`;
+        const attachment = new AttachmentBuilder(buffer, { name: fileName });
 
         const embed = EmbedBuilder.from(interaction.message.embeds[0])
-            .setImage('attachment://lobby-setup.png');
+            .setImage(`attachment://${fileName}`);
 
         if (match.captainA && match.captainB) {
             match.status = 'DRAFT_COINFLIP';
@@ -523,22 +526,25 @@ module.exports = {
 
         if (memberOptions.length === 0) memberOptions.push({ label: 'Hata', value: 'null', description: 'Odada kimse yok' });
 
+        const lobbyConfig = getLobbyBySetupChannel(interaction.channelId) || { name: 'Lobby' };
+
         const canvasData = {
             matchNumber: match.matchNumber || 0,
-            lobbyName: 'Lobby',
+            lobbyName: lobbyConfig.name,
             captainA: null,
             captainB: null
         };
 
         const { AttachmentBuilder } = require('discord.js');
         const buffer = await canvasGenerator.createLobbySetupImage(canvasData);
-        const attachment = new AttachmentBuilder(buffer, { name: 'lobby-setup.png' });
+        const fileName = `lobby-setup-${Date.now()}.png`;
+        const attachment = new AttachmentBuilder(buffer, { name: fileName });
 
         const embed = new EmbedBuilder()
             .setColor(0x1ABC9C)
             .setTitle(`⚔️ [ NEXORA COMPETITIVE ]`)
             .setDescription(`**Lobi Sıfırlandı!**\nKaptanları yeniden belirleyin.\n\n👑 **Yetkili:** <@${match.hostId}>`)
-            .setImage('attachment://lobby-setup.png')
+            .setImage(`attachment://${fileName}`)
             .setFooter({ text: `Nexora Competitive • Match #${match.matchNumber || '?'}` });
 
         const rows = [
