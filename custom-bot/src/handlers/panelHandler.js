@@ -48,15 +48,19 @@ async function handleStats(interaction, userDoc, guildId) {
         status: 'FINISHED',
         odaId: guildId,
         $or: [{ teamA: userDoc.odasi }, { teamB: userDoc.odasi }]
-    }).sort({ finishedAt: -1 }).limit(5);
+    }).sort({ createdAt: -1 }).limit(5);
 
     const matchHistoryData = matches.map(m => {
         const isTeamA = m.teamA.includes(userDoc.odasi);
         const userResult = (isTeamA && m.winner === 'A') || (!isTeamA && m.winner === 'B') ? 'WIN' : 'LOSS';
-        const eloChange = m.eloChanges ? m.eloChanges.get(userDoc.odasi) : 0;
-        const isMvp = m.mvp === userDoc.odasi;
 
-        const dateObj = new Date(m.finishedAt);
+        // Fix: eloChanges is an array, not a Map
+        const userEloLog = (m.eloChanges || []).find(log => log.userId === userDoc.odasi);
+        const eloChange = userEloLog ? userEloLog.change : 0;
+
+        const isMvp = m.mvpPlayerId === userDoc.odasi || m.mvpLoserId === userDoc.odasi;
+
+        const dateObj = new Date(m.finishedAt || m.createdAt);
         const diff = Date.now() - dateObj.getTime();
         const hours = Math.floor(diff / (1000 * 60 * 60));
         const days = Math.floor(hours / 24);
@@ -80,7 +84,7 @@ async function handleStats(interaction, userDoc, guildId) {
     }) + 1;
 
     // Simple Map/Teammate calculation
-    const allMatches = await Match.find({ status: 'FINISHED', odaId: guildId, $or: [{ teamA: userDoc.odasi }, { teamB: userDoc.odasi }] });
+    const allMatches = await Match.find({ status: 'FINISHED', odaId: guildId, $or: [{ teamA: userDoc.odasi }, { teamB: userDoc.odasi }] }).sort({ createdAt: -1 });
     const maps = {};
     const teammates = {};
     for (const m of allMatches) {
@@ -125,7 +129,7 @@ async function handleStats(interaction, userDoc, guildId) {
 
     const buffer = await canvasGenerator.createDetailedStatsImage(userForCard, stats, matchHistoryData, bestMapData, favTeammateData, userRank, nemesisData);
     const attachment = new AttachmentBuilder(buffer, { name: 'stats.png' });
-    await interaction.editReply({ files: [attachment] });
+    await interaction.editReply({ files: [attachment], flags: [MessageFlags.Ephemeral] });
 }
 
 async function handleElo(interaction, userDoc, guildId) {
@@ -140,7 +144,7 @@ async function handleElo(interaction, userDoc, guildId) {
 
     const buffer = await canvasGenerator.createEloCard(userForCard, stats, userRank);
     const attachment = new AttachmentBuilder(buffer, { name: 'elo.png' });
-    await interaction.editReply({ files: [attachment] });
+    await interaction.editReply({ files: [attachment], flags: [MessageFlags.Ephemeral] });
 }
 
 async function handleTitles(interaction, userDoc, guildId) {
@@ -157,7 +161,7 @@ async function handleTitles(interaction, userDoc, guildId) {
             `Sahip olduğun ünvanlar: ${myTitles.map(t => `\`${t}\``).join(', ')}`)
         .setColor('#fbbf24');
 
-    await interaction.editReply({ embeds: [embed], files: [attachment] });
+    await interaction.editReply({ embeds: [embed], files: [attachment], flags: [MessageFlags.Ephemeral] });
 }
 
 async function handleCustomize(interaction, userDoc, guildId) {
@@ -210,20 +214,33 @@ async function handleCustomize(interaction, userDoc, guildId) {
     };
 
     const response = await interaction.editReply(getUI());
-    const collector = response.createMessageComponentCollector({ time: 60000 });
+    const collector = response.createMessageComponentCollector({ time: 120000 }); // Increase to 2 mins
 
     collector.on('collect', async i => {
-        if (i.customId === 'panel_select_title') {
-            const selected = i.values[0].replace('title_', '');
-            userDoc.matchStats.activeTitle = selected;
-            await userDoc.save();
-            await i.update(getUI());
+        try {
+            if (i.customId === 'panel_select_title') {
+                const selected = i.values[0].replace('title_', '');
+                userDoc.matchStats.activeTitle = selected;
+                await userDoc.save();
+                await i.update({ ...getUI(), flags: [MessageFlags.Ephemeral] });
+            }
+            else if (i.customId === 'panel_select_bg') {
+                const selected = i.values[0].replace('bg_', '');
+                userDoc.backgroundImage = selected;
+                await userDoc.save();
+                await i.update({ ...getUI(), flags: [MessageFlags.Ephemeral] });
+            }
+        } catch (e) {
+            console.error('Customize Collector Error:', e);
         }
-        else if (i.customId === 'panel_select_bg') {
-            const selected = i.values[0].replace('bg_', '');
-            userDoc.backgroundImage = selected;
-            await userDoc.save();
-            await i.update(getUI());
+    });
+
+    collector.on('end', async (_, reason) => {
+        if (reason !== 'messageDelete') {
+            try {
+                // Remove components on timeout to avoid confusion
+                await interaction.editReply({ components: [] }).catch(() => { });
+            } catch (e) { }
         }
     });
 }

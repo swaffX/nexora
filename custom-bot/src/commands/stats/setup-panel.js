@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, MessageFlags } = require('discord.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -41,7 +41,7 @@ module.exports = {
                 .setStyle(ButtonStyle.Primary)
         );
 
-        await interaction.reply({ content: '✅ Kontrol paneli oluşturuldu.', ephemeral: true });
+        await interaction.reply({ content: '✅ Kontrol paneli oluşturuldu.', flags: [MessageFlags.Ephemeral] });
         await interaction.channel.send({ embeds: [embed], components: [row1] });
     }
 };

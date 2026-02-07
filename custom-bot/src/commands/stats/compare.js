@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, AttachmentBuilder } = require('discord.js');
+const { SlashCommandBuilder, AttachmentBuilder, MessageFlags } = require('discord.js');
 const path = require('path');
 const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const canvasGenerator = require('../../utils/canvasGenerator');
@@ -18,7 +18,7 @@ module.exports = {
                 .setRequired(true)),
 
     async execute(interaction) {
-        await interaction.deferReply();
+        await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
 
         try {
             const u1 = interaction.options.getUser('user1');

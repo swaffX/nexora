@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, AttachmentBuilder } = require('discord.js');
+const { SlashCommandBuilder, AttachmentBuilder, MessageFlags } = require('discord.js');
 const path = require('path');
 const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const canvasGenerator = require('../../utils/canvasGenerator');
@@ -13,7 +13,7 @@ module.exports = {
                 .setDescription('Kartını görmek istediğiniz kullanıcı (Opsiyonel)')),
 
     async execute(interaction) {
-        await interaction.deferReply();
+        await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
 
         try {
             const targetUser = interaction.options.getUser('user') || interaction.user;
