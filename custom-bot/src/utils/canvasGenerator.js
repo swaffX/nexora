@@ -1880,14 +1880,14 @@ module.exports = {
 
         // VS Logo/Text
         ctx.textAlign = 'center';
-        ctx.font = 'bold italic 200px "Arial", sans-serif';
+        ctx.font = 'bold italic 200px Arial, sans-serif';
         ctx.fillStyle = '#fff';
         ctx.shadowColor = '#fff'; ctx.shadowBlur = 20;
         ctx.fillText("VS", centerX, centerY + 70);
         ctx.shadowBlur = 0;
 
         // Istanbul & Map Info
-        ctx.font = 'bold 40px "Arial", sans-serif';
+        ctx.font = 'bold 40px Arial, sans-serif';
         ctx.fillStyle = '#ef4444';
         ctx.fillText("ISTANBUL", centerX, centerY - 150);
 
@@ -1904,10 +1904,10 @@ module.exports = {
 
             // Top Header: TEAM [CAPTAIN]
             ctx.textAlign = textAlign;
-            ctx.font = 'bold 60px "Arial", sans-serif';
+            ctx.font = 'bold 60px Arial, sans-serif';
             ctx.fillStyle = color;
             ctx.shadowColor = color; ctx.shadowBlur = 10;
-            ctx.fillText(`TEAM ${teamData.captain.name.toUpperCase()}`, alignX, 150);
+            ctx.fillText(`TEAM ${(teamData.captain.name || 'Unknown').toUpperCase()}`, alignX, 150);
             ctx.shadowBlur = 0;
 
             const playerList = teamData.players;
@@ -1957,7 +1957,7 @@ module.exports = {
                 let fontSize = 32;
                 const maxNameWidth = 350;
                 ctx.font = `bold ${fontSize}px Arial, sans-serif`;
-                let name = player.name.toUpperCase();
+                let name = (player.name || 'Unknown').toUpperCase();
                 let nameWidth = ctx.measureText(name).width;
                 while (nameWidth > maxNameWidth && fontSize > 16) {
                     fontSize -= 2;
@@ -2214,7 +2214,7 @@ module.exports = {
             let fontSize = 34;
             const maxNameWidth = 350;
             ctx.font = `bold ${fontSize}px Arial, sans-serif`;
-            let name = player.name.toUpperCase();
+            let name = (player.name || 'Unknown').toUpperCase();
             let nameWidth = ctx.measureText(name).width;
 
             while (nameWidth > maxNameWidth && fontSize > 18) {
