@@ -33,8 +33,19 @@ const ELO_CONFIG = {
         { max: 1950, level: 8, name: 'Godlike' },
         { max: 2300, level: 9, name: 'Grandmaster' },
         { max: Infinity, level: 10, name: 'Nexora Champion' }
-    ]
+    ],
+    TITLES: {
+        'Satchel Enjoyer': { color: '#ff8800', description: 'Exclusive RaZe Main title.' },
+        'MVP Master': { color: '#fbbf24', description: 'Awarded for reaching 5 MVPs.' },
+        'Veteran': { color: '#a1a1aa', description: 'Awarded for playing 10 matches.' },
+        'On Fire': { color: '#ef4444', description: 'Awarded for a 5-match win streak.' },
+        'Unlucky': { color: '#3b82f6', description: 'Awarded for a 5-match loss streak.' }
+    }
 };
+
+function getTitleColor(titleName) {
+    return ELO_CONFIG.TITLES[titleName]?.color || '#888';
+}
 
 // Level Emojileri (Discord Custom Emoji IDs)
 const LEVEL_EMOJIS = {
@@ -113,17 +124,29 @@ function ensureValidStats(user) {
     if (!Array.isArray(stats.titles)) {
         stats.titles = [];
     }
-    if (stats.activeTitle === undefined) {
-        stats.activeTitle = null;
+    // --- TITLE ATAMALARI (Otomatik Görevler) ---
+    const SPECIAL_USER_ID = '315875588906680330';
+    const activeTitles = stats.titles || [];
+
+    // Sana özel title
+    if (user.odasi === SPECIAL_USER_ID) {
+        if (!activeTitles.includes('Satchel Enjoyer')) activeTitles.push('Satchel Enjoyer');
+        if (!stats.activeTitle) stats.activeTitle = 'Satchel Enjoyer';
     }
 
-    // --- ÖZEL TITLE ATAMASI (Ses Kaydı İsteği) ---
-    const SPECIAL_USER_ID = '315875588906680330';
-    if (user.odasi === SPECIAL_USER_ID) {
-        const title = 'Satchel Enjoyer';
-        if (!stats.titles.includes(title)) stats.titles.push(title);
-        stats.activeTitle = title;
-    }
+    // MVP Master (5 MVP)
+    if (stats.totalMVPs >= 5 && !activeTitles.includes('MVP Master')) activeTitles.push('MVP Master');
+
+    // Veteran (10 Maç)
+    if (stats.totalMatches >= 10 && !activeTitles.includes('Veteran')) activeTitles.push('Veteran');
+
+    // On Fire (5 Seri)
+    if (stats.winStreak >= 5 && !activeTitles.includes('On Fire')) activeTitles.push('On Fire');
+
+    // Unlucky (5 Mağlubiyet Serisi)
+    if (stats.winStreak <= -5 && !activeTitles.includes('Unlucky')) activeTitles.push('Unlucky');
+
+    stats.titles = activeTitles;
     // -------------------------------------------
 
     // Sınırları uygula
@@ -360,5 +383,6 @@ module.exports = {
     calculateMatchEloChange,
     createDefaultStats,
     balanceTeams,
-    recalculateStatsFromHistory
+    recalculateStatsFromHistory,
+    getTitleColor
 };

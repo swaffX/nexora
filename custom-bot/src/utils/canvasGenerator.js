@@ -290,7 +290,7 @@ module.exports = {
         // Title
         if (stats.activeTitle) {
             ctx.font = 'bold 24px "Segoe UI", sans-serif';
-            ctx.fillStyle = '#888';
+            ctx.fillStyle = eloService.getTitleColor(stats.activeTitle);
             ctx.fillText(stats.activeTitle.toUpperCase(), nameX, 125);
         }
 
@@ -563,7 +563,7 @@ module.exports = {
 
         if (stats.activeTitle) {
             ctx.font = 'bold 22px "Segoe UI", sans-serif';
-            ctx.fillStyle = '#888';
+            ctx.fillStyle = eloService.getTitleColor(stats.activeTitle);
             ctx.fillText(stats.activeTitle.toUpperCase(), 140, footerMid + 25);
         }
 
