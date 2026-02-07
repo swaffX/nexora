@@ -42,14 +42,14 @@ async function handleInteraction(interaction, client) {
 }
 
 async function handleStats(interaction, userDoc, guildId) {
-    const stats = userDoc.matchStats || eloService.createDefaultStats();
-
     if (userDoc) {
         eloService.ensureValidStats(userDoc);
         await eloService.recalculateStatsFromHistory(userDoc);
     }
+    const stats = userDoc?.matchStats || eloService.createDefaultStats();
 
     const targetUserId = interaction.user.id;
+    const safeTargetId = String(targetUserId);
     const MIN_MATCH_ID = '1468676273680285706';
     const historyMatches = await Match.find({
         status: 'FINISHED',
@@ -58,8 +58,7 @@ async function handleStats(interaction, userDoc, guildId) {
     }).sort({ createdAt: -1 });
 
     const matchHistoryData = historyMatches.slice(0, 5).map(m => {
-        const safeTargetId = String(targetUserId);
-        const isTeamA = m.teamA.includes(targetUserId);
+        const isTeamA = m.teamA.some(id => String(id) === safeTargetId);
 
         let actualWinner = m.winner;
         if (m.scoreA !== undefined && m.scoreB !== undefined) {
@@ -113,7 +112,7 @@ async function handleStats(interaction, userDoc, guildId) {
     const mapStats = {};
 
     for (const m of historyMatches) {
-        const isTeamA = m.teamA.includes(targetUserId);
+        const isTeamA = m.teamA.some(id => String(id) === safeTargetId);
         const teamList = isTeamA ? m.teamA : m.teamB;
 
         for (const pid of teamList) {
@@ -151,7 +150,9 @@ async function handleStats(interaction, userDoc, guildId) {
             bestMapWR = (data.wins / data.total) * 100;
         }
     }
-    if (bestMapName) bestMapData = { name: bestMapName, wr: Math.round(bestMapWR) }; const userRank = await User.countDocuments({
+    if (bestMapName) bestMapData = { name: bestMapName, wr: Math.round(bestMapWR) };
+
+    const userRank = await User.countDocuments({
         odaId: guildId,
         'matchStats.totalMatches': { $gt: 0 },
         'matchStats.elo': { $gt: stats.elo }

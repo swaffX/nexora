@@ -762,8 +762,10 @@ module.exports = {
         }
 
 
+        ctx.font = '50px VALORANT';
+        ctx.textAlign = 'center';
         ctx.fillStyle = '#fff';
-        ctx.fillText('VS', width / 2, height / 2);
+        ctx.fillText('VS', width / 2, height / 2 + 20);
 
         const drawUserSide = async (user, stats, x, isRight) => {
             const sideWidth = 450;
