@@ -295,11 +295,16 @@ module.exports = {
         };
 
         const buffer = await canvasGenerator.createLobbySetupImage(canvasData);
-        const fileName = `lobby-setup-${Date.now()}.png`;
+        const fileName = 'lobby-setup.png';
         const attachment = new AttachmentBuilder(buffer, { name: fileName });
 
-        const embed = EmbedBuilder.from(interaction.message.embeds[0])
-            .setImage(`attachment://${fileName}`);
+        // Construct a fresh embed to avoid legacy image data
+        const embed = new EmbedBuilder()
+            .setColor(0x1ABC9C)
+            .setTitle(`⚔️ [ NEXORA COMPETITIVE ]`)
+            .setDescription(`Kaptanları belirleyip takımları kurmaya başlayın.\n\n👑 **Host:** <@${match.hostId}>`)
+            .setImage(`attachment://${fileName}`)
+            .setFooter({ text: 'Seçim menülerini kullanarak kaptanları atayın.' });
 
         if (match.captainA && match.captainB) {
             match.status = 'DRAFT_COINFLIP';
@@ -324,14 +329,14 @@ module.exports = {
             const optionsA = candidates.filter(c => c.value !== match.captainB);
             const selectA = new StringSelectMenuBuilder()
                 .setCustomId(`match_cap_select_A_${match.matchId}`)
-                .setPlaceholder(match.captainA ? '✅ Seçildi' : 'Team A Kaptanı Seç')
+                .setPlaceholder(match.captainA ? '✅ Seçildi' : 'TEAM A KAPTANI SEÇ')
                 .setDisabled(!!match.captainA)
                 .addOptions(optionsA.length > 0 ? optionsA.slice(0, 25) : [{ label: 'Uygun Aday Yok', value: 'null' }]);
 
             const optionsB = candidates.filter(c => c.value !== match.captainA);
             const selectB = new StringSelectMenuBuilder()
                 .setCustomId(`match_cap_select_B_${match.matchId}`)
-                .setPlaceholder(match.captainB ? '✅ Seçildi' : 'Team B Kaptanı Seç')
+                .setPlaceholder(match.captainB ? '✅ Seçildi' : 'TEAM B KAPTANI SEÇ')
                 .setDisabled(!!match.captainB)
                 .addOptions(optionsB.length > 0 ? optionsB.slice(0, 25) : [{ label: 'Uygun Aday Yok', value: 'null' }]);
 
@@ -345,7 +350,13 @@ module.exports = {
             ];
 
             try {
-                await interaction.update({ embeds: [embed], components: rows });
+                // Use attachments: [] to clear previous ones and force image refresh
+                await interaction.update({
+                    embeds: [embed],
+                    components: rows,
+                    files: [attachment],
+                    attachments: []
+                });
             } catch (e) {
                 console.warn('Captain UI Update Error:', e.message);
             }
