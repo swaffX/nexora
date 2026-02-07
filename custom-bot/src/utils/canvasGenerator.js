@@ -248,11 +248,29 @@ module.exports = {
         const levelData = getLevelInfo(elo);
         const rankColor = levelData.color;
 
-        const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-        bgGradient.addColorStop(0, '#18181b');
-        bgGradient.addColorStop(1, '#09090b');
-        ctx.fillStyle = bgGradient;
-        ctx.fillRect(0, 0, width, height);
+        const currentBg = user.backgroundImage || 'Default';
+        let bgImg = null;
+        if (currentBg !== 'Default') {
+            try {
+                const mapPath = path.join(__dirname, '..', '..', 'assets', 'maps', `${currentBg.toLowerCase()}.png`);
+                if (fs.existsSync(mapPath)) bgImg = await loadImage(mapPath);
+            } catch (e) { }
+        }
+
+        if (bgImg) {
+            const scale = Math.max(width / bgImg.width, height / bgImg.height);
+            const w = bgImg.width * scale;
+            const h = bgImg.height * scale;
+            ctx.drawImage(bgImg, (width - w) / 2, (height - h) / 2, w, h);
+            ctx.fillStyle = 'rgba(9, 9, 11, 0.85)'; // Overlay for readability
+            ctx.fillRect(0, 0, width, height);
+        } else {
+            const bgGradient = ctx.createLinearGradient(0, 0, width, height);
+            bgGradient.addColorStop(0, '#18181b');
+            bgGradient.addColorStop(1, '#09090b');
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, width, height);
+        }
 
         const r = parseInt(rankColor.slice(1, 3), 16);
         const g = parseInt(rankColor.slice(3, 5), 16);
@@ -361,18 +379,36 @@ module.exports = {
         return canvas.toBuffer('image/png');
     },
 
-    async createDetailedStatsImage(user, stats, matchHistory, bestMap, favoriteTeammate, rank) {
+    async createDetailedStatsImage(user, stats, matchHistory, bestMap, favoriteTeammate, rank, nemesisData) {
         const width = 1200;
-        const height = 850;
+        const height = 1000; // Increased height for nemesis row
 
         const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
 
-        const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-        bgGradient.addColorStop(0, '#18181b');
-        bgGradient.addColorStop(1, '#09090b');
-        ctx.fillStyle = bgGradient;
-        ctx.fillRect(0, 0, width, height);
+        const currentBg = user.backgroundImage || 'Default';
+        let bgImgPrimary = null;
+        if (currentBg !== 'Default') {
+            try {
+                const mapPath = path.join(__dirname, '..', '..', 'assets', 'maps', `${currentBg.toLowerCase()}.png`);
+                if (fs.existsSync(mapPath)) bgImgPrimary = await loadImage(mapPath);
+            } catch (e) { }
+        }
+
+        if (bgImgPrimary) {
+            const scale = Math.max(width / bgImgPrimary.width, height / bgImgPrimary.height);
+            const w = bgImgPrimary.width * scale;
+            const h = bgImgPrimary.height * scale;
+            ctx.drawImage(bgImgPrimary, (width - w) / 2, (height - h) / 2, w, h);
+            ctx.fillStyle = 'rgba(9, 9, 11, 0.9)'; // Darker overlay for detailed stats
+            ctx.fillRect(0, 0, width, height);
+        } else {
+            const bgGradient = ctx.createLinearGradient(0, 0, width, height);
+            bgGradient.addColorStop(0, '#18181b');
+            bgGradient.addColorStop(1, '#09090b');
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, width, height);
+        }
 
         const lvlInfo = getLevelInfo(stats.elo !== undefined ? stats.elo : 100);
         const rankColor = lvlInfo.color;
@@ -533,8 +569,28 @@ module.exports = {
         // Icon
         drawStar(ctx, rightX + 380, 580, 5, 25, 12, '#fbbf24');
 
+        // Ezeli Rakip (Nemesis)
+        if (nemesisData) {
+            ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(rightX, 660, 430, 120);
+            ctx.font = 'bold 20px "Segoe UI", sans-serif'; ctx.fillStyle = '#ef4444'; ctx.fillText('EZELİ RAKİP', rightX + 20, 700);
+            if (nemesisData.avatarURL) {
+                try {
+                    const av = await loadImage(nemesisData.avatarURL);
+                    ctx.save(); ctx.beginPath(); ctx.arc(rightX + 60, 740, 35, 0, Math.PI * 2); ctx.clip();
+                    ctx.drawImage(av, rightX + 25, 705, 70, 70); ctx.restore();
+                } catch (e) { }
+            }
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 30px "Segoe UI", sans-serif';
+            let nName = nemesisData.username.toUpperCase();
+            if (nName.length > 12) nName = nName.substring(0, 10) + '..';
+            ctx.fillText(nName, rightX + 110, 750);
+            ctx.font = 'bold 24px "DIN Alternate", sans-serif'; ctx.fillStyle = '#ef4444'; ctx.textAlign = 'right';
+            ctx.fillText(`${nemesisData.count} KEZ YENDİ`, rightX + 410, 750); ctx.textAlign = 'left';
+        }
+
         // --- FOOTER (User Info & Rank) ---
-        const footerY = 730;
+        const footerY = 880; // Adjusted for new height
         const footerBgStart = footerY - 20;
         const footerHeight = height - footerBgStart;
         const footerMid = footerBgStart + (footerHeight / 2);
@@ -664,6 +720,96 @@ module.exports = {
 
             y += rowHeight;
         }
+
+        return canvas.toBuffer('image/png');
+    },
+
+    async createCompareImage(user1, stats1, user2, stats2) {
+        const width = 1200;
+        const height = 700;
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext('2d');
+
+        // Arkaplan
+        const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
+        bgGrad.addColorStop(0, '#0c0c0e');
+        bgGrad.addColorStop(1, '#18181b');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, width, height);
+
+        // Header (VERSUS)
+        ctx.font = 'bold 80px "VALORANT", sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.05)';
+        ctx.textAlign = 'center';
+        ctx.fillText('COMPARISON', width / 2, 100);
+
+        ctx.font = 'bold 50px "VALORANT", sans-serif';
+        ctx.fillStyle = '#fff';
+        ctx.fillText('VS', width / 2, height / 2);
+
+        const drawUserSide = async (user, stats, x, isRight) => {
+            const sideWidth = 450;
+            const startX = isRight ? width - sideWidth - 50 : 50;
+            const avatarSize = 150;
+            const midX = startX + sideWidth / 2;
+
+            // Avatar
+            if (user.avatar) {
+                try {
+                    const av = await loadImage(user.avatar);
+                    ctx.save(); ctx.beginPath(); ctx.arc(midX, 200, avatarSize / 2, 0, Math.PI * 2); ctx.clip();
+                    ctx.drawImage(av, midX - avatarSize / 2, 200 - avatarSize / 2, avatarSize, avatarSize); ctx.restore();
+                } catch (e) { }
+            }
+
+            // Name
+            ctx.font = 'bold 45px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center';
+            ctx.fillText(user.username.toUpperCase(), midX, 320);
+
+            // Title
+            if (stats.activeTitle) {
+                ctx.font = 'bold 22px "Segoe UI", sans-serif';
+                ctx.fillStyle = eloService.getTitleColor(stats.activeTitle);
+                ctx.fillText(stats.activeTitle.toUpperCase(), midX, 350);
+            }
+
+            const statsY = 420;
+            const statRow = (label, value, idx, isWinner) => {
+                const y = statsY + (idx * 60);
+                const rectW = 350;
+                const rectX = midX - rectW / 2;
+
+                ctx.fillStyle = isWinner ? 'rgba(46, 204, 113, 0.1)' : 'rgba(255,255,255,0.02)';
+                ctx.beginPath(); ctx.roundRect(rectX, y - 40, rectW, 50, 5); ctx.fill();
+
+                if (isWinner) {
+                    ctx.strokeStyle = '#2ecc71'; ctx.lineWidth = 1; ctx.stroke();
+                }
+
+                ctx.font = 'bold 20px "Segoe UI", sans-serif';
+                ctx.fillStyle = '#666';
+                ctx.textAlign = isRight ? 'right' : 'left';
+                ctx.fillText(label.toUpperCase(), isRight ? rectX + rectW - 20 : rectX + 20, y - 7);
+
+                ctx.font = 'bold 28px "DIN Alternate", sans-serif';
+                ctx.fillStyle = isWinner ? '#2ecc71' : '#fff';
+                ctx.textAlign = isRight ? 'left' : 'right';
+                ctx.fillText(String(value), isRight ? rectX + 20 : rectX + rectW - 20, y - 7);
+            };
+
+            const wr1 = stats.totalMatches > 0 ? (stats.totalWins / stats.totalMatches) * 100 : 0;
+            const wr2 = stats2.totalMatches > 0 ? (stats2.totalWins / stats2.totalMatches) * 100 : 0;
+
+            statRow('ELO', stats.elo, 0, stats.elo >= stats2.elo);
+            statRow('Maç', stats.totalMatches, 1, stats.totalMatches >= stats2.totalMatches);
+            statRow('WR', `%${Math.round(wr1)}`, 2, wr1 >= wr2);
+            statRow('MVP', stats.totalMVPs || 0, 3, (stats.totalMVPs || 0) >= (stats2.totalMVPs || 0));
+        };
+
+        await drawUserSide(user1, stats1, 0, false);
+        await drawUserSide(user2, stats2, 0, true);
 
         return canvas.toBuffer('image/png');
     },

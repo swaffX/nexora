@@ -54,7 +54,8 @@ module.exports = {
             // GÖRSEL OLUŞTUR
             const userForCard = {
                 username: targetUser.username,
-                avatar: targetUser.displayAvatarURL({ extension: 'png' })
+                avatar: targetUser.displayAvatarURL({ extension: 'png' }),
+                backgroundImage: userDoc?.backgroundImage
             };
 
             // Pass userRank to generate visuals

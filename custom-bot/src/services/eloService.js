@@ -46,8 +46,63 @@ const ELO_CONFIG = {
         'Immortal': { color: '#a855f7', description: '2000 ELO barajını aş.' },
         'Nexora Elite': { color: '#2ecc71', description: 'Level 6 ve üzerine ulaş.' },
         'Rookie': { color: '#94a3b8', description: 'Nexora ELO sistemine giriş ünvanı.' }
+    },
+    BACKGROUND_THEMES: {
+        'Default': { path: null, name: 'Varsayılan Dark' },
+        'Ascent': { path: 'ascent.png', name: 'Ascent' },
+        'Bind': { path: 'bind.png', name: 'Bind' },
+        'Haven': { path: 'haven.png', name: 'Haven' },
+        'Icebox': { path: 'icebox.png', name: 'Icebox' },
+        'Split': { path: 'split.png', name: 'Split' },
+        'Fracture': { path: 'fracture.png', name: 'Fracture' },
+        'Lotus': { path: 'lotus.png', name: 'Lotus' },
+        'Pearl': { path: 'pearl.png', name: 'Pearl' },
+        'Sunset': { path: 'sunset.png', name: 'Sunset' },
+        'Abyss': { path: 'abyss.png', name: 'Abyss' }
     }
 };
+
+/**
+ * Ezeli Rakip (Nemesis) hesapla: Kullanıcının en çok hangi rakibe karşı yenildiğini bulur.
+ */
+async function calculateNemesis(userId, guildId) {
+    const path = require('path');
+    const { Match } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
+
+    const matches = await Match.find({
+        status: 'FINISHED',
+        odaId: guildId,
+        $or: [{ teamA: userId }, { teamB: userId }]
+    });
+
+    const losesTo = {}; // { opponentId: count }
+
+    for (const m of matches) {
+        const isTeamA = m.teamA.includes(userId);
+        const winners = m.winner === 'A' ? m.teamA : m.teamB;
+        const losers = m.winner === 'A' ? m.teamB : m.teamA;
+
+        // Eğer kullanıcı kaybeden takımdaysa, kazanan takımdaki herkesi "yendi beni" listesine ekle
+        const wasInLoserTeam = (isTeamA && m.winner === 'B') || (!isTeamA && m.winner === 'A');
+
+        if (wasInLoserTeam) {
+            for (const winnerId of winners) {
+                losesTo[winnerId] = (losesTo[winnerId] || 0) + 1;
+            }
+        }
+    }
+
+    let nemesisId = null;
+    let maxLoses = 0;
+    for (const [id, count] of Object.entries(losesTo)) {
+        if (count > maxLoses) {
+            maxLoses = count;
+            nemesisId = id;
+        }
+    }
+
+    return nemesisId ? { userId: nemesisId, count: maxLoses } : null;
+}
 
 function getTitleColor(titleName) {
     return ELO_CONFIG.TITLES[titleName]?.color || '#888';
@@ -405,5 +460,6 @@ module.exports = {
     createDefaultStats,
     balanceTeams,
     recalculateStatsFromHistory,
-    getTitleColor
+    getTitleColor,
+    calculateNemesis
 };

@@ -189,9 +189,24 @@ module.exports = {
                 } catch (e) { }
             }
 
+            // --- EZELİ RAKİP (NEMESIS) ---
+            const nemesisInfo = await eloService.calculateNemesis(targetUser.id, guildId);
+            let nemesisData = null;
+            if (nemesisInfo) {
+                try {
+                    const nMember = await interaction.guild.members.fetch(nemesisInfo.userId);
+                    nemesisData = {
+                        username: nMember.displayName,
+                        count: nemesisInfo.count,
+                        avatarURL: nMember.user.displayAvatarURL({ extension: 'png' })
+                    };
+                } catch (e) { }
+            }
+
             const userForCard = {
                 username: targetUser.username,
-                avatar: targetUser.displayAvatarURL({ extension: 'png' })
+                avatar: targetUser.displayAvatarURL({ extension: 'png' }),
+                backgroundImage: userDoc?.backgroundImage // NEW: Custom background
             };
 
             // Pass rank to canvas
@@ -201,7 +216,8 @@ module.exports = {
                 matchHistoryData,
                 bestMapData,
                 favTeammateData,
-                userRank // NEW
+                userRank,
+                nemesisData // NEW
             );
 
             const attachment = new AttachmentBuilder(buffer, { name: 'stats-card.png' });
