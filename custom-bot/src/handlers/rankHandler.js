@@ -136,7 +136,10 @@ module.exports = {
                 await member.roles.set(currentRoles, `Auto Rank Update: Level ${newLevel}`);
                 console.log(`[RANK] ${member.user.tag} -> Set to Level ${newLevel}`);
             } catch (e) {
-                // console.error(`Failed to set roles for ${member.user.tag}:`, e.message);
+                logger.error(`[RANK ERROR] ${member.user.tag} rol düzenleme başarısız: ${e.message}`);
+                if (e.message.includes('Missing Permissions')) {
+                    logger.error('!!! BOT ROLÜ, VERMEYE ÇALIŞTIĞI ROLLERDEN DAHA ALTA OLABİLİR (Hiyerarşi Sorunu) !!!');
+                }
             }
         }
     }
