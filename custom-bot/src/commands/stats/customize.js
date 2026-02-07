@@ -32,8 +32,7 @@ module.exports = {
                 .addFields(
                     { name: '🏆 Ünvan', value: `\`${currentTitle}\``, inline: true },
                     { name: '🖼️ Arkaplan', value: `\`${currentBg}\``, inline: true },
-                    { name: '👤 Favori Ajan', value: `\`${currentAgent}\``, inline: true },
-                    { name: '📍 Favori Harita', value: `\`${currentMap}\``, inline: true }
+                    { name: '👤 Favori Ajan', value: `\`${currentAgent}\``, inline: true }
                 )
                 .setColor('#fbbf24')
                 .setFooter({ text: 'Değişiklik yapmak için aşağıdaki menüleri kullanın.' });
@@ -83,23 +82,7 @@ module.exports = {
                     .addOptions(agentOptions)
             );
 
-            // 4. Favori Harita Menüsü
-            // Filter out 'Default' for map selection if needed, but let's keep it consistent
-            const mapOptions = Object.keys(eloService.ELO_CONFIG.BACKGROUND_THEMES).slice(0, 25).map(map => ({
-                label: map,
-                value: `map_${map}`,
-                description: `Favori haritan ${map} olarak görünsün.`,
-                emoji: '📍',
-                default: map === currentMap
-            }));
-            const mapRow = new ActionRowBuilder().addComponents(
-                new StringSelectMenuBuilder()
-                    .setCustomId('select_map')
-                    .setPlaceholder('Favori harita seçin...')
-                    .addOptions(mapOptions)
-            );
-
-            return { embeds: [embed], components: [titleRow, bgRow, agentRow, mapRow] };
+            return { embeds: [embed], components: [titleRow, bgRow, agentRow] };
         };
 
         const response = await interaction.editReply(getUI());
@@ -121,12 +104,6 @@ module.exports = {
             else if (i.customId === 'select_agent') {
                 const selected = i.values[0].replace('agent_', '');
                 userDoc.favoriteAgent = selected;
-                await userDoc.save();
-                await i.update(getUI());
-            }
-            else if (i.customId === 'select_map') {
-                const selected = i.values[0].replace('map_', '');
-                userDoc.favoriteMap = selected;
                 await userDoc.save();
                 await i.update(getUI());
             }

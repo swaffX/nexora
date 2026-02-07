@@ -285,6 +285,25 @@ module.exports = {
         ctx.fillStyle = rankColor;
         ctx.fillRect(0, 0, 10, height);
 
+        // --- FAVORITE AGENT DRAW (Background Layer) ---
+        if (user.favoriteAgent && user.favoriteAgent !== 'Default') {
+            try {
+                const agentData = eloService.ELO_CONFIG.AGENTS[user.favoriteAgent];
+                if (agentData) {
+                    const agentPath = path.join(__dirname, '..', '..', 'agents', agentData.path);
+                    if (fs.existsSync(agentPath)) {
+                        const agentImg = await loadImage(agentPath);
+                        const aW = 450;
+                        const aH = 450;
+                        ctx.save();
+                        ctx.globalAlpha = 0.4; // Lower alpha so it's a background element
+                        ctx.drawImage(agentImg, width - aW + 80, height - aH + 50, aW, aH);
+                        ctx.restore();
+                    }
+                }
+            } catch (e) { }
+        }
+
         try {
             const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${levelData.lv}.png`);
             if (fs.existsSync(iconPath)) {
@@ -376,26 +395,6 @@ module.exports = {
         drawStatBox(1, 'Wins', wins, '#2ecc71');
         drawStatBox(2, 'Win Rate', `%${winRate}`, winRate >= 50 ? '#2ecc71' : '#e74c3c');
         drawStatBox(3, 'Streak', Math.abs(streak), streak >= 0 ? '#2ecc71' : '#e74c3c');
-
-        // --- FAVORITE AGENT DRAW ---
-        if (user.favoriteAgent && user.favoriteAgent !== 'Default') {
-            try {
-                const agentData = eloService.ELO_CONFIG.AGENTS[user.favoriteAgent];
-                if (agentData) {
-                    const agentPath = path.join(__dirname, '..', '..', 'agents', agentData.path);
-                    if (fs.existsSync(agentPath)) {
-                        const agentImg = await loadImage(agentPath);
-                        // Aesthetic bottom-right placement
-                        const aW = 380;
-                        const aH = 380;
-                        ctx.save();
-                        ctx.globalAlpha = 0.8;
-                        ctx.drawImage(agentImg, width - aW + 50, height - aH + 50, aW, aH);
-                        ctx.restore();
-                    }
-                }
-            } catch (e) { }
-        }
 
         return canvas.toBuffer('image/png');
     },
@@ -545,56 +544,45 @@ module.exports = {
 
         const rightX = 720;
 
-        // Best / Favorite Map
-        ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(rightX, 100, 430, 260);
-        ctx.font = 'bold 20px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText(user.favoriteMap ? 'FAVORİ HARİTA' : 'BEST MAP', rightX + 20, 140);
+        // --- RIGHT SIDE BOXES (Reorganized to avoid overlap) ---
 
-        const mapToShow = user.favoriteMap || (bestMap ? bestMap.name : 'Unknown');
-        const mapWinRate = user.favoriteMap ? null : (bestMap ? bestMap.wr : 0); // Changed bestMap.winRate to bestMap.wr based on original code
-
-        ctx.font = 'bold 45px "VALORANT", sans-serif'; ctx.fillStyle = '#fff';
-        ctx.fillText(mapToShow.toUpperCase(), rightX + 20, 200); // Adjusted Y for better spacing
-
-        if (mapWinRate !== null) {
-            ctx.font = 'bold 24px "DIN Alternate", sans-serif'; ctx.fillStyle = '#2ecc71';
-            ctx.fillText(`WIN RATE: %${mapWinRate}`, rightX + 20, 245); // Adjusted Y for better spacing
+        // Box 1: Best Map (Stat-based)
+        if (bestMap) {
+            ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(rightX, 100, 430, 120);
+            ctx.font = 'bold 20px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('BEST MAP', rightX + 20, 140);
+            ctx.font = 'bold 45px "Segoe UI", sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText(bestMap.name.toUpperCase(), rightX + 20, 190);
+            ctx.font = '30px "DIN Alternate", sans-serif'; ctx.fillStyle = '#2ecc71'; ctx.textAlign = 'right'; ctx.fillText(`%${bestMap.wr} WR`, rightX + 410, 190); ctx.textAlign = 'left';
+        } else {
+            ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(rightX, 100, 430, 120);
+            ctx.font = 'bold 20px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('BEST MAP', rightX + 20, 140);
+            ctx.font = 'bold 35px "Segoe UI", sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText('NO DATA', rightX + 20, 190);
         }
 
-        // Map Image Preview
-        try {
-            const mapImgPath = path.join(__dirname, '..', '..', 'assets', 'maps', `${mapToShow}.png`);
-            if (fs.existsSync(mapImgPath)) {
-                const mImg = await loadImage(mapImgPath);
-                ctx.save(); ctx.beginPath(); ctx.roundRect(rightX + 20, 260, 390, 80, 5); ctx.clip(); // Adjusted Y for better spacing
-                ctx.drawImage(mImg, rightX + 20, 200, 390, 200); ctx.restore(); // Adjusted Y for better spacing
-            }
-        } catch (e) { }
-
-        // Fav Duo
+        // Box 2: Favorite Duo
         if (favoriteTeammate) {
-            ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(rightX, 380, 430, 120); // Adjusted Y
-            ctx.font = 'bold 20px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('PLAYED MOST TEAMMATE', rightX + 20, 420); // Adjusted Y
+            ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(rightX, 240, 430, 120);
+            ctx.font = 'bold 20px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('PLAYED MOST TEAMMATE', rightX + 20, 280);
             if (favoriteTeammate.avatarURL) {
                 try {
                     const avatar = await loadImage(favoriteTeammate.avatarURL);
-                    ctx.save(); ctx.beginPath(); ctx.arc(rightX + 60, 460, 35, 0, Math.PI * 2); ctx.clip(); // Adjusted Y
-                    ctx.drawImage(avatar, rightX + 25, 425, 70, 70); ctx.restore(); // Adjusted Y
+                    ctx.save(); ctx.beginPath(); ctx.arc(rightX + 60, 320, 35, 0, Math.PI * 2); ctx.clip();
+                    ctx.drawImage(avatar, rightX + 25, 285, 70, 70); ctx.restore();
                 } catch (e) { }
             }
             ctx.fillStyle = '#fff';
             let duoName = favoriteTeammate.username.toUpperCase();
             if (duoName.length > 15) ctx.font = 'bold 25px "Segoe UI", sans-serif';
             else if (duoName.length > 10) ctx.font = 'bold 30px "Segoe UI", sans-serif';
-            else ctx.font = 'bold 40px "Segoe UI", sans-serif';
+            else ctx.font = 'bold 35px "Segoe UI", sans-serif';
             ctx.fillText(duoName, rightX + 110, 330);
         }
 
-        // Win Rate
+        // Box 3: Win Rate
         ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(rightX, 380, 430, 120);
-        const w = stats.totalWins || 0; const l = stats.totalLosses || 0; const total = w + l;
-        const wr = total > 0 ? Math.round((w / total) * 100) : 0;
+        const w = stats.totalWins || 0; const l = stats.totalLosses || 0; const mtotal = w + l;
+        const wr_val = mtotal > 0 ? Math.round((w / mtotal) * 100) : 0;
         ctx.font = 'bold 20px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('WIN RATE (SEASON)', rightX + 20, 420);
-        ctx.font = 'bold 50px "DIN Alternate", sans-serif'; ctx.fillStyle = wr >= 50 ? '#2ecc71' : '#e74c3c'; ctx.fillText(`%${wr}`, rightX + 20, 470);
+        ctx.font = 'bold 50px "DIN Alternate", sans-serif'; ctx.fillStyle = wr_val >= 50 ? '#2ecc71' : '#e74c3c'; ctx.fillText(`%${wr_val}`, rightX + 20, 470);
         ctx.font = '30px "DIN Alternate", sans-serif'; ctx.fillStyle = '#fff'; ctx.textAlign = 'right'; ctx.fillText(`${w}W / ${l}L`, rightX + 410, 470); ctx.textAlign = 'left';
 
         // Total MVPs
