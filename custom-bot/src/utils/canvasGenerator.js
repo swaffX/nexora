@@ -590,54 +590,77 @@ module.exports = {
     },
 
     async createTitlesGuideImage() {
-        // --- PREMIUM TITLES GUIDE ---
-        const width = 1000;
+        // --- PREMIUM TITLES GUIDE v2 (Modern & Turkish) ---
+        const width = 1100;
         const titlesArr = Object.entries(eloService.ELO_CONFIG.TITLES);
-        const rowHeight = 90;
-        const height = 200 + (titlesArr.length * rowHeight);
+        const rowHeight = 100;
+        const height = 250 + (titlesArr.length * rowHeight);
 
         const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
 
-        // Background
+        // Background (Deep Dark)
         const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
-        bgGrad.addColorStop(0, '#18181b');
-        bgGrad.addColorStop(1, '#09090b');
+        bgGrad.addColorStop(0, '#0c0c0e');
+        bgGrad.addColorStop(0.5, '#121214');
+        bgGrad.addColorStop(1, '#0c0c0e');
         ctx.fillStyle = bgGrad;
         ctx.fillRect(0, 0, width, height);
 
-        // Header
-        ctx.font = 'bold 50px "VALORANT", sans-serif';
-        ctx.fillStyle = '#fff';
-        ctx.textAlign = 'center';
-        ctx.fillText('NEXORA ACHIEVEMENTS', width / 2, 80);
+        // Grid Pattern
+        ctx.save();
+        ctx.globalAlpha = 0.05;
+        ctx.strokeStyle = '#ffffff';
+        for (let i = 0; i < width; i += 50) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, height); ctx.stroke(); }
+        for (let j = 0; j < height; j += 50) { ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(width, j); ctx.stroke(); }
+        ctx.restore();
 
-        ctx.font = '20px "Segoe UI", sans-serif';
-        ctx.fillStyle = '#71717a';
-        ctx.fillText('Earn unique titles by playing and winning!', width / 2, 120);
+        // Header
+        ctx.font = 'bold 70px "VALORANT", sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = 'rgba(255,255,255,0.4)'; ctx.shadowBlur = 30;
+        ctx.fillText('NEXORA BAŞARILARI', width / 2, 100);
+        ctx.shadowBlur = 0;
+
+        ctx.font = '24px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#a1a1aa';
+        ctx.fillText('Maçlardaki performansına göre nadir ünvanlar kazan!', width / 2, 150);
+
+        // Accent Bar
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(width / 2 - 100, 180, 200, 4);
 
         // Rows
-        let y = 180;
+        let y = 260;
         for (const [name, data] of titlesArr) {
-            // Box
-            ctx.fillStyle = 'rgba(255,255,255,0.03)';
-            ctx.fillRect(50, y - 45, width - 100, 75);
+            const rowX = 80;
+            const rowW = width - 160;
 
-            // Title Color Side
+            // Box
+            ctx.fillStyle = 'rgba(255,255,255,0.02)';
+            ctx.beginPath();
+            ctx.roundRect(rowX, y - 50, rowW, 80, 10);
+            ctx.fill();
+
+            // Glow & Indicator
+            ctx.shadowColor = data.color;
+            ctx.shadowBlur = 15;
             ctx.fillStyle = data.color;
-            ctx.fillRect(50, y - 45, 5, 75);
+            ctx.fillRect(rowX, y - 50, 6, 80);
+            ctx.shadowBlur = 0;
 
             // Title Name
             ctx.textAlign = 'left';
-            ctx.font = 'bold 30px "Segoe UI", sans-serif';
+            ctx.font = 'bold 32px "Segoe UI", sans-serif';
             ctx.fillStyle = data.color;
-            ctx.fillText(name.toUpperCase(), 80, y);
+            ctx.fillText(name.toUpperCase(), rowX + 40, y);
 
             // Description
             ctx.textAlign = 'right';
-            ctx.font = '20px "Segoe UI", sans-serif';
-            ctx.fillStyle = '#a1a1aa';
-            ctx.fillText(data.description, width - 80, y);
+            ctx.font = 'italic 22px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#d4d4d8';
+            ctx.fillText(data.description, rowX + rowW - 40, y);
 
             y += rowHeight;
         }

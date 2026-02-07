@@ -35,16 +35,16 @@ const ELO_CONFIG = {
         { max: Infinity, level: 10, name: 'Nexora Champion' }
     ],
     TITLES: {
-        'Satchel Enjoyer': { color: '#ff8800', description: 'Exclusive RaZe Main title.' },
-        'MVP Master': { color: '#fbbf24', description: 'Awarded for reaching 5 MVPs.' },
-        'Headshot Machine': { color: '#ffffff', description: 'Awarded for reaching 25 total MVPs.' },
-        'Veteran': { color: '#a1a1aa', description: 'Awarded for playing 10 matches.' },
-        'Clutch King': { color: '#60a5fa', description: 'Awarded for playing 50 matches.' },
-        'On Fire': { color: '#ef4444', description: 'Awarded for a 5-match win streak.' },
-        'Unstoppable': { color: '#dc2626', description: 'Awarded for a 10-match win streak.' },
-        'Unlucky': { color: '#3b82f6', description: 'Awarded for a 5-match loss streak.' },
-        'Immortal': { color: '#a855f7', description: 'Awarded for reaching 2000 ELO.' },
-        'Nexora Elite': { color: '#2ecc71', description: 'Awarded for reaching Level 6.' }
+        'Satchel Enjoyer': { color: '#ff8800', description: 'Özel RaZe Main ünvanı.' },
+        'MVP Master': { color: '#fbbf24', description: '5 kez maçın adamı (MVP) ol.' },
+        'Headshot Machine': { color: '#ffffff', description: '25 kez maçın adamı (MVP) ol.' },
+        'Veteran': { color: '#a1a1aa', description: '10 maç sınırını geç.' },
+        'Clutch King': { color: '#60a5fa', description: '50 maç sınırını geç.' },
+        'On Fire': { color: '#ef4444', description: '5 maçlık galibiyet serisi yakala.' },
+        'Unstoppable': { color: '#dc2626', description: '10 maçlık galibiyet serisi yakala.' },
+        'Unlucky': { color: '#3b82f6', description: '5 maç üst üste mağlubiyet (Teselli).' },
+        'Immortal': { color: '#a855f7', description: '2000 ELO barajını aş.' },
+        'Nexora Elite': { color: '#2ecc71', description: 'Level 6 ve üzerine ulaş.' }
     }
 };
 
