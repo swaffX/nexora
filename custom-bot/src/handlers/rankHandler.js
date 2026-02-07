@@ -111,40 +111,36 @@ module.exports = {
 
         if (!config) return;
 
-        // VALORANT ROL KONTROLÜ (Güvenlik)
-        const REQUIRED_VALORANT_ROLE = '1466189076347486268';
+
+
+        // Hedef rolü bul
+        const targetRoleConfig = config.roles.find(r => r.level === newLevel);
+        const targetRoleId = targetRoleConfig ? targetRoleConfig.roleId : null;
+
         const allRankRoleIds = config.roles.map(r => r.roleId);
 
-        if (!member.roles.cache.has(REQUIRED_VALORANT_ROLE)) {
-            // Rolü yoksa, üzerindeki tüm rank rollerini temizle
-            const rolesToRemove = member.roles.cache.filter(r => allRankRoleIds.includes(r.id));
-            if (rolesToRemove.size > 0) {
-                await member.roles.remove(rolesToRemove).catch(() => { });
-            }
-            return; // Rank vermeden çık
-        }
-
-        const targetRoleConfig = config.roles.find(r => r.level === newLevel);
-        if (!targetRoleConfig) return; // Hedef rol yok
-
-        const targetRoleId = targetRoleConfig.roleId;
-
         // Kaldırılacaklar (Level rolleri olup da hedef olmayanlar)
+        // Eğer targetRoleId yoksa (örneğin level > 10 veya config eksik), tüm rank rollerini sileriz (güvenlik)
         const rolesToRemove = member.roles.cache.filter(r =>
             allRankRoleIds.includes(r.id) && r.id !== targetRoleId
         );
 
         const promises = [];
 
+        // Rolleri kaldır
         if (rolesToRemove.size > 0) {
-            promises.push(member.roles.remove(rolesToRemove).catch(() => { }));
+            promises.push(member.roles.remove(rolesToRemove).catch(e => console.error(`Failed to remove roles for ${member.user.tag}:`, e.message)));
         }
 
-        if (!member.roles.cache.has(targetRoleId)) {
-            // Kullanıcı bu rolde değilse ekle
-            promises.push(member.roles.add(targetRoleId).catch(() => { }));
+        // Yeni rolü ekle
+        if (targetRoleId && !member.roles.cache.has(targetRoleId)) {
+            promises.push(member.roles.add(targetRoleId).catch(e => console.error(`Failed to add role ${targetRoleId} to ${member.user.tag}:`, e.message)));
         }
 
         await Promise.all(promises);
+
+        if (rolesToRemove.size > 0 || (targetRoleId && !member.roles.cache.has(targetRoleId))) {
+            console.log(`[RANK SYNC] ${member.user.tag} -> Level ${newLevel} (Roles Updated)`);
+        }
     }
 };
