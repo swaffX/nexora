@@ -51,8 +51,9 @@ module.exports = {
             let stats = eloService.createDefaultStats();
             if (userDoc) {
                 eloService.ensureValidStats(userDoc);
+                // Her stats çekildiğinde geçmişten MVPlere bakarak doğruluğu garanti edelim
+                await eloService.recalculateStatsFromHistory(userDoc);
                 stats = userDoc.matchStats;
-                await userDoc.save();
             }
 
             // --- RANK HESAPLAMA ---
@@ -74,6 +75,8 @@ module.exports = {
             const historyMatches = await Match.find(baseQuery).sort({ createdAt: -1 }).limit(50);
 
             const matchHistoryData = [];
+            const safeTargetId = String(targetUser.id);
+
             for (const m of recentMatches) {
                 const isTeamA = m.teamA.includes(targetUser.id);
                 const myTeamScore = isTeamA ? m.scoreA : m.scoreB;
@@ -95,14 +98,15 @@ module.exports = {
                 let eloChangeVal = null;
                 let currentEloVal = null;
                 if (m.eloChanges && Array.isArray(m.eloChanges)) {
-                    const log = m.eloChanges.find(l => l.userId === targetUser.id);
+                    const log = m.eloChanges.find(l => String(l.userId) === safeTargetId);
                     if (log) {
                         eloChangeVal = log.change;
                         currentEloVal = log.newElo;
                     }
                 }
 
-                const isMvp = (m.mvp === targetUser.id || m.loserMvp === targetUser.id);
+                // MVP Check (Fix field names)
+                const isMvp = (String(m.mvpPlayerId) === safeTargetId || String(m.mvpLoserId) === safeTargetId);
 
                 matchHistoryData.push({
                     map: mapName,

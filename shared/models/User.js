@@ -131,7 +131,10 @@ const userSchema = new mongoose.Schema({
             default: 1,
             min: [1, 'Level cannot be below 1'],
             max: [10, 'Level cannot exceed 10']
-        }
+        },
+        totalMVPs: { type: Number, default: 0 },
+        titles: [{ type: String }],
+        activeTitle: { type: String, default: null }
     }
 
 }, { timestamps: true });

@@ -107,6 +107,15 @@ function ensureValidStats(user) {
     if (typeof stats.winStreak !== 'number') {
         stats.winStreak = 0;
     }
+    if (typeof stats.totalMVPs !== 'number') {
+        stats.totalMVPs = 0;
+    }
+    if (!Array.isArray(stats.titles)) {
+        stats.titles = [];
+    }
+    if (stats.activeTitle === undefined) {
+        stats.activeTitle = null;
+    }
 
     // Sınırları uygula
     stats.elo = clampElo(stats.elo);
@@ -203,7 +212,10 @@ function createDefaultStats() {
         totalLosses: 0,
         winStreak: 0,
         elo: ELO_CONFIG.DEFAULT_ELO,
-        matchLevel: ELO_CONFIG.DEFAULT_LEVEL
+        matchLevel: ELO_CONFIG.DEFAULT_LEVEL,
+        totalMVPs: 0,
+        titles: [],
+        activeTitle: null
     };
 }
 
@@ -270,6 +282,7 @@ async function recalculateStatsFromHistory(user) {
     let wins = 0;
     let losses = 0;
     let streak = 0;
+    let mvps = 0;
 
     for (const m of matches) {
         let actualWinner = m.winner;
@@ -283,12 +296,17 @@ async function recalculateStatsFromHistory(user) {
 
         if (isWin) {
             wins++;
-            if (streak < 0) streak = 1; // Lose streak'i boz
+            if (streak < 0) streak = 1;
             else streak++;
         } else {
             losses++;
-            if (streak > 0) streak = -1; // Win streak'i boz
-            else streak--; // Lose streak'i artır (daha negatif yap)
+            if (streak > 0) streak = -1;
+            else streak--;
+        }
+
+        // MVP Check
+        if (String(m.mvpPlayerId) === String(user.odasi) || String(m.mvpLoserId) === String(user.odasi)) {
+            mvps++;
         }
     }
 
@@ -297,6 +315,7 @@ async function recalculateStatsFromHistory(user) {
     user.matchStats.totalWins = wins;
     user.matchStats.totalLosses = losses;
     user.matchStats.winStreak = streak;
+    user.matchStats.totalMVPs = mvps;
 
     await user.save();
     return user;
