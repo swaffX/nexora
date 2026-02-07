@@ -2,7 +2,7 @@ const rankHandler = require('./handlers/rankHandler');
 const { User } = require('../../shared/models');
 const logger = require('../../shared/logger');
 
-// ELO Service ile uyumlu Level Hesaplayıcı (DB'den bağımsız, Real-Time)
+// ELO Service ile uyumlu Level Hesaplayıcı
 const LEVEL_THRESHOLDS = [
     { max: 200, level: 1 }, { max: 400, level: 2 }, { max: 600, level: 3 },
     { max: 850, level: 4 }, { max: 1100, level: 5 }, { max: 1350, level: 6 },
@@ -19,19 +19,12 @@ function calculateLevel(elo) {
 }
 
 /**
- * Background Rank Synchronizer - EXACT ALGORITHM
- * Ses kaydında istenilen:
- * 1. Valorant rolüne sahip herkesi al (91 kişi)
- * 2. Anlık ELO'larına bak
- * 3. Level kaç olmalı hesapla
- * 4. Rolü doğru mu kontrol et
- * 5. Yanlışsa düzelt (Ver/Sil), doğruysa geç
+ * Background Rank Synchronizer - FIXED LOGIC
  */
 module.exports = (client) => {
     const REQUIRED_VALORANT_ROLE = '1466189076347486268';
     const GUILD_ID = process.env.GUILD_ID;
 
-    // Rollerin ID haritası
     const LEVEL_ROLES = {
         1: '1469097452199088169', 2: '1469097453109383221', 3: '1469097454979911813',
         4: '1469097456523284500', 5: '1469097457303687180', 6: '1469097485514575895',
@@ -42,7 +35,7 @@ module.exports = (client) => {
 
     let isRunning = false;
 
-    logger.info('[AutoRank] Real-Time Rank System başlatıldı. (91 Kişi Takibi)');
+    logger.info('[AutoRank] Sistem başlatıldı. Döngü: 5 sn.');
 
     const runSync = async () => {
         if (isRunning) return;
@@ -55,75 +48,67 @@ module.exports = (client) => {
                 return;
             }
 
-            // 1. ADIM: Valorant Rolüne (91 kişi) sahip kişileri en güncel haliyle çek
+            // 1. SADECE VALORANT ROLÜ OLANLARI ÇEK
             const membersWithRole = await guild.members.fetch({ role: REQUIRED_VALORANT_ROLE, force: true }).catch(() => null);
 
             if (!membersWithRole || membersWithRole.size === 0) {
-                // logger.info('[AutoRank] Hedef kitle bulunamadı.');
                 isRunning = false;
                 return;
             }
 
-            // 2. ADIM: Bu kişilerin ELO'larını DB'den çek
+            // 2. SADECE BU (91) KİŞİNİN ELO'SUNU DB'DEN İSTE
             const memberIds = Array.from(membersWithRole.keys());
             const usersInDb = await User.find({
-                odasi: { $in: memberIds },
+                odasi: { $in: memberIds }, // Kritik nokta: Sadece bu ID'leri getir
                 odaId: GUILD_ID
             }).select('odasi matchStats.elo');
 
-            // DB'de olmayanları Level 1 varsayacağız
-            const userEloMap = new Map();
-            usersInDb.forEach(u => userEloMap.set(u.odasi, u.matchStats?.elo ?? 200));
+            // Map: Kullanıcı ID -> ELO
+            const eloMap = new Map();
+            usersInDb.forEach(u => eloMap.set(u.odasi, u.matchStats?.elo ?? 200));
 
-            // 3. ADIM: Tek tek kontrol et (Loop)
+            // 3. KARŞILAŞTIRMA VE GÜNCELLEME LİSTESİ HAZIRLA
             const updates = [];
-            for (const member of membersWithRole.values()) {
-                // Elo'yu al (Yoksa varsayılan 200)
-                const elo = userEloMap.get(member.id) ?? 200;
 
-                // HESAPLA: Bu ELO hangi level olmalı?
+            for (const member of membersWithRole.values()) {
+                // Elo'yu al (Yoksa varsayılan 200 - Level 1)
+                const elo = eloMap.get(member.id) ?? 200;
+
                 const targetLevel = calculateLevel(elo);
                 const targetRoleId = LEVEL_ROLES[targetLevel];
 
-                // KONTROL: Role sahip mi?
+                // Role sahip mi?
                 const hasCorrectRole = member.roles.cache.has(targetRoleId);
-
-                // KONTROL: Yanlış (fazla) rolleri var mı?
+                // Fazladan rolü var mı?
                 const hasExtraRoles = member.roles.cache.some(r => ALL_LEVEL_ROLES.includes(r.id) && r.id !== targetRoleId);
 
-                // KARAR: Değişiklik lazım mı?
+                // Sadece yanlışsa listeye ekle
                 if (!hasCorrectRole || hasExtraRoles) {
-                    updates.push({
-                        member,
-                        targetLevel,
-                        elo // Log için
-                    });
+                    updates.push({ member, targetLevel, elo });
                 }
             }
 
-            // 4. ADIM: Varsa güncellemeleri uygula
+            // 4. GÜNCELLEMELERİ UYGULA
             if (updates.length > 0) {
-                logger.info(`[AutoRank] ${updates.length} kişinin rolü olması gerekenden farklı. Düzeltiliyor...`);
+                // Hatalı sayıyı değil, gerçek güncellenecek sayıyı göster
+                logger.info(`[AutoRank] Toplam: ${membersWithRole.size} kişi. Güncellenecek: ${updates.length} kişi.`);
 
-                // Tek tek yapıyoruz ki hatayı net görelim (Paralel değil Sequential)
                 for (const update of updates) {
                     await rankHandler.syncRank(update.member, update.targetLevel);
-                    // Discord'u boğmamak için çok kısa bekle (0.5sn)
-                    await new Promise(r => setTimeout(r, 500));
+                    await new Promise(r => setTimeout(r, 200)); // Hızlı geçiş
                 }
             } else {
-                // Herkes doğrusu ise sessiz kal
+                // Her şey yolundaysa sessizce bekle
+                // logger.success('[AutoRank] Tüm roller senkronize.'); 
             }
 
         } catch (error) {
-            // logger.error(`[AutoRank Error]: ${error.message}`);
+            logger.error(`[AutoRank Error]: ${error.message}`);
         } finally {
             isRunning = false;
-            // 5 Saniye sonra tekrar kontrol et
-            setTimeout(runSync, 5000);
+            setTimeout(runSync, 5000); // 5 saniyede bir
         }
     };
 
-    // İlk başlangıç
     setTimeout(runSync, 3000);
 };
