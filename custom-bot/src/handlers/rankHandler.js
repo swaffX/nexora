@@ -102,51 +102,42 @@ module.exports = {
         if (!member || !member.guild || !newLevel) return;
 
         const LEVEL_ROLES = {
-            1: '1469097452199088169',
-            2: '1469097453109383221',
-            3: '1469097454979911813',
-            4: '1469097456523284500',
-            5: '1469097457303687180',
-            6: '1469097485514575895',
-            7: '1469097487016132810',
-            8: '1469097488429355158',
-            9: '1469097489457090754',
+            1: '1469097452199088169', 2: '1469097453109383221', 3: '1469097454979911813',
+            4: '1469097456523284500', 5: '1469097457303687180', 6: '1469097485514575895',
+            7: '1469097487016132810', 8: '1469097488429355158', 9: '1469097489457090754',
             10: '1469097490824564747'
         };
 
         const REQUIRED_VALORANT_ROLE = '1466189076347486268';
-        const allLevelRoles = Object.values(LEVEL_ROLES);
+        const ALL_LEVEL_ROLES = Object.values(LEVEL_ROLES);
+        const targetRoleId = LEVEL_ROLES[newLevel];
 
-        // Valorant Rolü Yoksa Temizle
+        // 1. Üye sunucuda değilse veya Valorant rolü yoksa tüm level rollerini sil
         if (!member.roles.cache.has(REQUIRED_VALORANT_ROLE)) {
-            const rolesToRemove = member.roles.cache.filter(r => allLevelRoles.includes(r.id));
-            if (rolesToRemove.size > 0) {
-                await member.roles.remove(rolesToRemove).catch(() => { });
-            }
+            const hasAny = member.roles.cache.filter(r => ALL_LEVEL_ROLES.includes(r.id));
+            if (hasAny.size > 0) await member.roles.remove(hasAny).catch(() => { });
             return;
         }
 
-        const targetRoleId = LEVEL_ROLES[newLevel];
-        if (!targetRoleId) return;
+        // 2. Yanlış olan tüm level rollerini tespit et
+        const rolesToRemove = member.roles.cache.filter(r => ALL_LEVEL_ROLES.includes(r.id) && r.id !== targetRoleId);
+        const hasTarget = member.roles.cache.has(targetRoleId);
 
-        // Yanlış Rollere Sahip mi?
-        const rolesToRemove = member.roles.cache.filter(r =>
-            allLevelRoles.includes(r.id) && r.id !== targetRoleId
-        );
+        // 3. Değişiklik Gerekiyorsa Uygula
+        if (rolesToRemove.size > 0 || !hasTarget) {
+            try {
+                // Önce yanlışları sil, sonra doğruyu ekle (veya tam tersi, optimize edilmiş)
+                let currentRoles = member.roles.cache.map(r => r.id);
+                // Level rollerini temizle
+                currentRoles = currentRoles.filter(id => !ALL_LEVEL_ROLES.includes(id));
+                // Doğru olanı ekle
+                if (targetRoleId) currentRoles.push(targetRoleId);
 
-        const promises = [];
-        if (rolesToRemove.size > 0) {
-            promises.push(member.roles.remove(rolesToRemove).catch(e => console.error(`[RANK ERROR] Remove fail: ${e.message}`)));
-        }
-
-        // Hedef Rol Eksik mi?
-        if (!member.roles.cache.has(targetRoleId)) {
-            promises.push(member.roles.add(targetRoleId).catch(e => console.error(`[RANK ERROR] Add fail: ${e.message}`)));
-        }
-
-        if (promises.length > 0) {
-            await Promise.all(promises);
-            console.log(`[RANK SYNC] ${member.user.tag} synced to Level ${newLevel}`);
+                await member.roles.set(currentRoles, `Auto Rank Update: Level ${newLevel}`);
+                console.log(`[RANK] ${member.user.tag} -> Set to Level ${newLevel}`);
+            } catch (e) {
+                // console.error(`Failed to set roles for ${member.user.tag}:`, e.message);
+            }
         }
     }
 };

@@ -3,28 +3,23 @@ const { User } = require('../../shared/models');
 const logger = require('../../shared/logger');
 
 /**
- * Background Rank Synchronizer - OPTIMIZED
+ * Background Rank Synchronizer - FULL SPEED OPTIMIZED
+ * Valorant rolü sahiplerini hızlıca tarar.
  */
 module.exports = (client) => {
     const REQUIRED_VALORANT_ROLE = '1466189076347486268';
     const GUILD_ID = process.env.GUILD_ID;
     const LEVEL_ROLES = {
-        1: '1469097452199088169',
-        2: '1469097453109383221',
-        3: '1469097454979911813',
-        4: '1469097456523284500',
-        5: '1469097457303687180',
-        6: '1469097485514575895',
-        7: '1469097487016132810',
-        8: '1469097488429355158',
-        9: '1469097489457090754',
+        1: '1469097452199088169', 2: '1469097453109383221', 3: '1469097454979911813',
+        4: '1469097456523284500', 5: '1469097457303687180', 6: '1469097485514575895',
+        7: '1469097487016132810', 8: '1469097488429355158', 9: '1469097489457090754',
         10: '1469097490824564747'
     };
     const ALL_LEVEL_ROLES = Object.values(LEVEL_ROLES);
 
     let isRunning = false;
 
-    logger.info('[AutoRank] Arka plan rank senkronizasyonu başlatıldı (Hızlı & Optimize).');
+    logger.info('[AutoRank] Arka plan tarayıcı başlatıldı (Yüksek Hız Modu).');
 
     const runSync = async () => {
         if (isRunning) return;
@@ -37,8 +32,11 @@ module.exports = (client) => {
                 return;
             }
 
-            // 1. Role sahip olanları cache'den filtrele
-            const membersWithRole = guild.members.cache.filter(m => m.roles.cache.has(REQUIRED_VALORANT_ROLE));
+            // 1. Üyeleri cache'den değil, güncel olarak Discord'dan çek (Sadece Valorant rolü olanlar)
+            // fetch({ withPresences: false }) API'den en güncel listeyi alır
+            const members = await guild.members.fetch();
+            const membersWithRole = members.filter(m => m.roles.cache.has(REQUIRED_VALORANT_ROLE));
+
             if (membersWithRole.size === 0) {
                 isRunning = false;
                 return;
@@ -53,42 +51,37 @@ module.exports = (client) => {
 
             const usersMap = new Map(usersInDb.map(u => [u.odasi, u.matchStats?.matchLevel || 1]));
 
-            // 3. Değişiklik gerekenleri tespit et (HIZLI KONTROL)
-            const tasks = [];
+            // 3. Değişiklik Gerekenleri Ayıkla
+            const updates = [];
             for (const member of membersWithRole.values()) {
                 const targetLevel = usersMap.get(member.id) || 1;
                 const targetRoleId = LEVEL_ROLES[targetLevel];
 
-                // Kontrol: Zaten doğru rolde mi? VE üzerinde başka level rolü var mı?
-                const hasTarget = member.roles.cache.has(targetRoleId);
-                const hasOthers = member.roles.cache.some(r => ALL_LEVEL_ROLES.includes(r.id) && r.id !== targetRoleId);
+                const hasCorrectRole = member.roles.cache.has(targetRoleId);
+                const hasExtraRoles = member.roles.cache.some(r => ALL_LEVEL_ROLES.includes(r.id) && r.id !== targetRoleId);
 
-                if (!hasTarget || hasOthers) {
-                    // Sadece değişiklik gerekiyorsa syncRank çağır
-                    tasks.push(rankHandler.syncRank(member, targetLevel));
-                }
-
-                // Batching: Discord API'yi korumak için (Her batch sonrası kısa bekleme)
-                if (tasks.length >= 10) {
-                    await Promise.all(tasks.map(t => t.catch(() => { })));
-                    tasks.length = 0;
-                    await new Promise(r => setTimeout(r, 200));
+                if (!hasCorrectRole || hasExtraRoles) {
+                    updates.push({ member, targetLevel });
                 }
             }
 
-            if (tasks.length > 0) {
-                await Promise.all(tasks.map(t => t.catch(() => { })));
+            // 4. Güncellemeleri Uygula (Batch: 5'erli gruplar, daha güvenli)
+            for (let i = 0; i < updates.length; i += 5) {
+                const batch = updates.slice(i, i + 5);
+                await Promise.all(batch.map(upd => rankHandler.syncRank(upd.member, upd.targetLevel)));
+                // Rate limit koruması için her batch arası çok kısa bekle
+                if (updates.length > 5) await new Promise(r => setTimeout(r, 1000));
             }
 
         } catch (error) {
             // console.error('[AutoRank Error]:', error);
         } finally {
             isRunning = false;
-            // Bir sonraki taramayı planla
+            // Bir sonraki tarama (Kullanıcı 5 sn istedi)
             setTimeout(runSync, 5000);
         }
     };
 
-    // İlk çalıştırma
-    setTimeout(runSync, 2000);
+    // Bot açıldıktan sonra ilk tarama
+    setTimeout(runSync, 5000);
 };
