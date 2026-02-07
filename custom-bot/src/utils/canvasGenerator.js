@@ -519,7 +519,7 @@ module.exports = {
                     ctx.fillStyle = '#fbbf24';
                     ctx.font = 'bold 18px "VALORANT", sans-serif';
                     ctx.fillText('MVP', infoX + eloWidth + 15, matchY + 33);
-                    drawStar(ctx, infoX + eloWidth + 60, matchY + 28, 5, 8, 4, '#fbbf24');
+                    drawStar(ctx, infoX + eloWidth + 75, matchY + 28, 5, 8, 4, '#fbbf24');
                 }
             }
 
