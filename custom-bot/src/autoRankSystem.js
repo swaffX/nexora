@@ -2,7 +2,6 @@ const rankHandler = require('./handlers/rankHandler');
 const { User } = require('../../shared/models');
 const logger = require('../../shared/logger');
 
-// ELO Service ile uyumlu Level Hesaplayıcı
 const LEVEL_THRESHOLDS = [
     { max: 200, level: 1 }, { max: 400, level: 2 }, { max: 600, level: 3 },
     { max: 850, level: 4 }, { max: 1100, level: 5 }, { max: 1350, level: 6 },
@@ -19,13 +18,13 @@ function calculateLevel(elo) {
 }
 
 /**
- * Background Rank Synchronizer - ROLE MEMBER ONLY FIX
+ * Background Rank Synchronizer - RATE LIMIT PROOF
+ * Opcode 8 hatasını engellemek için Members Fetch yerine Role Members kullanır.
  */
 module.exports = (client) => {
     const REQUIRED_VALORANT_ROLE = '1466189076347486268';
     const GUILD_ID = process.env.GUILD_ID;
 
-    // Rollerin ID haritası
     const LEVEL_ROLES = {
         1: '1469097452199088169', 2: '1469097453109383221', 3: '1469097454979911813',
         4: '1469097456523284500', 5: '1469097457303687180', 6: '1469097485514575895',
@@ -36,7 +35,7 @@ module.exports = (client) => {
 
     let isRunning = false;
 
-    logger.info('[AutoRank] Sistem başlatıldı. Döngü: 5 sn.');
+    // logger.info('[AutoRank] Safe Mode Rank System başlatıldı.');
 
     const runSync = async () => {
         if (isRunning) return;
@@ -49,33 +48,36 @@ module.exports = (client) => {
                 return;
             }
 
-            // 1. ÖNCE ROLÜ BUL (Cache'den değil, gerekirse fetch et)
+            // 1. ÜYE LİSTESİNİ ÇEKME YÖNTEMİ (KRİTİK DEĞİŞİKLİK)
+            // fetch() yerine cache'deki role bakıyoruz. Role cache'de yoksa sadece rolü çekiyoruz.
+            // Bu yöntem Opcode 8 (Chunk Request) göndermez.
             let targetRole = guild.roles.cache.get(REQUIRED_VALORANT_ROLE);
 
-            // Eğer rol cache'de yoksa veya üyeleri eksik görünüyorsa, rolü ve üyelerini fetch et (ZORUNLU)
-            // Bu işlem tüm sunucuyu değil, sadece o rolü ve üyelerini yeniler.
-            await guild.members.fetch();
-            targetRole = guild.roles.cache.get(REQUIRED_VALORANT_ROLE);
+            if (!targetRole) {
+                // Eğer rol hafızada yoksa, SADECE bu rolü fetch et
+                targetRole = await guild.roles.fetch(REQUIRED_VALORANT_ROLE).catch(() => null);
+            }
 
             if (!targetRole) {
-                logger.error(`[AutoRank] HATA: ${REQUIRED_VALORANT_ROLE} ID'li rol bulunamadı!`);
+                logger.error(`[AutoRank] Rol bulunamadı: ${REQUIRED_VALORANT_ROLE}`);
                 isRunning = false;
                 return;
             }
 
-            // 2. SADECE BU ROLDEKİ ÜYELERİ LİSTELE (Kesin Çözüm)
+            // Rolün üyelerini cache'den al. Eğer sayı eksikse (örn. bot yeni açıldıysa)
+            // yine de işlem yapmaya çalış ama tüm sunucuyu fetch ETME.
+            // Zamanla üyeler cache'e dolacaktır.
             const membersWithRole = targetRole.members;
 
-            // Her 5 saniyede log atıp kafa karıştırmasın, sadece sayı değişirse veya ilk açılışta yazsın
-            // Ama şimdilik emin olmak için logluyorum
-            // logger.info(`[AutoRank] Valorant Rolü Üye Sayısı: ${membersWithRole.size}`);
-
             if (membersWithRole.size === 0) {
+                // Hiç üye görünmüyorsa, bu seferlik mecburen güvenli bir fetch deneyelim
+                // Ama force: true yapmıyoruz, rate limit yememek için.
+                await guild.members.fetch({ limit: 10 }).catch(() => { });
                 isRunning = false;
                 return;
             }
 
-            // 3. ELO BİLGİLERİNİ ÇEK
+            // 2. ELO BİLGİLERİ (Sadece bulduğumuz üyeler için)
             const memberIds = Array.from(membersWithRole.keys());
             const usersInDb = await User.find({
                 odasi: { $in: memberIds },
@@ -85,11 +87,10 @@ module.exports = (client) => {
             const eloMap = new Map();
             usersInDb.forEach(u => eloMap.set(u.odasi, u.matchStats?.elo ?? 200));
 
-            // 4. KONTROL VE LİSTELEME
+            // 3. KONTROL
             const updates = [];
             for (const member of membersWithRole.values()) {
                 const elo = eloMap.get(member.id) ?? 200;
-
                 const targetLevel = calculateLevel(elo);
                 const targetRoleId = LEVEL_ROLES[targetLevel];
 
@@ -101,24 +102,29 @@ module.exports = (client) => {
                 }
             }
 
-            // 5. UYGULAMA
+            // 4. GÜNCELLEME
             if (updates.length > 0) {
-                logger.info(`[AutoRank] ${membersWithRole.size} kişiden ${updates.length} tanesinin rolü güncelleniyor...`);
+                logger.info(`[AutoRank] (${membersWithRole.size} kişiden) ${updates.length} güncelleme başlıyor...`);
 
                 for (const update of updates) {
                     await rankHandler.syncRank(update.member, update.targetLevel);
-                    // Discord'u yormamak için minik bekleme
-                    await new Promise(r => setTimeout(r, 250));
+                    // Bekleme süresini artır (Daha güvenli)
+                    await new Promise(r => setTimeout(r, 1500));
                 }
             }
 
         } catch (error) {
-            logger.error(`[AutoRank Error]: ${error.message}`);
+            if (error.message.includes('rate limited')) {
+                // logger.warn('[AutoRank] Rate Limit uyarısı - Biraz yavaşlıyoruz.');
+            } else {
+                logger.error(`[AutoRank Error]: ${error.message}`);
+            }
         } finally {
             isRunning = false;
-            setTimeout(runSync, 5000);
+            // 5 yerine 10 saniye bekle (Daha güvenli)
+            setTimeout(runSync, 10000);
         }
     };
 
-    setTimeout(runSync, 3000);
+    setTimeout(runSync, 5000);
 };
