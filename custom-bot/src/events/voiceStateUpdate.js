@@ -1,5 +1,5 @@
 const { PermissionsBitField } = require('discord.js');
-const logger = require('../shared/logger');
+const logger = require('../../../shared/logger');
 
 module.exports = {
     name: 'voiceStateUpdate',
