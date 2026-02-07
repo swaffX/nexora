@@ -278,17 +278,19 @@ async function handleCustomize(interaction, userDoc, guildId) {
 
     collector.on('collect', async i => {
         try {
+            await i.deferUpdate(); // Acknowledge instantly to avoid 'Unknown interaction'
+
             if (i.customId === 'panel_select_title') {
                 const selected = i.values[0].replace('title_', '');
                 userDoc.matchStats.activeTitle = selected;
                 await userDoc.save();
-                await i.update({ ...getUI(), flags: [MessageFlags.Ephemeral] });
+                await interaction.editReply(getUI());
             }
             else if (i.customId === 'panel_select_bg') {
                 const selected = i.values[0].replace('bg_', '');
                 userDoc.backgroundImage = selected;
                 await userDoc.save();
-                await i.update({ ...getUI(), flags: [MessageFlags.Ephemeral] });
+                await interaction.editReply(getUI());
             }
         } catch (e) {
             console.error('Customize Collector Error:', e);

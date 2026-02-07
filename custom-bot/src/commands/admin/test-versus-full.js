@@ -14,18 +14,18 @@ module.exports = {
             const mockData = {
                 map: 'Ascent',
                 teamA: [
-                    { name: 'aimstar swaze', agent: 'Gekko', level: 67, title: 'Süperstar' },
-                    { name: 'Ben', agent: 'Tejo', level: 42, title: 'Aura' },
-                    { name: 'mayonezsalcaxxx', agent: 'Yoru', level: 15, title: 'Çaylak' },
-                    { name: 'CLOVE', agent: 'Clove', level: 258, title: 'Evrim Geçirmiş' },
-                    { name: 'CYPHER', agent: 'Cypher', level: 12, title: 'Habibi' }
+                    { name: 'aimstar swaze', elo: 850, title: 'Süperstar' },
+                    { name: 'Ben', elo: 420, title: 'Aura' },
+                    { name: 'mayonezsalcaxxx', elo: 150, title: 'Çaylak' },
+                    { name: 'CLOVE', elo: 2580, title: 'Evrim Geçirmiş' },
+                    { name: 'CYPHER', elo: 120, title: 'Habibi' }
                 ],
                 teamB: [
-                    { name: 'Gurjj', agent: 'Reyna', level: 88, title: 'Alevli Binek' },
-                    { name: 'VYSE', agent: 'Vyse', level: 31, title: 'Beygir Gücü' },
-                    { name: 'One to Heroo', agent: 'Breach', level: 79, title: 'Usta' },
-                    { name: 'SprayAndPray', agent: 'Jett', level: 136, title: '6-7' },
-                    { name: 'Bonobo33', agent: 'Sova', level: 126, title: ':3' }
+                    { name: 'Gurjj', elo: 1100, title: 'Alevli Binek' },
+                    { name: 'VYSE', elo: 310, title: 'Beygir Gücü' },
+                    { name: 'One to Heroo', elo: 790, title: 'Usta' },
+                    { name: 'SprayAndPray', elo: 1360, title: '6-7' },
+                    { name: 'Bonobo33', elo: 1260, title: ':3' }
                 ]
             };
 
