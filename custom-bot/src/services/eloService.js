@@ -35,7 +35,7 @@ const ELO_CONFIG = {
         { max: Infinity, level: 10, name: 'Nexora Champion' }
     ],
     TITLES: {
-        'Satchel Enjoyer': { color: '#ff8800', description: 'Özel RaZe Main ünvanı.' },
+        'Satchel Enjoyer': { color: '#ff8800', description: 'Swaff\'a özel RaZe Main ünvanı.' },
         'MVP Master': { color: '#fbbf24', description: '5 kez maçın adamı (MVP) ol.' },
         'Headshot Machine': { color: '#ffffff', description: '25 kez maçın adamı (MVP) ol.' },
         'Veteran': { color: '#a1a1aa', description: '10 maç sınırını geç.' },
@@ -44,7 +44,8 @@ const ELO_CONFIG = {
         'Unstoppable': { color: '#dc2626', description: '10 maçlık galibiyet serisi yakala.' },
         'Unlucky': { color: '#3b82f6', description: '5 maç üst üste mağlubiyet (Teselli).' },
         'Immortal': { color: '#a855f7', description: '2000 ELO barajını aş.' },
-        'Nexora Elite': { color: '#2ecc71', description: 'Level 6 ve üzerine ulaş.' }
+        'Nexora Elite': { color: '#2ecc71', description: 'Level 6 ve üzerine ulaş.' },
+        'Rookie': { color: '#94a3b8', description: 'Nexora ELO sistemine giriş ünvanı.' }
     }
 };
 
@@ -132,6 +133,12 @@ function ensureValidStats(user) {
     // --- TITLE ATAMALARI (Otomatik Görevler) ---
     const SPECIAL_USER_ID = '315875588906680330';
     const activeTitles = stats.titles || [];
+
+    // Herkese Başlangıç Titlesi
+    if (!activeTitles.includes('Rookie')) {
+        activeTitles.push('Rookie');
+        if (!stats.activeTitle) stats.activeTitle = 'Rookie';
+    }
 
     // Sana özel title
     if (user.odasi === SPECIAL_USER_ID) {

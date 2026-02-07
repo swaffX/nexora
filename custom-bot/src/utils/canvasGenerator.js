@@ -620,7 +620,7 @@ module.exports = {
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
         ctx.shadowColor = 'rgba(255,255,255,0.4)'; ctx.shadowBlur = 30;
-        ctx.fillText('NEXORA BAŞARILARI', width / 2, 100);
+        ctx.fillText('NEXORA TITLE\'S', width / 2, 100);
         ctx.shadowBlur = 0;
 
         ctx.font = '24px "Segoe UI", sans-serif';
