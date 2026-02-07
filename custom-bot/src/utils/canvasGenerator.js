@@ -589,6 +589,62 @@ module.exports = {
         return canvas.toBuffer('image/png');
     },
 
+    async createTitlesGuideImage() {
+        // --- PREMIUM TITLES GUIDE ---
+        const width = 1000;
+        const titlesArr = Object.entries(eloService.ELO_CONFIG.TITLES);
+        const rowHeight = 90;
+        const height = 200 + (titlesArr.length * rowHeight);
+
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext('2d');
+
+        // Background
+        const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
+        bgGrad.addColorStop(0, '#18181b');
+        bgGrad.addColorStop(1, '#09090b');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, width, height);
+
+        // Header
+        ctx.font = 'bold 50px "VALORANT", sans-serif';
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.fillText('NEXORA ACHIEVEMENTS', width / 2, 80);
+
+        ctx.font = '20px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#71717a';
+        ctx.fillText('Earn unique titles by playing and winning!', width / 2, 120);
+
+        // Rows
+        let y = 180;
+        for (const [name, data] of titlesArr) {
+            // Box
+            ctx.fillStyle = 'rgba(255,255,255,0.03)';
+            ctx.fillRect(50, y - 45, width - 100, 75);
+
+            // Title Color Side
+            ctx.fillStyle = data.color;
+            ctx.fillRect(50, y - 45, 5, 75);
+
+            // Title Name
+            ctx.textAlign = 'left';
+            ctx.font = 'bold 30px "Segoe UI", sans-serif';
+            ctx.fillStyle = data.color;
+            ctx.fillText(name.toUpperCase(), 80, y);
+
+            // Description
+            ctx.textAlign = 'right';
+            ctx.font = '20px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#a1a1aa';
+            ctx.fillText(data.description, width - 80, y);
+
+            y += rowHeight;
+        }
+
+        return canvas.toBuffer('image/png');
+    },
+
     async createLeaderboardImage(users) {
         // ULTRA-WIDE PREMIUM LEADERBOARD (Stats Aesthetic)
         const width = 2500;
