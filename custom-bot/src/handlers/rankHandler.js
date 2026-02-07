@@ -101,7 +101,6 @@ module.exports = {
     async syncRank(member, newLevel) {
         if (!member || !member.guild || !newLevel) return;
 
-        // 1. HARDCODED ROLLER (User Request)
         const LEVEL_ROLES = {
             1: '1469097452199088169',
             2: '1469097453109383221',
@@ -115,71 +114,39 @@ module.exports = {
             10: '1469097490824564747'
         };
 
-        // 2. ZORUNLU KONTROL: Valorant Rolü
         const REQUIRED_VALORANT_ROLE = '1466189076347486268';
         const allLevelRoles = Object.values(LEVEL_ROLES);
 
-        console.log(`[RANK DEBUG] Starting sync for ${member.user.tag} (Target Level: ${newLevel})`);
-
+        // Valorant Rolü Yoksa Temizle
         if (!member.roles.cache.has(REQUIRED_VALORANT_ROLE)) {
-            console.log(`[RANK DEBUG] ${member.user.tag} does NOT have the REQUIRED_VALORANT_ROLE (${REQUIRED_VALORANT_ROLE})`);
-            // Rolü yoksa, üzerindeki tüm rank rollerini temizle
             const rolesToRemove = member.roles.cache.filter(r => allLevelRoles.includes(r.id));
             if (rolesToRemove.size > 0) {
-                await member.roles.remove(rolesToRemove).catch(e => console.error(`[RANK ERROR] Failed to remove roles: ${e.message}`));
-                console.log(`[RANK SYNC] ${member.user.tag} -> Level Roles Removed (No Valorant Role)`);
+                await member.roles.remove(rolesToRemove).catch(() => { });
             }
             return;
         }
 
         const targetRoleId = LEVEL_ROLES[newLevel];
-        if (!targetRoleId) {
-            console.log(`[RANK DEBUG] No target role ID found for level ${newLevel}`);
-            return;
-        }
+        if (!targetRoleId) return;
 
-        console.log(`[RANK DEBUG] Target Role ID for Level ${newLevel}: ${targetRoleId}`);
-
-        // Kaldırılacaklar: Hedef rol hariç diğer tüm level rolleri
+        // Yanlış Rollere Sahip mi?
         const rolesToRemove = member.roles.cache.filter(r =>
             allLevelRoles.includes(r.id) && r.id !== targetRoleId
         );
 
-        console.log(`[RANK DEBUG] Roles found to remove: ${rolesToRemove.map(r => r.name).join(', ') || 'None'}`);
-
         const promises = [];
-
-        // Rolleri kaldır
         if (rolesToRemove.size > 0) {
-            promises.push(member.roles.remove(rolesToRemove).catch(e => {
-                console.error(`[RANK ERROR] Failed to remove roles for ${member.user.tag}:`, e.message);
-                if (e.message.includes('Missing Permissions')) {
-                    console.error(`[RANK ERROR] BOT DOES NOT HAVE PERMISSION TO MANAGE THESE ROLES (Hierarchy issue?)`);
-                }
-            }));
+            promises.push(member.roles.remove(rolesToRemove).catch(e => console.error(`[RANK ERROR] Remove fail: ${e.message}`)));
         }
 
-        // Yeni rolü ekle
+        // Hedef Rol Eksik mi?
         if (!member.roles.cache.has(targetRoleId)) {
-            const roleObj = member.guild.roles.cache.get(targetRoleId);
-            if (!roleObj) {
-                console.error(`[RANK ERROR] Role ID ${targetRoleId} (Level ${newLevel}) NOT FOUND in guild cache!`);
-            } else {
-                console.log(`[RANK DEBUG] Adding Role: ${roleObj.name}`);
-                promises.push(member.roles.add(targetRoleId).catch(e => {
-                    console.error(`[RANK ERROR] Failed to add role ${targetRoleId} to ${member.user.tag}:`, e.message);
-                }));
-            }
-        } else {
-            console.log(`[RANK DEBUG] User already has the target role.`);
+            promises.push(member.roles.add(targetRoleId).catch(e => console.error(`[RANK ERROR] Add fail: ${e.message}`)));
         }
 
-        await Promise.all(promises);
-
-        if (rolesToRemove.size > 0 || !member.roles.cache.has(targetRoleId)) {
-            console.log(`[RANK SYNC] ${member.user.tag} -> Level ${newLevel} (Roles Updated)`);
-        } else {
-            console.log(`[RANK DEBUG] No changes needed for ${member.user.tag}`);
+        if (promises.length > 0) {
+            await Promise.all(promises);
+            console.log(`[RANK SYNC] ${member.user.tag} synced to Level ${newLevel}`);
         }
     }
 };
