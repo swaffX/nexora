@@ -282,12 +282,7 @@ module.exports = {
         ctx.font = 'bold 70px "Segoe UI", sans-serif';
 
         let nameX = textX;
-        if (rank) {
-            ctx.fillStyle = '#666';
-            ctx.fillText(`#${rank}`, nameX, 100);
-            const rankWidth = ctx.measureText(`#${rank}`).width;
-            nameX += rankWidth + 20;
-        }
+
 
         ctx.fillStyle = '#ffffff';
         let name = user.username ? user.username.toUpperCase() : 'UNKNOWN';
@@ -317,8 +312,8 @@ module.exports = {
 
         ctx.font = 'bold 35px "Segoe UI", sans-serif';
         ctx.fillStyle = '#cccccc';
-        const eloText = `${elo} ELO`;
-        ctx.fillText(eloText, textX, progressY + 55);
+        const eloText = `${elo} ELO (#${rank || 'Unranked'})`;
+        ctx.fillText(eloText, textX, progressY + 45);
 
         if (levelData.lv < 10) {
             ctx.textAlign = 'right';

@@ -21,28 +21,35 @@ module.exports = {
                 odaId: interaction.guild.id
             });
 
+            let total = 0;
             let success = 0;
             let failed = 0;
 
-            await interaction.editReply(`🔄 ${allUsers.length} kullanıcının rankleri senkronize ediliyor... Bu biraz sürebilir.`);
+            await interaction.editReply(`🔄 **${allUsers.length}** kullanıcının rankleri senkronize ediliyor... Bu işlem biraz sürebilir.`);
 
             for (const userDoc of allUsers) {
+                total++;
                 try {
                     const member = await interaction.guild.members.fetch(userDoc.odasi).catch(() => null);
+
+                    // ZORUNLU VALORANT ROLESİ KONTROLÜ
+                    const REQUIRED_VALORANT_ROLE = '1466189076347486268';
+
                     if (member) {
-                        const level = userDoc.matchStats.matchLevel || 1;
-                        await rankHandler.syncRank(member, level);
-                        success++;
-                    } else {
-                        // Üye sunucudan çıkmış (görmezden gel)
+                        if (member.roles.cache.has(REQUIRED_VALORANT_ROLE)) {
+                            const level = userDoc.matchStats.matchLevel || 1;
+                            await rankHandler.syncRank(member, level);
+                            success++;
+                        }
+                        // Rolü yoksa HİÇBİR ŞEY yapmıyoruz (User Request: sadece role sahiplerine uygula)
                     }
                 } catch (e) {
                     console.error(`Sync error for ${userDoc.odasi}:`, e);
                     failed++;
                 }
 
-                // Rate limit yememek için kısa bekleme (her 10 kullanıcıda bir)
-                if (success % 10 === 0) await new Promise(r => setTimeout(r, 500));
+                // Rate limiting önlemi: Her 5 kullanıcıda bir 1 sn bekle
+                if (total % 5 === 0) await new Promise(r => setTimeout(r, 1000));
             }
 
             await interaction.editReply(`✅ İşlem tamamlandı!\n- **Başarılı:** ${success}\n- **Hatalı:** ${failed}`);
