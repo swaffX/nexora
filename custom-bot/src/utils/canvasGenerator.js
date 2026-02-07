@@ -280,14 +280,19 @@ module.exports = {
 
         const textX = 380;
         ctx.font = 'bold 70px "Segoe UI", sans-serif';
-
-        let nameX = textX;
-
+        const nameX = textX;
 
         ctx.fillStyle = '#ffffff';
         let name = user.username ? user.username.toUpperCase() : 'UNKNOWN';
         if (name.length > 15) name = name.substring(0, 15) + '...';
-        ctx.fillText(name, nameX, 100);
+        ctx.fillText(name, nameX, 90);
+
+        // Title
+        if (stats.activeTitle) {
+            ctx.font = 'bold 24px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#888';
+            ctx.fillText(stats.activeTitle.toUpperCase(), nameX, 125);
+        }
 
         const progressY = 160;
         const barWidth = 750;
@@ -310,10 +315,10 @@ module.exports = {
             ctx.shadowBlur = 0;
         }
 
-        ctx.font = 'bold 35px "Segoe UI", sans-serif';
+        ctx.font = 'bold 32px "Segoe UI", sans-serif';
         ctx.fillStyle = '#cccccc';
         const eloText = `${elo} ELO (#${rank || 'Unranked'})`;
-        ctx.fillText(eloText, textX, progressY + 45);
+        ctx.fillText(eloText, textX, progressY + 55);
 
         if (levelData.lv < 10) {
             ctx.textAlign = 'right';
@@ -548,13 +553,19 @@ module.exports = {
         ctx.font = 'bold 50px "Segoe UI", sans-serif';
         let nameX = 140;
         if (rank) {
-            ctx.fillStyle = '#666'; ctx.fillText(`#${rank}`, nameX, footerMid);
+            ctx.fillStyle = '#666'; ctx.fillText(`#${rank}`, nameX, footerMid - (stats.activeTitle ? 15 : 0));
             const rankWidth = ctx.measureText(`#${rank}`).width; nameX += rankWidth + 15;
         }
         ctx.fillStyle = '#fff';
         let mainName = user.username.toUpperCase();
         if (mainName.length > 15) mainName = mainName.substring(0, 15);
-        ctx.fillText(mainName, nameX, footerMid);
+        ctx.fillText(mainName, nameX, footerMid - (stats.activeTitle ? 15 : 0));
+
+        if (stats.activeTitle) {
+            ctx.font = 'bold 22px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#888';
+            ctx.fillText(stats.activeTitle.toUpperCase(), 140, footerMid + 25);
+        }
 
         ctx.textAlign = 'right';
         ctx.font = 'bold 50px "DIN Alternate", sans-serif';

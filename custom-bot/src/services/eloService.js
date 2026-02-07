@@ -117,6 +117,15 @@ function ensureValidStats(user) {
         stats.activeTitle = null;
     }
 
+    // --- ÖZEL TITLE ATAMASI (Ses Kaydı İsteği) ---
+    const SPECIAL_USER_ID = '315875588906680330';
+    if (user.odasi === SPECIAL_USER_ID) {
+        const title = 'Satchel Enjoyer';
+        if (!stats.titles.includes(title)) stats.titles.push(title);
+        stats.activeTitle = title;
+    }
+    // -------------------------------------------
+
     // Sınırları uygula
     stats.elo = clampElo(stats.elo);
     stats.matchLevel = getLevelFromElo(stats.elo);
