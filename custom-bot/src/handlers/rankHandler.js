@@ -1,5 +1,7 @@
 const { PermissionsBitField } = require('discord.js');
+const path = require('path');
 const RankConfig = require('../../../shared/models/RankConfig');
+const logger = require(path.join(__dirname, '..', '..', '..', 'shared', 'logger'));
 
 // Level rolleri için konfigürasyon (renkler) - Hex Number Format
 const LEVEL_COLORS = {
@@ -126,19 +128,24 @@ module.exports = {
         // 3. Değişiklik Gerekiyorsa Uygula
         if (rolesToRemove.size > 0 || !hasTarget) {
             try {
-                // Önce yanlışları sil, sonra doğruyu ekle (veya tam tersi, optimize edilmiş)
-                let currentRoles = member.roles.cache.map(r => r.id);
-                // Level rollerini temizle
-                currentRoles = currentRoles.filter(id => !ALL_LEVEL_ROLES.includes(id));
-                // Doğru olanı ekle
-                if (targetRoleId) currentRoles.push(targetRoleId);
+                // Get all current roles IDs
+                let currentRoleIds = Array.from(member.roles.cache.keys());
 
-                await member.roles.set(currentRoles, `Auto Rank Update: Level ${newLevel}`);
-                console.log(`[RANK] ${member.user.tag} -> Set to Level ${newLevel}`);
+                // Cleanup level roles
+                currentRoleIds = currentRoleIds.filter(id => !ALL_LEVEL_ROLES.includes(id));
+
+                // Add target level role
+                if (targetRoleId) currentRoleIds.push(targetRoleId);
+
+                console.log(`[SYNC-ATTEMPT] ${member.user.tag} -> Target Level: ${newLevel}`);
+
+                await member.roles.set(currentRoleIds, `Auto Rank Update: Level ${newLevel}`);
+
+                logger.success(`[SYNC-SUCCESS] ${member.user.tag} artık Level ${newLevel}.`);
             } catch (e) {
-                logger.error(`[RANK ERROR] ${member.user.tag} rol düzenleme başarısız: ${e.message}`);
+                logger.error(`[SYNC-ERROR] ${member.user.tag} işlemi başarısız: ${e.message}`);
                 if (e.message.includes('Missing Permissions')) {
-                    logger.error('!!! BOT ROLÜ, VERMEYE ÇALIŞTIĞI ROLLERDEN DAHA ALTA OLABİLİR (Hiyerarşi Sorunu) !!!');
+                    logger.error('!!! BOTUN YETKİSİ YETMİYOR. "Nexora Custom" rolünü Discord ayarlarından en üste çekin !!!');
                 }
             }
         }
