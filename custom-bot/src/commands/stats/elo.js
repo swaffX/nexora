@@ -43,11 +43,26 @@ module.exports = {
                 if (userDoc.isModified('matchStats')) await userDoc.save();
             }
 
-            // --- RANK HESAPLAMA ---
-            const userRank = await User.countDocuments({
-                odaId: guildId,
-                'matchStats.elo': { $gt: stats.elo }
-            }) + 1;
+            // --- RANK HESAPLAMA (Sadece Rol Sahipleri Arasında) ---
+            let userRank = 'Unranked';
+            try {
+                const REQUIRED_ROLE_ID = '1466189076347486268';
+
+                // 1. Rol sahiplerini çek
+                const roleMembers = await interaction.guild.members.fetch({ role: REQUIRED_ROLE_ID }).catch(() => new Map());
+                const roleMemberIds = Array.from(roleMembers.keys());
+
+                // 2. Rol sahipleri içinden ELO'su seninkinden yüksek olanları say
+                const higherEloCount = await User.countDocuments({
+                    odaId: guildId,
+                    odasi: { $in: roleMemberIds },
+                    'matchStats.elo': { $gt: stats.elo }
+                });
+
+                userRank = higherEloCount + 1;
+            } catch (e) {
+                console.error('Rank calc error:', e);
+            }
             // ---------------------
 
             // GÖRSEL OLUŞTUR
