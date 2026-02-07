@@ -495,20 +495,29 @@ module.exports = {
             ctx.fillText(match.map.toUpperCase(), 140, matchY + 50);
 
             let detailText = match.score;
-            if (match.eloChange !== null && match.eloChange !== undefined) {
-                const sign = match.eloChange > 0 ? '+' : '';
-                detailText += ` • ${sign}${match.eloChange}`;
-            }
 
             ctx.fillStyle = '#ccc';
-            ctx.font = '30px "DIN Alternate", sans-serif';
+            ctx.font = 'bold 32px "DIN Alternate", sans-serif';
             ctx.shadowColor = '#000'; ctx.shadowBlur = 5;
-            ctx.fillText(detailText, 400, matchY + 50);
+            ctx.textAlign = 'center';
+            ctx.fillText(detailText, 380, matchY + 50);
             ctx.shadowBlur = 0;
 
-            ctx.font = 'italic 20px "Segoe UI", sans-serif';
-            ctx.fillStyle = '#ddd'; ctx.textAlign = 'right'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3;
-            ctx.fillText(match.date, 630, matchY + 48);
+            // ELO Change (Far Right)
+            if (match.eloChange !== null && match.eloChange !== undefined) {
+                const sign = match.eloChange > 0 ? '+' : '';
+                const eloChangeText = `${sign}${match.eloChange}`;
+                ctx.fillStyle = match.eloChange > 0 ? '#2ecc71' : '#e74c3c';
+                ctx.font = 'bold 28px "DIN Alternate", sans-serif';
+                ctx.textAlign = 'right';
+                ctx.fillText(eloChangeText, 640, matchY + 35);
+            }
+
+            ctx.font = 'italic 18px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#888';
+            ctx.textAlign = 'right';
+            ctx.shadowColor = '#000'; ctx.shadowBlur = 3;
+            ctx.fillText(match.date, 640, matchY + 65);
             ctx.textAlign = 'left'; ctx.shadowBlur = 0;
 
             matchY += 95;
