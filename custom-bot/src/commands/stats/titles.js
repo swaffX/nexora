@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
 const path = require('path');
-const { User } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
+const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const eloService = require('../../services/eloService');
 
 module.exports = {
@@ -26,7 +26,7 @@ module.exports = {
             .setDescription(`Aşağıdaki listeden kazandığınız title'lar arasından seçim yapabilirsiniz.\n\n**Şu anki Title:** \`${currentTitle}\``)
             .setColor('#fbbf24')
             .addFields(
-                { name: 'Nasıl Kazanılır?', value: '• **MVP Master:** 5 Kez MVP ol.\n• **Veteran:** 10 Maç oyna.\n• **On Fire:** 5 Galibiyet Serisi yakala.\n• **Unlucky:** 5 Mağlubiyet Serisi (Teselli).' }
+                { name: 'Nasıl Kazanılır?', value: '• **MVP Master:** 5 Kez MVP ol.\n• **Headshot Machine:** 25 Kez MVP ol.\n• **Veteran:** 10 Maç oyna.\n• **Clutch King:** 50 Maç oyna.\n• **On Fire:** 5 Galibiyet Serisi.\n• **Unstoppable:** 10 Galibiyet Serisi.\n• **Immortal:** 2000 ELO barajını geç.\n• **Nexora Elite:** Level 6 ve üzerine ulaş.' }
             );
 
         const options = stats.titles.map(t => ({

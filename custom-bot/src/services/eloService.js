@@ -37,9 +37,14 @@ const ELO_CONFIG = {
     TITLES: {
         'Satchel Enjoyer': { color: '#ff8800', description: 'Exclusive RaZe Main title.' },
         'MVP Master': { color: '#fbbf24', description: 'Awarded for reaching 5 MVPs.' },
+        'Headshot Machine': { color: '#ffffff', description: 'Awarded for reaching 25 total MVPs.' },
         'Veteran': { color: '#a1a1aa', description: 'Awarded for playing 10 matches.' },
+        'Clutch King': { color: '#60a5fa', description: 'Awarded for playing 50 matches.' },
         'On Fire': { color: '#ef4444', description: 'Awarded for a 5-match win streak.' },
-        'Unlucky': { color: '#3b82f6', description: 'Awarded for a 5-match loss streak.' }
+        'Unstoppable': { color: '#dc2626', description: 'Awarded for a 10-match win streak.' },
+        'Unlucky': { color: '#3b82f6', description: 'Awarded for a 5-match loss streak.' },
+        'Immortal': { color: '#a855f7', description: 'Awarded for reaching 2000 ELO.' },
+        'Nexora Elite': { color: '#2ecc71', description: 'Awarded for reaching Level 6.' }
     }
 };
 
@@ -134,17 +139,26 @@ function ensureValidStats(user) {
         if (!stats.activeTitle) stats.activeTitle = 'Satchel Enjoyer';
     }
 
-    // MVP Master (5 MVP)
+    // MVP Master (5 MVP) & Headshot Machine (25 MVP)
     if (stats.totalMVPs >= 5 && !activeTitles.includes('MVP Master')) activeTitles.push('MVP Master');
+    if (stats.totalMVPs >= 25 && !activeTitles.includes('Headshot Machine')) activeTitles.push('Headshot Machine');
 
-    // Veteran (10 Maç)
+    // Veteran (10 Maç) & Clutch King (50 Maç)
     if (stats.totalMatches >= 10 && !activeTitles.includes('Veteran')) activeTitles.push('Veteran');
+    if (stats.totalMatches >= 50 && !activeTitles.includes('Clutch King')) activeTitles.push('Clutch King');
 
-    // On Fire (5 Seri)
+    // On Fire (5 Seri) & Unstoppable (10 Seri)
     if (stats.winStreak >= 5 && !activeTitles.includes('On Fire')) activeTitles.push('On Fire');
+    if (stats.winStreak >= 10 && !activeTitles.includes('Unstoppable')) activeTitles.push('Unstoppable');
 
     // Unlucky (5 Mağlubiyet Serisi)
     if (stats.winStreak <= -5 && !activeTitles.includes('Unlucky')) activeTitles.push('Unlucky');
+
+    // Immortal (2000 ELO)
+    if (stats.elo >= 2000 && !activeTitles.includes('Immortal')) activeTitles.push('Immortal');
+
+    // Nexora Elite (Level 6)
+    if (stats.matchLevel >= 6 && !activeTitles.includes('Nexora Elite')) activeTitles.push('Nexora Elite');
 
     stats.titles = activeTitles;
     // -------------------------------------------
