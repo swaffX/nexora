@@ -486,8 +486,8 @@ module.exports = {
 
             let detailText = match.score;
 
-            ctx.fillStyle = '#ccc';
-            ctx.font = 'bold 30px "DIN Alternate", sans-serif';
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 50px Arial, sans-serif';
             ctx.shadowColor = '#000'; ctx.shadowBlur = 5;
             ctx.textAlign = 'center';
             ctx.fillText(detailText, 340, matchY + 50); // Skoru map üzerinde merkeze çektik
@@ -875,6 +875,7 @@ module.exports = {
     async createCompareImage(user1, stats1, user2, stats2, currentBg = 'Default') {
         const width = 1200;
         const height = 700;
+        const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
 
         // Arkaplan
@@ -902,7 +903,7 @@ module.exports = {
         }
 
 
-        ctx.font = '50px VALORANT';
+        ctx.font = 'bold 50px Arial, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillStyle = '#fff';
         ctx.fillText('VS', width / 2, height / 2 + 20);
@@ -923,14 +924,14 @@ module.exports = {
             }
 
             // Name
-            ctx.font = 'bold 45px "Segoe UI", sans-serif';
+            ctx.font = 'bold 45px Arial, sans-serif';
             ctx.fillStyle = '#fff';
             ctx.textAlign = 'center';
-            ctx.fillText(user.username.toUpperCase(), midX, 320);
+            ctx.fillText((user.username || 'Unknown').toUpperCase(), midX, 320);
 
             // Title
             if (stats.activeTitle) {
-                ctx.font = 'bold 22px "Segoe UI", sans-serif';
+                ctx.font = 'bold 22px Arial, sans-serif';
                 ctx.fillStyle = eloService.getTitleColor(stats.activeTitle);
                 ctx.fillText(stats.activeTitle.toUpperCase(), midX, 350);
             }
@@ -948,12 +949,12 @@ module.exports = {
                     ctx.strokeStyle = '#2ecc71'; ctx.lineWidth = 1; ctx.stroke();
                 }
 
-                ctx.font = 'bold 20px "Segoe UI", sans-serif';
+                ctx.font = 'bold 20px Arial, sans-serif';
                 ctx.fillStyle = '#666';
                 ctx.textAlign = isRight ? 'right' : 'left';
                 ctx.fillText(label.toUpperCase(), isRight ? rectX + rectW - 20 : rectX + 20, y - 7);
 
-                ctx.font = 'bold 28px "DIN Alternate", sans-serif';
+                ctx.font = 'bold 28px Arial, sans-serif';
                 ctx.fillStyle = isWinner ? '#2ecc71' : '#fff';
                 ctx.textAlign = isRight ? 'left' : 'right';
                 ctx.fillText(String(value), isRight ? rectX + 20 : rectX + rectW - 20, y - 7);
@@ -1017,7 +1018,7 @@ module.exports = {
 
         // Title
         ctx.textAlign = 'center';
-        ctx.font = 'bold 150px "VALORANT", sans-serif';
+        ctx.font = 'bold 80px Arial, sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.shadowColor = 'rgba(255, 255, 255, 0.4)'; ctx.shadowBlur = 40;
         ctx.fillText("LEADERBOARD", width / 2, 200);
