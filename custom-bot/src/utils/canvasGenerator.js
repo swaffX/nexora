@@ -761,13 +761,7 @@ module.exports = {
             ctx.fillRect(0, 0, width, height);
         }
 
-        // Header (VERSUS)
-        ctx.font = 'bold 80px "VALORANT", sans-serif';
-        ctx.fillStyle = 'rgba(255,255,255,0.05)';
-        ctx.textAlign = 'center';
-        ctx.fillText('COMPARISON', width / 2, 100);
 
-        ctx.font = 'bold 50px "VALORANT", sans-serif';
         ctx.fillStyle = '#fff';
         ctx.fillText('VS', width / 2, height / 2);
 

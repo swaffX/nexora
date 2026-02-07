@@ -44,15 +44,22 @@ async function handleInteraction(interaction, client) {
 async function handleStats(interaction, userDoc, guildId) {
     const stats = userDoc.matchStats || eloService.createDefaultStats();
 
+    if (userDoc) {
+        eloService.ensureValidStats(userDoc);
+        await eloService.recalculateStatsFromHistory(userDoc);
+    }
+
+    const targetUserId = interaction.user.id;
+    const MIN_MATCH_ID = '1468676273680285706';
     const historyMatches = await Match.find({
         status: 'FINISHED',
-        odaId: guildId,
-        $or: [{ teamA: userDoc.odasi }, { teamB: userDoc.odasi }]
+        matchId: { $gte: MIN_MATCH_ID },
+        $or: [{ teamA: targetUserId }, { teamB: targetUserId }]
     }).sort({ createdAt: -1 });
 
     const matchHistoryData = historyMatches.slice(0, 5).map(m => {
-        const safeTargetId = String(userDoc.odasi);
-        const isTeamA = m.teamA.some(id => String(id) === safeTargetId);
+        const safeTargetId = String(targetUserId);
+        const isTeamA = m.teamA.includes(targetUserId);
 
         let actualWinner = m.winner;
         if (m.scoreA !== undefined && m.scoreB !== undefined) {
@@ -81,22 +88,32 @@ async function handleStats(interaction, userDoc, guildId) {
         if (days > 0) timeStr = `${days}g önce`;
         if (hours === 0) timeStr = 'Az önce';
 
+        const dateStrDay = `${dateObj.getDate()}/${dateObj.getMonth() + 1}`;
+
+        let currentEloVal = stats.elo;
+        if (m.eloChanges && Array.isArray(m.eloChanges)) {
+            const log = m.eloChanges.find(l => String(l.userId) === safeTargetId);
+            if (log) currentEloVal = log.newElo;
+        }
+
         return {
             map: m.selectedMap || 'Unknown',
             score: `${myTeamScore}-${enemyScore}`,
             result: result,
             eloChange: eloChangeVal,
             isMvp: isMvp,
-            date: timeStr
+            date: timeStr,
+            newElo: currentEloVal,
+            dateObj: m.createdAt,
+            dateStr: dateStrDay
         };
     });
 
     const teammates = {};
-    const mapStatsDict = {};
+    const mapStats = {};
 
     for (const m of historyMatches) {
-        const safeTargetId = String(userDoc.odasi);
-        const isTeamA = m.teamA.some(id => String(id) === safeTargetId);
+        const isTeamA = m.teamA.includes(targetUserId);
         const teamList = isTeamA ? m.teamA : m.teamB;
 
         for (const pid of teamList) {
@@ -105,8 +122,8 @@ async function handleStats(interaction, userDoc, guildId) {
         }
 
         const mapName = m.selectedMap || 'Unknown';
-        if (!mapStatsDict[mapName]) mapStatsDict[mapName] = { wins: 0, total: 0 };
-        mapStatsDict[mapName].total++;
+        if (!mapStats[mapName]) mapStats[mapName] = { wins: 0, total: 0 };
+        mapStats[mapName].total++;
 
         let actualWinner = m.winner;
         if (m.scoreA !== undefined && m.scoreB !== undefined) {
@@ -114,42 +131,47 @@ async function handleStats(interaction, userDoc, guildId) {
             else if (m.scoreB > m.scoreA) actualWinner = 'B';
         }
         const isWin = (actualWinner === 'A' && isTeamA) || (actualWinner === 'B' && !isTeamA);
-        if (isWin) mapStatsDict[mapName].wins++;
+        if (isWin) mapStats[mapName].wins++;
     }
 
     let bestMapData = null;
-    let bMapName = null;
-    let bWR = -1;
+    let bestMapName = null;
+    let bestMapWR = -1;
 
-    for (const [mname, data] of Object.entries(mapStatsDict)) {
+    for (const [map, data] of Object.entries(mapStats)) {
         if (data.total >= 3) {
             const wr = (data.wins / data.total) * 100;
-            if (wr > bWR) { bWR = wr; bMapName = mname; }
+            if (wr > bestMapWR) { bestMapWR = wr; bestMapName = map; }
         }
     }
-    if (bWR === -1 && Object.keys(mapStatsDict).length > 0) {
-        bMapName = Object.keys(mapStatsDict).reduce((a, b) => mapStatsDict[a].total > mapStatsDict[b].total ? a : b);
-        const d = mapStatsDict[bMapName];
-        bWR = (d.wins / d.total) * 100;
+    if (bestMapWR === -1 && Object.keys(mapStats).length > 0) {
+        bestMapName = Object.keys(mapStats).reduce((a, b) => mapStats[a].total > mapStats[b].total ? a : b);
+        if (bestMapName) {
+            const data = mapStats[bestMapName];
+            bestMapWR = (data.wins / data.total) * 100;
+        }
     }
-    if (bMapName) bestMapData = { name: bMapName, wr: Math.round(bWR) };
-
-    const userRank = await User.countDocuments({ odaId: guildId, 'matchStats.elo': { $gt: stats.elo } }) + 1;
-
+    if (bestMapName) bestMapData = { name: bestMapName, wr: Math.round(bestMapWR) }; const userRank = await User.countDocuments({
+        odaId: guildId,
+        'matchStats.totalMatches': { $gt: 0 },
+        'matchStats.elo': { $gt: stats.elo }
+    }) + 1;
     let favTeammateData = null;
-    let maxDuoGames = 0;
-    let topDuoId = null;
-    for (const [pid, count] of Object.entries(teammates)) {
-        if (count > maxDuoGames) { maxDuoGames = count; topDuoId = pid; }
-    }
-    if (topDuoId) {
-        try {
-            const tmMember = await interaction.guild.members.fetch(topDuoId);
-            favTeammateData = { username: tmMember.displayName, count: maxDuoGames, avatarURL: tmMember.user.displayAvatarURL({ extension: 'png' }) };
-        } catch (e) { }
+    if (Object.keys(teammates).length > 0) {
+        let topTeammateId = null;
+        let maxGames = 0;
+        for (const [pid, count] of Object.entries(teammates)) {
+            if (count > maxGames) { maxGames = count; topTeammateId = pid; }
+        }
+        if (topTeammateId) {
+            try {
+                const tmMember = await interaction.guild.members.fetch(topTeammateId);
+                favTeammateData = { username: tmMember.displayName, count: maxGames, avatarURL: tmMember.user.displayAvatarURL({ extension: 'png' }) };
+            } catch (e) { }
+        }
     }
 
-    const nemesisInfo = await eloService.calculateNemesis(userDoc.odasi, guildId);
+    const nemesisInfo = await eloService.calculateNemesis(targetUserId, guildId);
     let nemesisData = null;
     if (nemesisInfo) {
         try {
@@ -161,7 +183,7 @@ async function handleStats(interaction, userDoc, guildId) {
     const userForCard = {
         username: interaction.user.username,
         avatar: interaction.user.displayAvatarURL({ extension: 'png' }),
-        backgroundImage: userDoc.backgroundImage
+        backgroundImage: userDoc?.backgroundImage
     };
 
     const buffer = await canvasGenerator.createDetailedStatsImage(userForCard, stats, matchHistoryData, bestMapData, favTeammateData, userRank, nemesisData);
