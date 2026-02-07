@@ -23,16 +23,16 @@ const ELO_CONFIG = {
     FAIRNESS_DIVISOR: 40, // Her 40 ELO farkı = ±1 puan
     MAX_FAIRNESS_ADJUSTMENT: 10,
     LEVEL_THRESHOLDS: [
-        { max: 300, level: 1 },
-        { max: 450, level: 2 },
-        { max: 600, level: 3 },
-        { max: 750, level: 4 },
-        { max: 900, level: 5 },
-        { max: 1050, level: 6 },
-        { max: 1200, level: 7 },
-        { max: 1350, level: 8 },
-        { max: 1600, level: 9 },
-        { max: Infinity, level: 10 }
+        { max: 200, level: 1, name: 'Challenger I' },
+        { max: 400, level: 2, name: 'Challenger II' },
+        { max: 600, level: 3, name: 'Challenger III' },
+        { max: 850, level: 4, name: 'Expert' },
+        { max: 1100, level: 5, name: 'Master' },
+        { max: 1350, level: 6, name: 'Elite' },
+        { max: 1650, level: 7, name: 'Warlord' },
+        { max: 1950, level: 8, name: 'Godlike' },
+        { max: 2300, level: 9, name: 'Grandmaster' },
+        { max: Infinity, level: 10, name: 'Nexora Champion' }
     ]
 };
 

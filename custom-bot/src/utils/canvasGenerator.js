@@ -503,7 +503,7 @@ module.exports = {
             ctx.fillText(detailText, 340, matchY + 50); // Skoru map üzerinde merkeze çektik
             ctx.shadowBlur = 0;
 
-            // ELO Change (Harita Resminin Tam Sağ Dışı)
+            // ELO Change logic update: Check id as string to avoid type mismatch
             const infoX = boxX + boxW + 20; // x=570 civarı
             if (match.eloChange !== null && match.eloChange !== undefined) {
                 const sign = match.eloChange > 0 ? '+' : '';
@@ -512,12 +512,6 @@ module.exports = {
                 ctx.font = 'bold 32px "DIN Alternate", sans-serif';
                 ctx.textAlign = 'left';
                 ctx.fillText(eloChangeText, infoX, matchY + 35);
-            } else {
-                // Eğer ELO değişimi yoksa (eski maçlar)
-                ctx.fillStyle = '#666';
-                ctx.font = 'bold 24px "DIN Alternate", sans-serif';
-                ctx.textAlign = 'left';
-                ctx.fillText('N/A', infoX, matchY + 35);
             }
 
             // Tarih (ELO değişiminin altı)
