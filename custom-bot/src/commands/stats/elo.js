@@ -43,41 +43,11 @@ module.exports = {
                 if (userDoc.isModified('matchStats')) await userDoc.save();
             }
 
-            // ROL SENKRONİZASYONU (Görüntüleme anında otomatik kontrol)
-            const rankHandler = require('../../handlers/rankHandler');
-            if (member) {
-                await rankHandler.syncRank(member, stats.matchLevel || 1);
-            }
-
-            // --- RANK HESAPLAMA (Leaderboard ile Uyumlu) ---
-            let userRank = 'Unranked';
-            try {
-                // 1. Tüm geçerli kayıtları çek
-                const allDocs = await User.find({ odaId: guildId, 'matchStats.elo': { $exists: true } })
-                    .select('odasi matchStats.elo')
-                    .sort({ 'matchStats.elo': -1 });
-
-                // 2. Rol kontrolü için ID listesi
-                const userIds = allDocs.map(d => d.odasi);
-
-                // 3. Toplu Member Fetch (Rate limit dostu)
-                const members = await interaction.guild.members.fetch({ user: userIds }).catch(() => new Map());
-
-                // 4. Role sahip olanları filtrele ve sıralı listeyi oluştur
-                let rankCounter = 1;
-                for (const doc of allDocs) {
-                    const m = members.get(doc.odasi);
-                    if (m && m.roles.cache.has(REQUIRED_ROLE_ID)) {
-                        if (doc.odasi === targetUser.id) {
-                            userRank = rankCounter;
-                            break;
-                        }
-                        rankCounter++;
-                    }
-                }
-            } catch (e) {
-                console.error('Rank calc error:', e);
-            }
+            // --- RANK HESAPLAMA ---
+            const userRank = await User.countDocuments({
+                odaId: guildId,
+                'matchStats.elo': { $gt: stats.elo }
+            }) + 1;
             // ---------------------
 
             // GÖRSEL OLUŞTUR
