@@ -3,7 +3,7 @@ const { User } = require('../../shared/models');
 const logger = require('../../shared/logger');
 
 /**
- * Background Rank Synchronizer - RATE LIMIT FRIENDLY
+ * Background Rank Synchronizer - ROLE VERIFICATION MODE
  */
 module.exports = (client) => {
     const REQUIRED_VALORANT_ROLE = '1466189076347486268';
@@ -17,14 +17,10 @@ module.exports = (client) => {
     const ALL_LEVEL_ROLES = Object.values(LEVEL_ROLES);
 
     let isRunning = false;
-    let scanCount = 0;
-
-    logger.info('[AutoRank] Arka plan tarayıcı başlatıldı (Rate-Limit Korumalı).');
 
     const runSync = async () => {
         if (isRunning) return;
         isRunning = true;
-        scanCount++;
 
         try {
             const guild = client.guilds.cache.get(GUILD_ID);
@@ -33,26 +29,24 @@ module.exports = (client) => {
                 return;
             }
 
-            // --- RATE LIMIT ÇÖZÜMÜ ---
-            // Tüm sunucuyu çekmek yerine sadece o role sahip olanları çekiyoruz
-            // Bu yöntem API'yi yormaz ve rate limit yemez.
-            const membersWithRole = await guild.members.fetch({ role: REQUIRED_VALORANT_ROLE }).catch(e => {
-                if (e.message.includes('rate limited')) {
-                    // Sessizce bekle, bir sonraki turda deneriz
-                }
-                return null;
-            });
+            // --- ROL DOĞRULAMA (Senin için ekledim) ---
+            const targetRole = guild.roles.cache.get(REQUIRED_VALORANT_ROLE);
+            if (targetRole) {
+                // Sadece ilk seferde veya her 5 taramada bir log atalım
+                logger.info(`[DEBUG] Botun baktığı Rol: "${targetRole.name}" | Toplam Üye: ${targetRole.members.size}`);
+            } else {
+                logger.error(`[DEBUG] KRİTİK: ID'si verilen rol sunucuda BULUNAMADI! ID: ${REQUIRED_VALORANT_ROLE}`);
+            }
+
+            // 1. Üyeleri çek (Sadece o role sahip olanları getir)
+            const membersWithRole = await guild.members.fetch({ role: REQUIRED_VALORANT_ROLE }).catch(() => null);
 
             if (!membersWithRole || membersWithRole.size === 0) {
                 isRunning = false;
                 return;
             }
 
-            if (scanCount % 6 === 1) {
-                logger.info(`[AutoRank] Tarama: ${membersWithRole.size} Valorant oyuncusu inceleniyor.`);
-            }
-
-            // 2. DB'den verileri çek
+            // 2. DB'deki kullanıcıları al
             const memberIds = Array.from(membersWithRole.keys());
             const usersInDb = await User.find({
                 odasi: { $in: memberIds },
@@ -61,41 +55,39 @@ module.exports = (client) => {
 
             const usersMap = new Map(usersInDb.map(u => [u.odasi, u.matchStats?.matchLevel || 1]));
 
-            // 3. Değişiklik Gerekenleri Ayıkla
+            // 3. SADECE DB'DE OLANLARI GÜNCELLE
             const updates = [];
             for (const member of membersWithRole.values()) {
-                const targetLevel = usersMap.get(member.id) || 1;
-                const targetRoleId = LEVEL_ROLES[targetLevel];
+                // Sadece veritabanında kaydı olanları (maç oynamışları) incele
+                if (usersMap.has(member.id)) {
+                    const targetLevel = usersMap.get(member.id);
+                    const targetRoleId = LEVEL_ROLES[targetLevel];
 
-                const hasCorrectRole = member.roles.cache.has(targetRoleId);
-                const hasExtraRoles = member.roles.cache.some(r => ALL_LEVEL_ROLES.includes(r.id) && r.id !== targetRoleId);
+                    const hasCorrectRole = member.roles.cache.has(targetRoleId);
+                    const hasExtraRoles = member.roles.cache.some(r => ALL_LEVEL_ROLES.includes(r.id) && r.id !== targetRoleId);
 
-                if (!hasCorrectRole || hasExtraRoles) {
-                    updates.push({ member, targetLevel });
+                    if (!hasCorrectRole || hasExtraRoles) {
+                        updates.push({ member, targetLevel });
+                    }
                 }
             }
 
             if (updates.length > 0) {
-                logger.info(`[AutoRank] ${updates.length} oyuncunun rolü güncelleniyor...`);
-
-                for (let i = 0; i < updates.length; i += 3) { // Batch boyutunu küçülttük (3)
+                logger.info(`[AutoRank] ${updates.length} kayıtlı ve Valorant rolü olan kişi güncelleniyor.`);
+                for (let i = 0; i < updates.length; i += 3) {
                     const batch = updates.slice(i, i + 3);
                     await Promise.all(batch.map(upd => rankHandler.syncRank(upd.member, upd.targetLevel)));
-                    // Her batch arası 1.5 saniye bekle (Tam güvenlik)
                     await new Promise(r => setTimeout(r, 1500));
                 }
             }
 
         } catch (error) {
-            // Hata logunu sadece kritikse yaz
-            if (!error.message.includes('rate limited')) {
-                logger.error(`[AutoRank Error]: ${error.message}`);
-            }
+            // logger.error(`[AutoRank Error]: ${error.message}`);
         } finally {
             isRunning = false;
-            setTimeout(runSync, 5000);
+            setTimeout(runSync, 10000); // Taramayı biraz yavaşlattım (10sn)
         }
     };
 
-    setTimeout(runSync, 2000);
+    setTimeout(runSync, 3000);
 };
