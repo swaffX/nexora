@@ -102,12 +102,15 @@ module.exports = {
                     }
                 }
 
+                const isMvp = (m.mvp === targetUser.id || m.loserMvp === targetUser.id);
+
                 matchHistoryData.push({
                     map: mapName,
                     result: result,
                     score: `${myTeamScore}-${enemyScore}`,
                     date: dateStr,
                     eloChange: eloChangeVal,
+                    isMvp: isMvp,
                     newElo: currentEloVal,
                     dateObj: m.createdAt
                 });

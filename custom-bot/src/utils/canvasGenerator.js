@@ -504,7 +504,7 @@ module.exports = {
             ctx.shadowBlur = 0;
 
             // ELO Change logic update: Check id as string to avoid type mismatch
-            const infoX = boxX + boxW + 20; // x=570 civarı
+            const infoX = boxX + boxW + 20;
             if (match.eloChange !== null && match.eloChange !== undefined) {
                 const sign = match.eloChange > 0 ? '+' : '';
                 const eloChangeText = `${sign}${match.eloChange}`;
@@ -512,6 +512,15 @@ module.exports = {
                 ctx.font = 'bold 32px "DIN Alternate", sans-serif';
                 ctx.textAlign = 'left';
                 ctx.fillText(eloChangeText, infoX, matchY + 35);
+
+                // MVP Badge (if applicable)
+                if (match.isMvp) {
+                    const eloWidth = ctx.measureText(eloChangeText).width;
+                    ctx.fillStyle = '#fbbf24';
+                    ctx.font = 'bold 18px "VALORANT", sans-serif';
+                    ctx.fillText('MVP', infoX + eloWidth + 15, matchY + 33);
+                    drawStar(ctx, infoX + eloWidth + 60, matchY + 28, 5, 8, 4, '#fbbf24');
+                }
             }
 
             // Tarih (ELO değişiminin altı)
@@ -560,6 +569,16 @@ module.exports = {
         ctx.font = 'bold 20px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('WIN RATE (SEASON)', rightX + 20, 420);
         ctx.font = 'bold 50px "DIN Alternate", sans-serif'; ctx.fillStyle = wr >= 50 ? '#2ecc71' : '#e74c3c'; ctx.fillText(`%${wr}`, rightX + 20, 470);
         ctx.font = '30px "DIN Alternate", sans-serif'; ctx.fillStyle = '#fff'; ctx.textAlign = 'right'; ctx.fillText(`${w}W / ${l}L`, rightX + 410, 470); ctx.textAlign = 'left';
+
+        // Total MVPs
+        ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(rightX, 520, 430, 120);
+        ctx.font = 'bold 20px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('TOTAL MVPs', rightX + 20, 560);
+        ctx.font = 'bold 55px "DIN Alternate", sans-serif'; ctx.fillStyle = '#fbbf24';
+        ctx.shadowColor = 'rgba(251, 191, 36, 0.3)'; ctx.shadowBlur = 15;
+        ctx.fillText(String(stats.totalMVPs || 0), rightX + 20, 615);
+        ctx.shadowBlur = 0;
+        // Icon
+        drawStar(ctx, rightX + 380, 580, 5, 25, 12, '#fbbf24');
 
         // --- FOOTER (User Info & Rank) ---
         const footerY = 730;
