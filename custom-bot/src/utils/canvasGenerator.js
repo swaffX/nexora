@@ -1929,6 +1929,76 @@ module.exports = {
         }
 
         return canvas.toBuffer('image/png');
+    },
+
+    async createPanelBanner() {
+        const width = 1200;
+        const height = 400;
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext('2d');
+
+        // Background - Dark sleek gradient
+        const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+        bgGrad.addColorStop(0, '#09090b');
+        bgGrad.addColorStop(1, '#18181b');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, width, height);
+
+        // Subtle Grid Pattern
+        ctx.strokeStyle = 'rgba(251, 191, 36, 0.03)';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < width; x += 40) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+        }
+        for (let y = 0; y < height; y += 40) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+        }
+
+        // Decorative Shapes
+        ctx.fillStyle = 'rgba(251, 191, 36, 0.05)';
+        ctx.beginPath();
+        ctx.arc(width - 100, 100, 200, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Main Text - "NEXORA"
+        ctx.shadowColor = '#fbbf24';
+        ctx.shadowBlur = 20;
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = 'bold 120px "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('NEXORA', width / 2, height / 2 - 20);
+        ctx.shadowBlur = 0;
+
+        // Sub Text - "CONTROL PANEL"
+        ctx.font = '36px "Segoe UI", sans-serif';
+        ctx.letterSpacing = '15px';
+        ctx.fillStyle = '#ffffff';
+        ctx.globalAlpha = 0.8;
+        ctx.fillText('CONTROL PANEL', width / 2, height / 2 + 50);
+
+        // Bottom Glow Line
+        const lineGrad = ctx.createLinearGradient(width * 0.2, 0, width * 0.8, 0);
+        lineGrad.addColorStop(0, 'transparent');
+        lineGrad.addColorStop(0.5, '#fbbf24');
+        lineGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = lineGrad;
+        ctx.fillRect(width * 0.2, height - 80, width * 0.6, 2);
+
+        // Add 4 mini-icons placeholders to make it look "busy" and "modern"
+        const icons = ['📊', '📈', '🏆', '🎨'];
+        ctx.globalAlpha = 1;
+        ctx.font = '30px "Segoe UI", sans-serif';
+        icons.forEach((icon, i) => {
+            const x = (width / 2 - 150) + (i * 100);
+            ctx.fillStyle = 'rgba(255,255,255,0.1)';
+            ctx.beginPath();
+            ctx.roundRect(x - 30, height - 70, 60, 60, 10);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.fillText(icon, x, height - 30);
+        });
+
+        return canvas.toBuffer('image/png');
     }
 };
 
