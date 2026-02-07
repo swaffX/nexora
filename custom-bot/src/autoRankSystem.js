@@ -47,8 +47,8 @@ module.exports = (client) => {
                 return;
             }
 
-            // 1. Role sahip olanları çek
-            const membersWithRole = await guild.members.fetch({ role: REQUIRED_VALORANT_ROLE }).catch(() => null);
+            // 1. Role sahip olanları çek (Cache'i zorla tazele)
+            const membersWithRole = await guild.members.fetch({ role: REQUIRED_VALORANT_ROLE, force: true }).catch(() => null);
             if (!membersWithRole || membersWithRole.size === 0) {
                 isRunning = false;
                 return;
