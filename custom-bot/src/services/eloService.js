@@ -129,9 +129,10 @@ function ensureValidStats(user) {
  * @param {Object} user Mongoose User document
  * @param {number} change ELO değişikliği (+/-)
  * @param {string} reason Değişiklik nedeni (Audit için)
+ * @param {Object} client Discord.js Client (Rol güncelleme için)
  * @returns {Promise<Object>} Güncellenmiş user
  */
-async function applyEloChange(user, change, reason = 'Unknown') {
+async function applyEloChange(user, change, reason = 'Unknown', client = null) {
     ensureValidStats(user);
 
     const oldElo = user.matchStats.elo;
@@ -149,6 +150,24 @@ async function applyEloChange(user, change, reason = 'Unknown') {
     console.log(`[ELO AUDIT] User: ${user.odasi} | ELO: ${oldElo} → ${newElo} (${changeSign}${change}) | Level: ${oldLevel} → ${newLevel} | Reason: ${reason}`);
 
     await user.save();
+
+    // ROL SENKRONİZASYONU (Otomatik)
+    const rankHandler = require('../handlers/rankHandler');
+    if (client || global.client) {
+        const dClient = client || global.client;
+        const guild = dClient.guilds.cache.get(user.odaId);
+        if (guild) {
+            try {
+                const member = await guild.members.fetch(user.odasi).catch(() => null);
+                if (member) {
+                    await rankHandler.syncRank(member, newLevel);
+                }
+            } catch (e) {
+                console.error(`Automatic rank sync failed for ${user.odasi}:`, e.message);
+            }
+        }
+    }
+
     return user;
 }
 

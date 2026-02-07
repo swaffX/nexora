@@ -56,11 +56,9 @@ module.exports = {
                     userDoc = new User({ odasi: targetUser.id, odaId: guildId, matchStats: eloService.createDefaultStats() });
                 }
 
-                eloService.ensureValidStats(userDoc);
                 const oldElo = userDoc.matchStats.elo;
-                userDoc.matchStats.elo = newElo;
-                userDoc.matchStats.matchLevel = eloService.getLevelFromElo(newElo);
-                await userDoc.save();
+                const change = newElo - oldElo;
+                await eloService.applyEloChange(userDoc, change, `Admin Set by ${interaction.user.tag}`, interaction.client);
 
                 return interaction.editReply(`✅ **${targetUser.username}** ELO ayarlandı: \`${oldElo}\` → \`${newElo}\` (Level ${userDoc.matchStats.matchLevel})`);
 
@@ -68,12 +66,15 @@ module.exports = {
                 const targetUser = interaction.options.getUser('user');
 
                 let userDoc = await User.findOne({ odasi: targetUser.id, odaId: guildId });
-                if (!userDoc) {
-                    userDoc = new User({ odasi: targetUser.id, odaId: guildId, matchStats: eloService.createDefaultStats() });
-                }
+                if (!userDoc) return interaction.editReply('❌ Kullanıcı veritabanında bulunamadı.');
 
-                eloService.ensureValidStats(userDoc);
                 const oldElo = userDoc.matchStats.elo;
+                const change = eloService.ELO_CONFIG.DEFAULT_ELO - oldElo;
+
+                // Reset also clears history normally, but applyEloChange handles ELO specifically
+                await eloService.applyEloChange(userDoc, change, `Admin Reset by ${interaction.user.tag}`, interaction.client);
+
+                // Diğer her şeyi sıfırla
                 userDoc.matchStats = eloService.createDefaultStats();
                 await userDoc.save();
 
@@ -88,11 +89,8 @@ module.exports = {
                     userDoc = new User({ odasi: targetUser.id, odaId: guildId, matchStats: eloService.createDefaultStats() });
                 }
 
-                eloService.ensureValidStats(userDoc);
                 const oldElo = userDoc.matchStats.elo;
-                userDoc.matchStats.elo = Math.min(userDoc.matchStats.elo + amount, eloService.ELO_CONFIG.MAX_ELO);
-                userDoc.matchStats.matchLevel = eloService.getLevelFromElo(userDoc.matchStats.elo);
-                await userDoc.save();
+                await eloService.applyEloChange(userDoc, amount, `Admin Add by ${interaction.user.tag}`, interaction.client);
 
                 return interaction.editReply(`✅ **${targetUser.username}** ELO eklendi: \`${oldElo}\` → \`${userDoc.matchStats.elo}\` (+${amount})`);
 
@@ -105,11 +103,8 @@ module.exports = {
                     userDoc = new User({ odasi: targetUser.id, odaId: guildId, matchStats: eloService.createDefaultStats() });
                 }
 
-                eloService.ensureValidStats(userDoc);
                 const oldElo = userDoc.matchStats.elo;
-                userDoc.matchStats.elo = Math.max(userDoc.matchStats.elo - amount, eloService.ELO_CONFIG.MIN_ELO);
-                userDoc.matchStats.matchLevel = eloService.getLevelFromElo(userDoc.matchStats.elo);
-                await userDoc.save();
+                await eloService.applyEloChange(userDoc, -amount, `Admin Remove by ${interaction.user.tag}`, interaction.client);
 
                 return interaction.editReply(`✅ **${targetUser.username}** ELO çıkarıldı: \`${oldElo}\` → \`${userDoc.matchStats.elo}\` (-${amount})`);
 

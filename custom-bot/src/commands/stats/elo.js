@@ -43,6 +43,12 @@ module.exports = {
                 if (userDoc.isModified('matchStats')) await userDoc.save();
             }
 
+            // ROL SENKRONİZASYONU (Görüntüleme anında otomatik kontrol)
+            const rankHandler = require('../../handlers/rankHandler');
+            if (member) {
+                await rankHandler.syncRank(member, stats.matchLevel || 1);
+            }
+
             // --- RANK HESAPLAMA (Leaderboard ile Uyumlu) ---
             let userRank = 'Unranked';
             try {
