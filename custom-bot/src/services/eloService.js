@@ -49,17 +49,8 @@ const ELO_CONFIG = {
     },
     BACKGROUND_THEMES: {
         'Default': { path: null, name: 'Varsayılan Dark' },
-        'Ascent': { path: 'ascent.png', name: 'Ascent' },
-        'Bind': { path: 'bind.png', name: 'Bind' },
-        'Haven': { path: 'haven.png', name: 'Haven' },
-        'Icebox': { path: 'icebox.png', name: 'Icebox' },
-        'Split': { path: 'split.png', name: 'Split' },
-        'Fracture': { path: 'fracture.png', name: 'Fracture' },
-        'Lotus': { path: 'lotus.png', name: 'Lotus' },
-        'Pearl': { path: 'pearl.png', name: 'Pearl' },
-        'Sunset': { path: 'sunset.png', name: 'Sunset' },
-        'Abyss': { path: 'abyss.png', name: 'Abyss' },
         'Raze': { path: 'Raze.png', name: 'Raze Special' },
+        'Jett': { path: 'Jett.png', name: 'Jett Special' },
     },
 };
 
