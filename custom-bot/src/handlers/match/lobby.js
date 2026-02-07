@@ -111,24 +111,24 @@ module.exports = {
             });
             await newMatch.save();
 
-            // Panel Tasarımı
+            // --- GÖRSEL HAZIRLA ---
+            const canvasData = {
+                matchNumber: currentMatchNumber,
+                lobbyName: lobbyConfig.name,
+                captainA: null,
+                captainB: null
+            };
+
+            const { AttachmentBuilder } = require('discord.js');
+            const buffer = await canvasGenerator.createLobbySetupImage(canvasData);
+            const attachment = new AttachmentBuilder(buffer, { name: 'lobby-setup.png' });
+
             const embed = new EmbedBuilder()
                 .setColor(0x1ABC9C)
-                .setTitle(`⚔️ [ NEXORA COMPETITIVE ] • LOBİ YÖNETİMİ`)
-                .setThumbnail('https://cdn-icons-png.flaticon.com/512/3233/3233515.png') // Shield/Trophy icon
-                .setDescription(
-                    `**Mücadele Başlamak Üzere!**\n` +
-                    `Kaptanları belirleyip takımları kurmaya başlayın.\n\n` +
-                    `🔹 **Kategori:** \`${lobbyConfig.name}\`\n` +
-                    `🔹 **Maç ID:** \`#${currentMatchNumber}\` \n` +
-                    `🔹 **Sesteki Adaylar:** \`${voiceMembers.size} Oyuncu\`\n` +
-                    `👑 **Host:** <@${interaction.user.id}>`
-                )
-                .addFields(
-                    { name: '🔵 Team A Kaptanı', value: '```yaml\nBekleniyor...```', inline: true },
-                    { name: '🔴 Team B Kaptanı', value: '```yaml\nBekleniyor...```', inline: true }
-                )
-                .setFooter({ text: 'Nexora System • Lütfen menüleri kullanarak kaptanları seçin.' });
+                .setTitle(`⚔️ [ NEXORA COMPETITIVE ]`)
+                .setDescription(`Kaptanları belirleyip takımları kurmaya başlayın.\n\n👑 **Host:** <@${interaction.user.id}>`)
+                .setImage('attachment://lobby-setup.png')
+                .setFooter({ text: 'Seçim menülerini kullanarak kaptanları atayın.' });
 
             // Kaptan Adayları
             const memberOptions = voiceMembers.map(m => ({
@@ -142,10 +142,10 @@ module.exports = {
 
             const rows = [
                 new ActionRowBuilder().addComponents(
-                    new StringSelectMenuBuilder().setCustomId(`match_cap_select_A_${interaction.id}`).setPlaceholder('Team A Kaptanı Seç').addOptions(memberOptions)
+                    new StringSelectMenuBuilder().setCustomId(`match_cap_select_A_${interaction.id}`).setPlaceholder('TEAM A KAPTANI SEÇ').addOptions(memberOptions)
                 ),
                 new ActionRowBuilder().addComponents(
-                    new StringSelectMenuBuilder().setCustomId(`match_cap_select_B_${interaction.id}`).setPlaceholder('Team B Kaptanı Seç').addOptions(memberOptions)
+                    new StringSelectMenuBuilder().setCustomId(`match_cap_select_B_${interaction.id}`).setPlaceholder('TEAM B KAPTANI SEÇ').addOptions(memberOptions)
                 ),
                 new ActionRowBuilder().addComponents(
                     new ButtonBuilder().setCustomId(`match_randomcap_${interaction.id}`).setLabel('🎲 Rastgele').setStyle(ButtonStyle.Secondary),
@@ -153,7 +153,7 @@ module.exports = {
                 )
             ];
 
-            await textChannel.send({ embeds: [embed], components: rows });
+            await textChannel.send({ embeds: [embed], components: rows, files: [attachment] });
             await interaction.editReply({ content: `✅ **${lobbyConfig.name}** Maçı oluşturuldu! <#${textChannel.id}>` });
 
         } catch (error) {
@@ -266,18 +266,37 @@ module.exports = {
     },
 
     async updateCaptainUI(interaction, match) {
+        const { MessageFlags, AttachmentBuilder } = require('discord.js');
         if (!interaction.message.embeds || interaction.message.embeds.length === 0) {
-            return interaction.reply({ content: '❌ Panel bulunamadı.', flags: require('discord.js').MessageFlags.Ephemeral });
+            return interaction.reply({ content: '❌ Panel bulunamadı.', flags: MessageFlags.Ephemeral });
         }
 
-        const capAName = match.captainA ? (interaction.guild.members.cache.get(match.captainA)?.displayName || `<@${match.captainA}>`) : 'Seçilmedi';
-        const capBName = match.captainB ? (interaction.guild.members.cache.get(match.captainB)?.displayName || `<@${match.captainB}>`) : 'Seçilmedi';
+        const lobbyConfig = getLobbyConfig(match.matchId) || { name: 'Lobby' };
 
-        const embed = EmbedBuilder.from(interaction.message.embeds[0]);
-        embed.spliceFields(0, 2,
-            { name: '🔵 Team A Kaptanı', value: `\`\`\`yaml\n${capAName}\n\`\`\``, inline: true },
-            { name: '🔴 Team B Kaptanı', value: `\`\`\`yaml\n${capBName}\n\`\`\``, inline: true }
-        );
+        // Helper: Kaptan verisi çek
+        const getCapData = async (id) => {
+            if (!id) return null;
+            const member = await interaction.guild.members.fetch(id).catch(() => null);
+            const userDoc = await User.findOne({ odasi: id, odaId: interaction.guild.id });
+            return {
+                name: member?.displayName || 'Unknown',
+                avatar: member?.user.displayAvatarURL({ extension: 'png', size: 256 }),
+                elo: userDoc?.matchStats?.elo || 200
+            };
+        };
+
+        const canvasData = {
+            matchNumber: match.matchNumber || 0,
+            lobbyName: lobbyConfig.name,
+            captainA: await getCapData(match.captainA),
+            captainB: await getCapData(match.captainB)
+        };
+
+        const buffer = await canvasGenerator.createLobbySetupImage(canvasData);
+        const attachment = new AttachmentBuilder(buffer, { name: 'lobby-setup.png' });
+
+        const embed = EmbedBuilder.from(interaction.message.embeds[0])
+            .setImage('attachment://lobby-setup.png');
 
         if (match.captainA && match.captainB) {
             match.status = 'DRAFT_COINFLIP';
@@ -504,27 +523,30 @@ module.exports = {
 
         if (memberOptions.length === 0) memberOptions.push({ label: 'Hata', value: 'null', description: 'Odada kimse yok' });
 
+        const canvasData = {
+            matchNumber: match.matchNumber || 0,
+            lobbyName: 'Lobby',
+            captainA: null,
+            captainB: null
+        };
+
+        const { AttachmentBuilder } = require('discord.js');
+        const buffer = await canvasGenerator.createLobbySetupImage(canvasData);
+        const attachment = new AttachmentBuilder(buffer, { name: 'lobby-setup.png' });
+
         const embed = new EmbedBuilder()
             .setColor(0x1ABC9C)
-            .setTitle(`⚔️ [ NEXORA COMPETITIVE ] • LOBİ YÖNETİMİ`)
-            .setThumbnail('https://cdn-icons-png.flaticon.com/512/3233/3233515.png')
-            .setDescription(
-                `**Lobi Sıfırlandı!**\n` +
-                `Kaptanları yeniden belirleyin.\n\n` +
-                `👑 **Yetkili:** <@${match.hostId}>`
-            )
-            .addFields(
-                { name: '🔵 Team A Kaptanı', value: '```yaml\nBekleniyor...```', inline: true },
-                { name: '🔴 Team B Kaptanı', value: '```yaml\nBekleniyor...```', inline: true }
-            )
+            .setTitle(`⚔️ [ NEXORA COMPETITIVE ]`)
+            .setDescription(`**Lobi Sıfırlandı!**\nKaptanları yeniden belirleyin.\n\n👑 **Yetkili:** <@${match.hostId}>`)
+            .setImage('attachment://lobby-setup.png')
             .setFooter({ text: `Nexora Competitive • Match #${match.matchNumber || '?'}` });
 
         const rows = [
             new ActionRowBuilder().addComponents(
-                new StringSelectMenuBuilder().setCustomId(`match_cap_select_A_${match.matchId}`).setPlaceholder('Team A Kaptanı Seç').addOptions(memberOptions)
+                new StringSelectMenuBuilder().setCustomId(`match_cap_select_A_${match.matchId}`).setPlaceholder('TEAM A KAPTANI SEÇ').addOptions(memberOptions)
             ),
             new ActionRowBuilder().addComponents(
-                new StringSelectMenuBuilder().setCustomId(`match_cap_select_B_${match.matchId}`).setPlaceholder('Team B Kaptanı Seç').addOptions(memberOptions)
+                new StringSelectMenuBuilder().setCustomId(`match_cap_select_B_${match.matchId}`).setPlaceholder('TEAM B KAPTANI SEÇ').addOptions(memberOptions)
             ),
             new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId(`match_randomcap_${match.matchId}`).setLabel('🎲 Rastgele').setStyle(ButtonStyle.Secondary),
@@ -532,7 +554,7 @@ module.exports = {
             )
         ];
 
-        await interaction.editReply({ content: null, embeds: [embed], components: rows });
+        await interaction.editReply({ content: null, embeds: [embed], components: rows, files: [attachment] });
     },
 
     /**

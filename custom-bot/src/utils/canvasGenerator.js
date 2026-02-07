@@ -857,6 +857,97 @@ module.exports = {
         return canvas.toBuffer('image/png');
     },
 
+    async createLobbySetupImage(data) {
+        // data: { matchNumber, lobbyName, captainA: { name, avatar, elo }, captainB: { name, avatar, elo } }
+        const width = 1200;
+        const height = 450;
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext('2d');
+
+        // 1. Dark Modern Background
+        ctx.fillStyle = '#0a0a0c';
+        ctx.fillRect(0, 0, width, height);
+
+        // Subtle Grid
+        ctx.strokeStyle = '#ffffff05';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < width; i += 50) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, height); ctx.stroke(); }
+        for (let i = 0; i < height; i += 50) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(width, i); ctx.stroke(); }
+
+        // Center Split Line
+        const gradSplit = ctx.createLinearGradient(0, 0, 0, height);
+        gradSplit.addColorStop(0, 'transparent');
+        gradSplit.addColorStop(0.5, '#ffffff20');
+        gradSplit.addColorStop(1, 'transparent');
+        ctx.strokeStyle = gradSplit;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(width / 2, 50); ctx.lineTo(width / 2, height - 50); ctx.stroke();
+
+        // Header Info
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 35px sans-serif';
+        ctx.fillText(`MATCH #${data.matchNumber}`, width / 2, 80);
+        ctx.font = '20px sans-serif';
+        ctx.fillStyle = '#71717a';
+        ctx.fillText(data.lobbyName.toUpperCase(), width / 2, 110);
+
+        // Draw Captain Helper
+        const drawCap = async (cap, isLeft) => {
+            const x = isLeft ? width * 0.25 : width * 0.75;
+            const y = height / 2 + 30;
+            const color = isLeft ? '#3b82f6' : '#ef4444';
+
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = cap ? color : 'rgba(0,0,0,0)';
+
+            ctx.fillStyle = '#18181b';
+            ctx.beginPath(); ctx.arc(x, y - 50, 85, 0, Math.PI * 2); ctx.fill();
+            ctx.shadowBlur = 0;
+
+            if (cap) {
+                if (cap.avatar) {
+                    try {
+                        const avatarImg = await loadImage(cap.avatar);
+                        ctx.save();
+                        ctx.beginPath(); ctx.arc(x, y - 50, 80, 0, Math.PI * 2); ctx.clip();
+                        ctx.drawImage(avatarImg, x - 80, y - 50 - 80, 160, 160);
+                        ctx.restore();
+                    } catch (e) { }
+                }
+
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 5;
+                ctx.beginPath(); ctx.arc(x, y - 50, 82, 0, Math.PI * 2); ctx.stroke();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 38px sans-serif';
+                ctx.fillText(cap.name.toUpperCase().substring(0, 15), x, y + 80);
+
+                const lvInfo = getLevelInfo(cap.elo || 200);
+                ctx.font = 'bold 24px sans-serif';
+                ctx.fillStyle = lvInfo.color;
+                ctx.fillText(`LV.${lvInfo.lv} • ${cap.elo} ELO`, x, y + 115);
+            } else {
+                ctx.strokeStyle = '#27272a';
+                ctx.setLineDash([8, 6]);
+                ctx.beginPath(); ctx.arc(x, y - 50, 82, 0, Math.PI * 2); ctx.stroke();
+                ctx.setLineDash([]);
+
+                ctx.fillStyle = '#3f3f46';
+                ctx.font = 'bold 28px sans-serif';
+                ctx.fillText(isLeft ? "TEAM A CAPTAIN" : "TEAM B CAPTAIN", x, y + 80);
+                ctx.font = '18px sans-serif';
+                ctx.fillText("WAITING...", x, y + 110);
+            }
+        };
+
+        await drawCap(data.captainA, true);
+        await drawCap(data.captainB, false);
+
+        return canvas.toBuffer('image/png');
+    },
+
     // --- ADVANCED MATCH VISUALIZATIONS ---
 
     async createVersusImage(captainA, captainB, mapName) {
