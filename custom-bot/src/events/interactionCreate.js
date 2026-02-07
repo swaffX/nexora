@@ -83,6 +83,12 @@ module.exports = {
                 }
             }
 
+            // Control Panel System
+            if (customId.startsWith('panel_')) {
+                const panelHandler = require('../handlers/panelHandler');
+                await panelHandler.handleInteraction(interaction, client);
+            }
+
         } catch (error) {
             logger.error('Custom Bot Interaction Error:', error);
         }
