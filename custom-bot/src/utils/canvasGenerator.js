@@ -715,7 +715,7 @@ module.exports = {
 
             // Title Name
             ctx.textAlign = 'left';
-            ctx.font = 'bold 32px "Segoe UI", sans-serif';
+            ctx.font = 'bold 32px Arial, sans-serif';
             ctx.fillStyle = data.color;
             ctx.fillText(name.toUpperCase(), rowX + 40, y);
 
@@ -726,6 +726,147 @@ module.exports = {
             ctx.fillText(data.description, rowX + rowW - 40, y);
 
             y += rowHeight;
+            ctx.fillStyle = '#fff';
+        }
+
+        return canvas.toBuffer('image/png');
+    },
+
+    async createMatchImage(data) {
+        const width = 1920;
+        const height = 1080;
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+
+        // 1. Background
+        let bgImg = null;
+        if (data.map) {
+            try {
+                const mapPath = path.join(__dirname, '..', '..', 'assets', 'maps', `${data.map}.png`);
+                if (fs.existsSync(mapPath)) bgImg = await loadImage(mapPath);
+            } catch (e) { }
+        }
+
+        if (bgImg) {
+            const scale = Math.max(width / bgImg.width, height / bgImg.height);
+            const w = bgImg.width * scale;
+            const h = bgImg.height * scale;
+            ctx.drawImage(bgImg, (width - w) / 2, (height - h) / 2, w, h);
+            ctx.fillStyle = 'rgba(9, 9, 11, 0.85)'; // Dark overlay
+            ctx.fillRect(0, 0, width, height);
+        } else {
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
+            bgGrad.addColorStop(0, '#0c0c0e');
+            bgGrad.addColorStop(1, '#18181b');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, width, height);
+        }
+
+        // 2. Center Text (Map & VS)
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#fff';
+        ctx.shadowColor = 'rgba(255,255,255,0.3)';
+        ctx.shadowBlur = 20;
+
+        ctx.font = 'bold 150px "VALORANT", sans-serif';
+        ctx.fillText((data.map || 'UNKNOWN').toUpperCase(), width / 2, 250);
+
+        ctx.font = 'bold 60px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText('FRANKFURT', width / 2, 330);
+
+        // Center Diamond & VS
+        ctx.save();
+        ctx.translate(width / 2, height / 2);
+        ctx.rotate(Math.PI / 4);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-100, -100, 200, 200);
+        ctx.restore();
+
+        ctx.font = 'bold 120px "VALORANT", sans-serif';
+        ctx.fillStyle = '#fff';
+        ctx.fillText('VS', width / 2, height / 2 + 40);
+        ctx.shadowBlur = 0; // Reset shadow after VS
+
+        // 3. Side Headers
+        ctx.font = 'bold 40px "Segoe UI", sans-serif';
+        ctx.letterSpacing = '10px';
+
+        ctx.fillStyle = '#4ade80';
+        ctx.textAlign = 'left';
+        ctx.fillText('SALDIRI', 150, 150);
+        ctx.fillRect(150, 170, 300, 2);
+
+        ctx.fillStyle = '#f87171';
+        ctx.textAlign = 'right';
+        ctx.fillText('SAVUNMA', width - 150, 150);
+        ctx.fillRect(width - 450, 170, 300, 2);
+
+        // 4. Player Cards
+        const drawPlayerCard = async (player, x, y, isRight) => {
+            const cardW = 500;
+            const cardH = 120;
+            const drawX = isRight ? x - cardW : x;
+
+            // Simple Sleek Background
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+            ctx.beginPath();
+            ctx.roundRect(drawX, y, cardW, cardH, 5);
+            ctx.fill();
+
+            // Custom Level Icon from faceitsekli
+            const lvlInfo = getLevelInfo(player.elo || 200);
+            try {
+                const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
+                if (fs.existsSync(iconPath)) {
+                    const icon = await loadImage(iconPath);
+                    const iSize = 85;
+                    const iX = isRight ? drawX + 15 : drawX + cardW - 15 - iSize;
+                    const iY = y + (cardH - iSize) / 2;
+                    ctx.drawImage(icon, iX, iY, iSize, iSize);
+                }
+            } catch (e) { }
+
+            // Name & Title (Arial Bold)
+            ctx.textAlign = isRight ? 'right' : 'left';
+            const textX = isRight ? drawX + cardW - 30 : drawX + 30;
+
+            // Dynamic Font Scaling for Long Names
+            let fontSize = 34;
+            const maxNameWidth = 350;
+            ctx.font = `bold ${fontSize}px "Segoe UI", sans-serif`;
+            let nameWidth = ctx.measureText(player.name.toUpperCase()).width;
+
+            while (nameWidth > maxNameWidth && fontSize > 18) {
+                fontSize -= 2;
+                ctx.font = `bold ${fontSize}px "Segoe UI", sans-serif`;
+                nameWidth = ctx.measureText(player.name.toUpperCase()).width;
+            }
+
+            ctx.fillStyle = '#fff';
+            ctx.fillText(player.name.toUpperCase(), textX, y + 55);
+
+            // Connect to Title System (activeTitle)
+            const playerTitle = (player.activeTitle || player.title || 'OYUNCU').toUpperCase();
+            ctx.font = '20px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#94a3b8';
+            ctx.globalAlpha = 0.7;
+            ctx.fillText(playerTitle, textX, y + 90);
+            ctx.globalAlpha = 1;
+        };
+
+        let playerY = 200;
+        for (const p of data.teamA) {
+            await drawPlayerCard(p, 50, playerY, false);
+            playerY += 140;
+        }
+
+        playerY = 200;
+        for (const p of data.teamB) {
+            await drawPlayerCard(p, width - 50, playerY, true);
+            playerY += 140;
         }
 
         return canvas.toBuffer('image/png');
@@ -734,7 +875,6 @@ module.exports = {
     async createCompareImage(user1, stats1, user2, stats2, currentBg = 'Default') {
         const width = 1200;
         const height = 700;
-        const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
 
         // Arkaplan
@@ -1386,7 +1526,7 @@ module.exports = {
 
         // Headers
         ctx.textAlign = 'center';
-        ctx.font = 'bold 80px "VALORANT", sans-serif';
+        ctx.font = 'bold 80px Arial, sans-serif';
 
         ctx.fillStyle = '#38bdf8'; // Team A Blue
         ctx.fillText("TEAM A", width * 0.25, 120);
@@ -1421,9 +1561,15 @@ module.exports = {
                 } catch (e) { }
             }
 
-            // Name
+            // Name Scaling for Duel
             const name = player.username ? player.username.toUpperCase() : 'UNKNOWN';
-            ctx.font = 'bold 45px "Segoe UI", sans-serif';
+            let fontSize = 45;
+            const maxNameWidth = w - 150;
+            ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+            while (ctx.measureText(name).width > maxNameWidth && fontSize > 20) {
+                fontSize -= 2;
+                ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+            }
             ctx.fillStyle = '#fff';
             ctx.textAlign = isLeft ? 'left' : 'right';
             const textX = isLeft ? avX + avSize + 30 : avX - 30;
@@ -1472,7 +1618,7 @@ module.exports = {
 
         // Header
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 30px "Segoe UI", sans-serif';
+        ctx.font = 'bold 30px Arial, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('KURA SONUCU', width / 2, 50);
 
@@ -1506,7 +1652,7 @@ module.exports = {
 
         // Winner Text
         ctx.fillStyle = winner.team === 'A' ? '#3498DB' : '#E74C3C'; // Team Color
-        ctx.font = 'bold 50px "Segoe UI", sans-serif';
+        ctx.font = 'bold 50px Arial, sans-serif';
         ctx.fillText(winner.name.toUpperCase(), width / 2, 280);
 
         // Subtext
@@ -1640,12 +1786,12 @@ module.exports = {
 
         // Header
         ctx.textAlign = 'center';
-        ctx.font = 'bold 80px "VALORANT", sans-serif';
+        ctx.font = 'bold 80px Arial, sans-serif';
         ctx.fillStyle = '#fff';
         ctx.shadowColor = '#000'; ctx.shadowBlur = 20;
         ctx.fillText("SIDE SELECTION", width / 2, 120);
 
-        ctx.font = 'bold 40px "VALORANT", sans-serif';
+        ctx.font = 'bold 40px Arial, sans-serif';
         ctx.fillStyle = '#71717a';
         ctx.fillText(mapName.toUpperCase(), width / 2, 180);
 
@@ -1674,7 +1820,7 @@ module.exports = {
 
             // Text
             ctx.textAlign = 'center';
-            ctx.font = 'bold 60px "VALORANT", sans-serif';
+            ctx.font = 'bold 60px Arial, sans-serif';
             ctx.fillStyle = color;
             ctx.fillText(label, x + boxW / 2, boxY + boxH / 2 + 20);
 
@@ -1734,18 +1880,18 @@ module.exports = {
 
         // VS Logo/Text
         ctx.textAlign = 'center';
-        ctx.font = 'bold italic 200px "VALORANT", sans-serif';
+        ctx.font = 'bold italic 200px "Arial", sans-serif';
         ctx.fillStyle = '#fff';
         ctx.shadowColor = '#fff'; ctx.shadowBlur = 20;
         ctx.fillText("VS", centerX, centerY + 70);
         ctx.shadowBlur = 0;
 
         // Istanbul & Map Info
-        ctx.font = 'bold 40px "VALORANT", sans-serif';
+        ctx.font = 'bold 40px "Arial", sans-serif';
         ctx.fillStyle = '#ef4444';
         ctx.fillText("ISTANBUL", centerX, centerY - 150);
 
-        ctx.font = 'bold 30px sans-serif';
+        ctx.font = 'bold 30px Arial, sans-serif';
         ctx.fillStyle = '#71717a';
         ctx.letterSpacing = "5px";
         ctx.fillText((match.selectedMap || 'UNKNOWN').toUpperCase(), centerX, centerY - 100);
@@ -1758,7 +1904,7 @@ module.exports = {
 
             // Top Header: TEAM [CAPTAIN]
             ctx.textAlign = textAlign;
-            ctx.font = 'bold 60px "VALORANT", sans-serif';
+            ctx.font = 'bold 60px "Arial", sans-serif';
             ctx.fillStyle = color;
             ctx.shadowColor = color; ctx.shadowBlur = 10;
             ctx.fillText(`TEAM ${teamData.captain.name.toUpperCase()}`, alignX, 150);
@@ -1806,13 +1952,25 @@ module.exports = {
 
                 // Name & Rank Info
                 ctx.textAlign = textAlign;
-                ctx.font = 'bold 32px sans-serif';
+
+                // Name Scaling for Live Match
+                let fontSize = 32;
+                const maxNameWidth = 350;
+                ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+                let name = player.name.toUpperCase();
+                let nameWidth = ctx.measureText(name).width;
+                while (nameWidth > maxNameWidth && fontSize > 16) {
+                    fontSize -= 2;
+                    ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+                    nameWidth = ctx.measureText(name).width;
+                }
+
                 ctx.fillStyle = '#fff';
                 const textStartX = isLeft ? avX + avSize + 25 : avX - 25;
-                ctx.fillText(player.name.toUpperCase().substring(0, 16), textStartX, playerY + 45);
+                ctx.fillText(name, textStartX, playerY + 45);
 
                 const lvInfo = getLevelInfo(player.elo || 200);
-                ctx.font = 'bold 24px "DIN Alternate", sans-serif';
+                ctx.font = 'bold 24px Arial, sans-serif';
                 ctx.fillStyle = lvInfo.color;
                 ctx.fillText(`LV.${lvInfo.lv} • ${player.elo} ELO`, textStartX, playerY + 80);
 
@@ -1843,7 +2001,7 @@ module.exports = {
 
         // Header
         ctx.textAlign = 'center';
-        ctx.font = 'bold 50px "VALORANT", sans-serif';
+        ctx.font = 'bold 50px Arial, sans-serif';
         ctx.fillStyle = '#fff';
         ctx.fillText("MAP VOTING", width / 2, 80);
 
@@ -1947,7 +2105,7 @@ module.exports = {
 
 
     async createVersusFullImage(data) {
-        // data: { map, teamA: [{name, elo, title}], teamB: [{name, elo, title}] }
+        // data: { map, teamA: [{name, elo, title, activeTitle}], teamB: [{name, elo, title, activeTitle}] }
         const width = 1920;
         const height = 1080;
         const canvas = createCanvas(width, height);
@@ -1989,10 +2147,10 @@ module.exports = {
         // 2. Center Text (Map & VS)
         ctx.textAlign = 'center';
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 150px "VALORANT", sans-serif';
+        ctx.font = 'bold 150px Arial, sans-serif';
         ctx.fillText((data.map || 'UNKNOWN').toUpperCase(), width / 2, 250);
 
-        ctx.font = 'bold 60px "VALORANT", sans-serif';
+        ctx.font = 'bold 60px Arial, sans-serif';
         ctx.fillStyle = '#94a3b8';
         ctx.fillText('FRANKFURT', width / 2, 330);
 
@@ -2005,14 +2163,14 @@ module.exports = {
         ctx.strokeRect(-100, -100, 200, 200);
         ctx.restore();
 
-        ctx.font = 'bold 120px "VALORANT", sans-serif';
+        ctx.font = 'bold 120px Arial, sans-serif';
         ctx.fillStyle = '#fff';
         ctx.fillText('VS', width / 2, height / 2 + 40);
 
-        // 3. Side Headers (VALORANT Font)
-        ctx.font = 'bold 40px "VALORANT", sans-serif';
+        // 3. Side Headers
+        ctx.font = 'bold 40px Arial, sans-serif';
         ctx.letterSpacing = '10px';
-        
+
         ctx.fillStyle = '#4ade80';
         ctx.textAlign = 'left';
         ctx.fillText('SALDIRI', 150, 150);
@@ -2048,18 +2206,32 @@ module.exports = {
                 }
             } catch (e) { }
 
-            // Name & Title (VALORANT Font)
+            // Name & Title (Arial Bold)
             ctx.textAlign = isRight ? 'right' : 'left';
             const textX = isRight ? drawX + cardW - 30 : drawX + 30;
-            
-            ctx.font = 'bold 36px "VALORANT", sans-serif';
-            ctx.fillStyle = '#fff';
-            ctx.fillText(player.name.toUpperCase(), textX, y + 55);
 
-            ctx.font = '20px "VALORANT", sans-serif';
+            // Dynamic Font Scaling for Long Names
+            let fontSize = 34;
+            const maxNameWidth = 350;
+            ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+            let name = player.name.toUpperCase();
+            let nameWidth = ctx.measureText(name).width;
+
+            while (nameWidth > maxNameWidth && fontSize > 18) {
+                fontSize -= 2;
+                ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+                nameWidth = ctx.measureText(name).width;
+            }
+
+            ctx.fillStyle = '#fff';
+            ctx.fillText(name, textX, y + 55);
+
+            // Connect to Title System (activeTitle)
+            const playerTitle = (player.activeTitle || player.title || 'OYUNCU').toUpperCase();
+            ctx.font = '20px Arial, sans-serif';
             ctx.fillStyle = '#94a3b8';
             ctx.globalAlpha = 0.7;
-            ctx.fillText(player.title || 'OYUNCU', textX, y + 90);
+            ctx.fillText(playerTitle, textX, y + 90);
             ctx.globalAlpha = 1;
         };
 
@@ -2111,13 +2283,13 @@ module.exports = {
         ctx.shadowColor = '#fbbf24';
         ctx.shadowBlur = 20;
         ctx.fillStyle = '#fbbf24';
-        ctx.font = 'bold 120px "Segoe UI", sans-serif';
+        ctx.font = 'bold 120px Arial, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('NEXORA', width / 2, height / 2 - 20);
         ctx.shadowBlur = 0;
 
         // Sub Text - "CONTROL PANEL"
-        ctx.font = '36px "Segoe UI", sans-serif';
+        ctx.font = '36px Arial, sans-serif';
         ctx.letterSpacing = '15px';
         ctx.fillStyle = '#ffffff';
         ctx.globalAlpha = 0.8;
@@ -2133,7 +2305,7 @@ module.exports = {
 
         // Simple sleek bottom glow instead of emoji boxes
         ctx.globalAlpha = 0.5;
-        ctx.font = 'bold 20px "Segoe UI", sans-serif';
+        ctx.font = 'bold 20px Arial, sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.letterSpacing = '5px';
         ctx.fillText('• STATS • RANK • TITLES • STYLE •', width / 2, height - 40);

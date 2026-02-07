@@ -19,6 +19,11 @@ async function handleInteraction(interaction, client) {
         userDoc = await User.create({ odasi: userId, odaId: guildId, username: interaction.user.username });
     }
 
+    // --- FIX: Avoid double acknowledgement ---
+    // These IDs are handled by the collector inside handleCustomize/handleTitles.
+    // We should not deferReply again in the global handler.
+    if (customId === 'panel_select_title' || customId === 'panel_select_bg') return;
+
     // Always defer ephemeral for panel actions
     await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
 
@@ -240,7 +245,7 @@ async function handleCustomize(interaction, userDoc, guildId) {
             )
             .setColor('#fbbf24');
 
-        const titleOptions = myTitles.map(t => ({
+        const titleOptions = myTitles.slice(0, 25).map(t => ({ // FIX: 25 limit
             label: t,
             value: `title_${t}`,
             description: eloService.ELO_CONFIG.TITLES[t]?.description || 'Nexora Title',
@@ -255,7 +260,7 @@ async function handleCustomize(interaction, userDoc, guildId) {
                 .addOptions(titleOptions)
         );
 
-        const bgOptions = Object.keys(eloService.ELO_CONFIG.BACKGROUND_THEMES).map(bg => ({
+        const bgOptions = Object.keys(eloService.ELO_CONFIG.BACKGROUND_THEMES).slice(0, 25).map(bg => ({ // FIX: 25 limit
             label: bg,
             value: `bg_${bg}`,
             description: `${bg} temalı arkaplan.`,

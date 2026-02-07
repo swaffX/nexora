@@ -225,7 +225,8 @@ module.exports = {
                     name: m?.displayName || 'Unknown',
                     avatar: m?.user.displayAvatarURL({ extension: 'png', size: 128 }),
                     elo: u?.matchStats?.elo || 200,
-                    level: u?.matchStats?.matchLevel || 1
+                    level: u?.matchStats?.matchLevel || 1,
+                    activeTitle: u?.matchStats?.activeTitle
                 };
             };
 
