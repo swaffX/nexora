@@ -23,16 +23,13 @@ module.exports = {
             const myTitles = stats.titles || ['Rookie'];
             const currentTitle = stats.activeTitle || 'Rookie';
             const currentBg = userDoc.backgroundImage || 'Default';
-            const currentAgent = userDoc.favoriteAgent || 'Default';
-            const currentMap = userDoc.favoriteMap || 'Default';
 
             const embed = new EmbedBuilder()
                 .setTitle('🎨 Profil Kişiselleştirme')
                 .setDescription('Profil kartlarınızda (ELO/Stats) görünecek tercihlerinizi ayarlayın.')
                 .addFields(
                     { name: '🏆 Ünvan', value: `\`${currentTitle}\``, inline: true },
-                    { name: '🖼️ Arkaplan', value: `\`${currentBg}\``, inline: true },
-                    { name: '👤 Favori Ajan', value: `\`${currentAgent}\``, inline: true }
+                    { name: '🖼️ Arkaplan', value: `\`${currentBg}\``, inline: true }
                 )
                 .setColor('#fbbf24')
                 .setFooter({ text: 'Değişiklik yapmak için aşağıdaki menüleri kullanın.' });
@@ -67,22 +64,7 @@ module.exports = {
                     .addOptions(bgOptions)
             );
 
-            // 3. Ajan Menüsü
-            const agentOptions = Object.keys(eloService.ELO_CONFIG.AGENTS).slice(0, 25).map(agent => ({
-                label: agent,
-                value: `agent_${agent}`,
-                description: `${agent} favori ajanın olarak görünsün.`,
-                emoji: '👤',
-                default: agent === currentAgent
-            }));
-            const agentRow = new ActionRowBuilder().addComponents(
-                new StringSelectMenuBuilder()
-                    .setCustomId('select_agent')
-                    .setPlaceholder('Favori ajan seçin...')
-                    .addOptions(agentOptions)
-            );
-
-            return { embeds: [embed], components: [titleRow, bgRow, agentRow] };
+            return { embeds: [embed], components: [titleRow, bgRow] };
         };
 
         const response = await interaction.editReply(getUI());
@@ -98,12 +80,6 @@ module.exports = {
             else if (i.customId === 'select_bg') {
                 const selected = i.values[0].replace('bg_', '');
                 userDoc.backgroundImage = selected;
-                await userDoc.save();
-                await i.update(getUI());
-            }
-            else if (i.customId === 'select_agent') {
-                const selected = i.values[0].replace('agent_', '');
-                userDoc.favoriteAgent = selected;
                 await userDoc.save();
                 await i.update(getUI());
             }

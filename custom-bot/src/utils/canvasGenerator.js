@@ -285,25 +285,6 @@ module.exports = {
         ctx.fillStyle = rankColor;
         ctx.fillRect(0, 0, 10, height);
 
-        // --- FAVORITE AGENT DRAW (Background Layer) ---
-        if (user.favoriteAgent && user.favoriteAgent !== 'Default') {
-            try {
-                const agentData = eloService.ELO_CONFIG.AGENTS[user.favoriteAgent];
-                if (agentData) {
-                    const agentPath = path.join(__dirname, '..', '..', 'agents', agentData.path);
-                    if (fs.existsSync(agentPath)) {
-                        const agentImg = await loadImage(agentPath);
-                        const aW = 450;
-                        const aH = 450;
-                        ctx.save();
-                        ctx.globalAlpha = 0.4; // Lower alpha so it's a background element
-                        ctx.drawImage(agentImg, width - aW + 80, height - aH + 50, aW, aH);
-                        ctx.restore();
-                    }
-                }
-            } catch (e) { }
-        }
-
         try {
             const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${levelData.lv}.png`);
             if (fs.existsSync(iconPath)) {
@@ -1313,87 +1294,72 @@ module.exports = {
 
         // Start X Update
         const startX = (width - (maps.length * (cardW + gap) - gap)) / 2;
-        const startY = 150;
+        const getUI = () => {
+            const stats = userDoc.matchStats || {};
+            const myTitles = stats.titles || ['Rookie'];
+            const currentTitle = stats.activeTitle || 'Rookie';
+            const currentBg = userDoc.backgroundImage || 'Default';
 
-        for (let i = 0; i < maps.length; i++) {
-            const mapName = maps[i];
-            const state = mapStates[mapName];
-            const x = startX + i * (cardW + gap);
-            const y = startY;
+            const embed = new EmbedBuilder()
+                .setTitle('🎨 Profil Kişiselleştirme')
+                .setDescription('Profil kartlarınızda (ELO/Stats) görünecek tercihlerinizi ayarlayın.')
+                .addFields(
+                    { name: '🏆 Ünvan', value: `\`${currentTitle}\``, inline: true },
+                    { name: '🖼️ Arkaplan', value: `\`${currentBg}\``, inline: true }
+                )
+                .setColor('#fbbf24')
+                .setFooter({ text: 'Değişiklik yapmak için aşağıdaki menüleri kullanın.' });
 
-            // Card Shape
-            ctx.save();
-            ctx.beginPath();
-            ctx.roundRect(x, y, cardW, cardH, 15);
-            ctx.clip();
+            // 1. Ünvan Menüsü
+            const titleOptions = myTitles.map(t => ({
+                label: t,
+                value: `title_${t}`,
+                description: eloService.ELO_CONFIG.TITLES[t]?.description || 'Nexora Title',
+                emoji: '🏆',
+                default: t === currentTitle
+            }));
+            const titleRow = new ActionRowBuilder().addComponents(
+                new StringSelectMenuBuilder()
+                    .setCustomId('select_title')
+                    .setPlaceholder('Ünvan seçin...')
+                    .addOptions(titleOptions)
+            );
 
-            // Map Image
-            try {
-                const assetsPath = path.join(__dirname, '..', '..', 'assets', 'maps');
-                let p = path.join(assetsPath, `${mapName}.png`);
-                if (!fs.existsSync(p)) p = path.join(assetsPath, `${mapName.toLowerCase()}.png`);
+            // 2. Arkaplan Menüsü
+            const bgOptions = Object.keys(eloService.ELO_CONFIG.BACKGROUND_THEMES).slice(0, 25).map(bg => ({
+                label: bg,
+                value: `bg_${bg}`,
+                description: `${bg} temalı arkaplan.`,
+                emoji: '🖼️',
+                default: bg === currentBg
+            }));
+            const bgRow = new ActionRowBuilder().addComponents(
+                new StringSelectMenuBuilder()
+                    .setCustomId('select_bg')
+                    .setPlaceholder('Kart arkaplanı seçin...')
+                    .addOptions(bgOptions)
+            );
 
-                if (fs.existsSync(p)) {
-                    const img = await loadImage(p);
-                    ctx.drawImage(img, x, y, cardW, cardH);
-                } else {
-                    ctx.fillStyle = '#333'; ctx.fillRect(x, y, cardW, cardH);
-                }
-            } catch (e) {
-                ctx.fillStyle = '#333'; ctx.fillRect(x, y, cardW, cardH);
+            return { embeds: [embed], components: [titleRow, bgRow] };
+        };
+
+        const response = await interaction.editReply(getUI());
+        const collector = response.createMessageComponentCollector({ time: 300000 }); // 5 dk
+
+        collector.on('collect', async i => {
+            if (i.customId === 'select_title') {
+                const selected = i.values[0].replace('title_', '');
+                userDoc.matchStats.activeTitle = selected;
+                await userDoc.save();
+                await i.update(getUI());
             }
-
-            // Overlay based on state
-            if (mapName === selectedMap) {
-                // Selected (Winner)
-                ctx.strokeStyle = '#2ecc71';
-                ctx.lineWidth = 10;
-                ctx.strokeRect(x, y, cardW, cardH);
-
-                ctx.fillStyle = 'rgba(46, 204, 113, 0.2)';
-                ctx.fillRect(x, y, cardW, cardH);
-            } else if (state.banned) {
-                // Banned
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; // Darken
-                ctx.fillRect(x, y, cardW, cardH);
-
-                // Red Stripe
-                ctx.fillStyle = 'rgba(239, 68, 68, 0.8)';
-                ctx.translate(x + cardW / 2, y + cardH / 2);
-                ctx.rotate(-Math.PI / 4);
-                ctx.fillRect(-cardW, -20, cardW * 2, 40);
-
-                // Text
-                ctx.font = 'bold 40px sans-serif';
-                ctx.fillStyle = '#fff';
-                ctx.textAlign = 'center';
-                ctx.fillText("BANNED", 0, 15);
-
-                ctx.rotate(Math.PI / 4);
-                ctx.translate(-(x + cardW / 2), -(y + cardH / 2));
+            else if (i.customId === 'select_bg') {
+                const selected = i.values[0].replace('bg_', '');
+                userDoc.backgroundImage = selected;
+                await userDoc.save();
+                await i.update(getUI());
             }
-
-            ctx.restore();
-
-            // Map Name
-            ctx.font = 'bold 30px "DIN Alternate", sans-serif';
-            ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
-            ctx.fillText(mapName.toUpperCase(), x + cardW / 2, y + cardH + 40);
-        }
-
-        return canvas.toBuffer('image/png');
-    },
-
-    async createRosterImage(teamA, teamB) {
-        const width = 1920;
-        const height = 900;
-        const canvas = createCanvas(width, height);
-        const ctx = canvas.getContext('2d');
-
-        // Layout Constants
-        const centerY = height / 2;
-        const startY = 200;
-        const rowH = 120;
+        }); 120;
 
         // Background
         const grad = ctx.createLinearGradient(0, 0, width, height);
