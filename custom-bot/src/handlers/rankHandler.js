@@ -119,40 +119,67 @@ module.exports = {
         const REQUIRED_VALORANT_ROLE = '1466189076347486268';
         const allLevelRoles = Object.values(LEVEL_ROLES);
 
+        console.log(`[RANK DEBUG] Starting sync for ${member.user.tag} (Target Level: ${newLevel})`);
+
         if (!member.roles.cache.has(REQUIRED_VALORANT_ROLE)) {
+            console.log(`[RANK DEBUG] ${member.user.tag} does NOT have the REQUIRED_VALORANT_ROLE (${REQUIRED_VALORANT_ROLE})`);
             // Rolü yoksa, üzerindeki tüm rank rollerini temizle
             const rolesToRemove = member.roles.cache.filter(r => allLevelRoles.includes(r.id));
             if (rolesToRemove.size > 0) {
-                await member.roles.remove(rolesToRemove).catch(() => { });
+                await member.roles.remove(rolesToRemove).catch(e => console.error(`[RANK ERROR] Failed to remove roles: ${e.message}`));
                 console.log(`[RANK SYNC] ${member.user.tag} -> Level Roles Removed (No Valorant Role)`);
             }
             return;
         }
 
         const targetRoleId = LEVEL_ROLES[newLevel];
-        if (!targetRoleId) return;
+        if (!targetRoleId) {
+            console.log(`[RANK DEBUG] No target role ID found for level ${newLevel}`);
+            return;
+        }
+
+        console.log(`[RANK DEBUG] Target Role ID for Level ${newLevel}: ${targetRoleId}`);
 
         // Kaldırılacaklar: Hedef rol hariç diğer tüm level rolleri
         const rolesToRemove = member.roles.cache.filter(r =>
             allLevelRoles.includes(r.id) && r.id !== targetRoleId
         );
 
+        console.log(`[RANK DEBUG] Roles found to remove: ${rolesToRemove.map(r => r.name).join(', ') || 'None'}`);
+
         const promises = [];
 
         // Rolleri kaldır
         if (rolesToRemove.size > 0) {
-            promises.push(member.roles.remove(rolesToRemove).catch(e => console.error(`Failed to remove roles for ${member.user.tag}:`, e.message)));
+            promises.push(member.roles.remove(rolesToRemove).catch(e => {
+                console.error(`[RANK ERROR] Failed to remove roles for ${member.user.tag}:`, e.message);
+                if (e.message.includes('Missing Permissions')) {
+                    console.error(`[RANK ERROR] BOT DOES NOT HAVE PERMISSION TO MANAGE THESE ROLES (Hierarchy issue?)`);
+                }
+            }));
         }
 
         // Yeni rolü ekle
         if (!member.roles.cache.has(targetRoleId)) {
-            promises.push(member.roles.add(targetRoleId).catch(e => console.error(`Failed to add role ${targetRoleId} to ${member.user.tag}:`, e.message)));
+            const roleObj = member.guild.roles.cache.get(targetRoleId);
+            if (!roleObj) {
+                console.error(`[RANK ERROR] Role ID ${targetRoleId} (Level ${newLevel}) NOT FOUND in guild cache!`);
+            } else {
+                console.log(`[RANK DEBUG] Adding Role: ${roleObj.name}`);
+                promises.push(member.roles.add(targetRoleId).catch(e => {
+                    console.error(`[RANK ERROR] Failed to add role ${targetRoleId} to ${member.user.tag}:`, e.message);
+                }));
+            }
+        } else {
+            console.log(`[RANK DEBUG] User already has the target role.`);
         }
 
         await Promise.all(promises);
 
         if (rolesToRemove.size > 0 || !member.roles.cache.has(targetRoleId)) {
             console.log(`[RANK SYNC] ${member.user.tag} -> Level ${newLevel} (Roles Updated)`);
+        } else {
+            console.log(`[RANK DEBUG] No changes needed for ${member.user.tag}`);
         }
     }
 };

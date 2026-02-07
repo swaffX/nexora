@@ -96,6 +96,9 @@ if (fs.existsSync(eventsPath)) {
         logger.error('CUSTOM_BOT_TOKEN bulunamadı!');
     } else {
         await client.login(token);
+
+        // Arka Plan Rank Sistemi (5 Saniyede bir otomatik tarama)
+        require('./autoRankSystem')(client);
     }
 })();
 
