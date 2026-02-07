@@ -29,21 +29,38 @@ module.exports = {
         const endUnix = Math.floor(match.voteEndTime.getTime() / 1000);
         const totalPlayers = match.teamA.length + match.teamB.length;
 
-        const embed = new EmbedBuilder().setColor(0xFFA500).setTitle('🗳️ Harita Oylaması')
-            .setDescription(`Oynamak istediğiniz haritayı seçin!\n\n⏳ **Bitiş:** <t:${endUnix}:R>`)
-            .setFooter({ text: `🗳️ Oy Durumu: 0/${totalPlayers} • Made by Swaff` });
+        const embed = new EmbedBuilder()
+            .setColor(0xFFA500)
+            .setTitle('🗳️ [ NEXORA ] • HARİTA OYLAMASI')
+            .setThumbnail('https://cdn-icons-png.flaticon.com/512/854/854929.png') // Map icon
+            .setDescription(
+                `**Mücadele hangi haritada geçecek?**\n` +
+                `Lütfen oynamak istediğiniz haritayı aşağıdaki menüden seçin.\n\n` +
+                `⏰ **Oylama Bitiş:** <t:${endUnix}:R>`
+            )
+            .addFields(
+                { name: '✅ Oy Verenler (0)', value: '> *Henüz kimse oy vermedi.*', inline: false },
+                { name: '⏳ Bekleyenler', value: '> *Tüm oyuncular bekleniyor.*', inline: false },
+                { name: '🎮 Lobi Kodu', value: match.lobbyCode ? `\`\`\`${match.lobbyCode}\`\`\`` : '`BEKLENİYOR`', inline: true }
+            )
+            .setFooter({ text: `Nexora Voting • 0/${totalPlayers} Oy Kullanıldı` });
 
         if (played.length > 0) {
-            embed.addFields({ name: '🚫 Oynanmış Haritalar', value: played.join(', ') });
+            embed.addFields({ name: '🚫 Oynanmış Haritalar', value: `\`${played.join(', ')}\``, inline: true });
         }
 
-        embed.addFields({ name: '🎮 VALORANT Lobi Kodu', value: match.lobbyCode ? `\`\`\`${match.lobbyCode}\`\`\`` : 'Bekleniyor...', inline: false });
-
         const options = mapsToVote.map(m => ({ label: m.name, value: m.name, emoji: '🗺️' }));
-        // Eğer tüm haritalar oynandıysa sıfırla veya hepsi açık
         const finalOptions = options.length > 0 ? options : MAPS.map(m => ({ label: m.name, value: m.name, emoji: '🗺️' }));
-        const row = new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().setCustomId(`match_vote_${match.matchId}`).setPlaceholder('Haritanı Seç!').addOptions(finalOptions));
-        const row2 = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('Maçı İptal Et').setEmoji('🛑').setStyle(ButtonStyle.Danger));
+
+        const row = new ActionRowBuilder().addComponents(
+            new StringSelectMenuBuilder()
+                .setCustomId(`match_vote_${match.matchId}`)
+                .setPlaceholder('Favori haritanı seç!')
+                .addOptions(finalOptions)
+        );
+        const row2 = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('Maçı İptal Et').setEmoji('🛑').setStyle(ButtonStyle.Danger)
+        );
 
         const msg = await channel.send({ embeds: [embed], components: [row, row2] });
 
@@ -94,10 +111,10 @@ module.exports = {
                 embed.setFields(
                     { name: `✅ Oy Verenler (${match.votes.length})`, value: votedList, inline: false },
                     { name: `⏳ Bekleyenler (${notVotedIds.length})`, value: notVotedList, inline: false },
-                    { name: '🎮 VALORANT Lobi Kodu', value: match.lobbyCode ? `\`\`\`${match.lobbyCode}\`\`\`` : 'Bekleniyor...', inline: false },
-                    { name: '🚫 Oynanmış Haritalar', value: match.playedMaps && match.playedMaps.length > 0 ? match.playedMaps.join(', ') : 'Yok', inline: false }
+                    { name: '🎮 Lobi Kodu', value: match.lobbyCode ? `\`\`\`${match.lobbyCode}\`\`\`` : '`BEKLENİYOR`', inline: true },
+                    { name: '🚫 Oynananlar', value: match.playedMaps && match.playedMaps.length > 0 ? `\`${match.playedMaps.join(', ')}\`` : '`Yok`', inline: true }
                 );
-                embed.setFooter({ text: `🗳️ Oy Durumu: ${match.votes.length}/${totalPlayers} • Made by Swaff` });
+                embed.setFooter({ text: `Nexora Voting • ${match.votes.length}/${totalPlayers} Oy Kullanıldı` });
                 await votingMsg.edit({ embeds: [embed] });
             }
         } catch (e) {

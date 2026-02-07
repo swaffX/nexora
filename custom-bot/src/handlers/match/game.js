@@ -52,9 +52,14 @@ module.exports = {
 
         const embed = new EmbedBuilder()
             .setColor(0xF1C40F) // Gold
-            .setTitle('🛡️ TARAF SEÇİMİ')
-            .setDescription(`**Harita:** ${match.selectedMap}\n\nSeçim Sırası: <@${match.sideSelector}>\nLütfen tarafınızı seçin (Saldırı veya Savunma).`)
-            .setImage('attachment://side-selection.png');
+            .setTitle('🛡️ [ NEXORA ] • TARAF SEÇİMİ')
+            .setDescription(
+                `**Harita:** \`${match.selectedMap}\`\n` +
+                `Seçim Sırası: <@${match.sideSelector}>\n\n` +
+                `Lütfen aşağıdaki butonları kullanarak tarafınızı (Saldırı veya Savunma) seçin.`
+            )
+            .setImage('attachment://side-selection.png')
+            .setFooter({ text: 'Taraf seçimi yapıldıktan sonra maç başlayacaktır.' });
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`match_side_ATTACK_${match.matchId}`).setLabel('SALDIRI (Attack)').setStyle(ButtonStyle.Danger).setEmoji('🗡️'),
@@ -301,15 +306,18 @@ module.exports = {
 
         const embed = new EmbedBuilder()
             .setColor(0xE74C3C) // Live Red
-            .setTitle(`🔴 MAÇ BAŞLADI! (LIVE)`)
-            // Harita adından sonra yeni satıra geçildi
-            .setDescription(`## 🗺️ Harita: **${match.selectedMap.toUpperCase()}**\n${divider}`)
+            .setTitle(`🔴 [ NEXORA ] • MAÇ BAŞLADI (LIVE)`)
+            .setDescription(
+                `## 🗺️ Harita: **${match.selectedMap.toUpperCase()}**\n` +
+                `${divider}\n` +
+                `**Mücadele başladı!** Tüm oyuncular ses kanallarına taşındı. İyi olan kazansın!`
+            )
             .addFields(
-                { name: '🎮 VALORANT Lobi Kodu', value: `\`\`\`${match.lobbyCode || 'BEKLENİYOR'}\`\`\``, inline: false },
+                { name: '🎮 Lobi Kodu', value: `\`\`\`${match.lobbyCode || 'BEKLENİYOR'}\`\`\``, inline: false },
                 { name: `🔹 ${nameA}`, value: listA, inline: true },
                 { name: `🔸 ${nameB}`, value: listB, inline: true }
             )
-            .setFooter({ text: 'Maç devam ediyor... İyi şanslar! • Made by Swaff' })
+            .setFooter({ text: 'Match Live • Her iki kaptan da maç bitince skoru girebilir.' })
             .setTimestamp();
 
         if (mapAttachment) {

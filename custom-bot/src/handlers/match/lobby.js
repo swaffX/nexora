@@ -112,14 +112,23 @@ module.exports = {
             await newMatch.save();
 
             // Panel Tasarımı
-            const embed = new EmbedBuilder().setColor(0x5865F2)
-                .setTitle(`🛡️ LOBİ YÖNETİMİ (${lobbyConfig.name})`)
-                .setDescription(`**Lobi Hazır!**\nKaptanları belirleyip takımları kurmaya başlayın.\n\n👑 **Yetkili:** <@${interaction.user.id}>`)
-                .addFields(
-                    { name: '🔵 Team A', value: 'Wait...', inline: true },
-                    { name: '🔴 Team B', value: 'Wait...', inline: true }
+            const embed = new EmbedBuilder()
+                .setColor(0x1ABC9C)
+                .setTitle(`⚔️ [ NEXORA COMPETITIVE ] • LOBİ YÖNETİMİ`)
+                .setThumbnail('https://cdn-icons-png.flaticon.com/512/3233/3233515.png') // Shield/Trophy icon
+                .setDescription(
+                    `**Mücadele Başlamak Üzere!**\n` +
+                    `Kaptanları belirleyip takımları kurmaya başlayın.\n\n` +
+                    `🔹 **Kategori:** \`${lobbyConfig.name}\`\n` +
+                    `🔹 **Maç ID:** \`#${currentMatchNumber}\` \n` +
+                    `🔹 **Sesteki Adaylar:** \`${voiceMembers.size} Oyuncu\`\n` +
+                    `👑 **Host:** <@${interaction.user.id}>`
                 )
-                .setFooter({ text: `Nexora Competitive • Match #${currentMatchNumber}` });
+                .addFields(
+                    { name: '🔵 Team A Kaptanı', value: '```yaml\nBekleniyor...```', inline: true },
+                    { name: '🔴 Team B Kaptanı', value: '```yaml\nBekleniyor...```', inline: true }
+                )
+                .setFooter({ text: 'Nexora System • Lütfen menüleri kullanarak kaptanları seçin.' });
 
             // Kaptan Adayları
             const memberOptions = voiceMembers.map(m => ({
@@ -261,10 +270,13 @@ module.exports = {
             return interaction.reply({ content: '❌ Panel bulunamadı.', flags: require('discord.js').MessageFlags.Ephemeral });
         }
 
+        const capAName = match.captainA ? (interaction.guild.members.cache.get(match.captainA)?.displayName || `<@${match.captainA}>`) : 'Seçilmedi';
+        const capBName = match.captainB ? (interaction.guild.members.cache.get(match.captainB)?.displayName || `<@${match.captainB}>`) : 'Seçilmedi';
+
         const embed = EmbedBuilder.from(interaction.message.embeds[0]);
         embed.spliceFields(0, 2,
-            { name: '🔵 Team A', value: match.captainA ? `<@${match.captainA}>` : 'Seçilmedi', inline: true },
-            { name: '🔴 Team B', value: match.captainB ? `<@${match.captainB}>` : 'Seçilmedi', inline: true }
+            { name: '🔵 Team A Kaptanı', value: `\`\`\`yaml\n${capAName}\n\`\`\``, inline: true },
+            { name: '🔴 Team B Kaptanı', value: `\`\`\`yaml\n${capBName}\n\`\`\``, inline: true }
         );
 
         if (match.captainA && match.captainB) {
@@ -322,13 +334,20 @@ module.exports = {
     async startDraftCoinFlip(channel, match) {
         const embed = new EmbedBuilder()
             .setColor(0xF1C40F)
-            .setTitle('🎡 KAPTANLAR KURA ÇARKI')
-            .setDescription(`**Kaptanlar Hazır!**\n\nİlk seçim hakkını (Harita/Taraf) kimin alacağını belirlemek için çarkı çevirin.\n\n🔵 **Team A:** <@${match.captainA}>\n🔴 **Team B:** <@${match.captainB}>\n\nHerhangi bir kaptan çevirebilir!`)
-            .setThumbnail('https://cdn-icons-png.flaticon.com/512/2855/2855473.png'); // Wheel Icon
+            .setTitle('🎡 [ NEXORA ] • KURA ÇARKI')
+            .setThumbnail('https://cdn-icons-png.flaticon.com/512/2855/2855473.png') // Wheel Icon
+            .setDescription(
+                `**Kaptanlar Hazır!**\n` +
+                `Sıra seçimlerini belirlemek için şans çarkını çevirin.\n\n` +
+                `👤 **Kaptan A:** <@${match.captainA}>\n` +
+                `👤 **Kaptan B:** <@${match.captainB}>\n\n` +
+                `*Herhangi bir kaptan butona basarak çarkı başlatabilir.*`
+            )
+            .setFooter({ text: 'Kazanan taraf Harita veya Oyuncu seçme hakkına sahip olur.' });
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`match_draftcoin_${match.matchId}`).setLabel('🎡 Çarkı Çevir').setStyle(ButtonStyle.Primary),
-            new ButtonBuilder().setCustomId(`match_autobalance_${match.matchId}`).setLabel('⚖️ Takımları Dengele').setStyle(ButtonStyle.Secondary).setDisabled(true)
+            new ButtonBuilder().setCustomId(`match_autobalance_${match.matchId}`).setLabel('⚖️ Takımları Dengele').setStyle(ButtonStyle.Secondary)
         );
 
         await channel.send({ content: `<@${match.captainA}> <@${match.captainB}>`, embeds: [embed], components: [row] });
@@ -485,10 +504,19 @@ module.exports = {
 
         if (memberOptions.length === 0) memberOptions.push({ label: 'Hata', value: 'null', description: 'Odada kimse yok' });
 
-        const embed = new EmbedBuilder().setColor(0x5865F2)
-            .setTitle(`🛡️ LOBİ YÖNETİMİ`)
-            .setDescription(`**Lobi Sıfırlandı!**\nKaptanları yeniden belirleyin.\n\n👑 **Yetkili:** <@${match.hostId}>`)
-            .addFields({ name: '🔵 Team A', value: 'Seçilmedi', inline: true }, { name: '🔴 Team B', value: 'Seçilmedi', inline: true })
+        const embed = new EmbedBuilder()
+            .setColor(0x1ABC9C)
+            .setTitle(`⚔️ [ NEXORA COMPETITIVE ] • LOBİ YÖNETİMİ`)
+            .setThumbnail('https://cdn-icons-png.flaticon.com/512/3233/3233515.png')
+            .setDescription(
+                `**Lobi Sıfırlandı!**\n` +
+                `Kaptanları yeniden belirleyin.\n\n` +
+                `👑 **Yetkili:** <@${match.hostId}>`
+            )
+            .addFields(
+                { name: '🔵 Team A Kaptanı', value: '```yaml\nBekleniyor...```', inline: true },
+                { name: '🔴 Team B Kaptanı', value: '```yaml\nBekleniyor...```', inline: true }
+            )
             .setFooter({ text: `Nexora Competitive • Match #${match.matchNumber || '?'}` });
 
         const rows = [

@@ -132,13 +132,25 @@ module.exports = {
             return lines.join('\n');
         };
 
-        const embed = new EmbedBuilder().setColor(turnColor)
-            .setTitle(`${turnEmoji} OYUNCU SEÇİMİ`)
-            .setDescription(`**Sıra:** <@${currentTurnCaptain}> (Team ${match.pickTurn}) **seçiyor.**\n⏰ **Süre:** <t:${nextTime}:R>`)
+        const embed = new EmbedBuilder()
+            .setColor(turnColor)
+            .setTitle(`⚔️ [ NEXORA ] • OYUNCU SEÇİMİ`)
+            .setThumbnail(match.pickTurn === 'A' ? 'https://cdn-icons-png.flaticon.com/512/3408/3408455.png' : 'https://cdn-icons-png.flaticon.com/512/3408/3408473.png') // Team colored icons
+            .setDescription(
+                `**Sıra:** <@${currentTurnCaptain}> (Team ${match.pickTurn})\n` +
+                `Lütfen takımınıza bir oyuncu seçin.\n\n` +
+                `⏰ **Kalan Süre:** <t:${nextTime}:R>`
+            )
             .addFields(
                 { name: `🔵 Team A`, value: formatTeam(match.teamA), inline: true },
                 { name: `🔴 Team B`, value: formatTeam(match.teamB), inline: true },
-                { name: `📍 Havuzda Bekleyenler (${poolOptions.length})`, value: poolOptions.length > 0 ? poolOptions.map(p => `${p.rawEmoji} ${p.label}`).join('\n') : '⚠️ Kimse kalmadı', inline: false }
+                {
+                    name: `📍 Oyuncu Havuzu (${poolOptions.length})`,
+                    value: poolOptions.length > 0
+                        ? `\`\`\`yaml\n${poolOptions.map(p => `${p.label}`).join('\n')}\n\`\`\``
+                        : '> *Tüm oyuncular seçildi.*',
+                    inline: false
+                }
             )
             .setFooter({ text: `Nexora Draft System • Match #${match.matchNumber || '?'}` });
 
