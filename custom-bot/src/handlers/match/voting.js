@@ -29,46 +29,60 @@ module.exports = {
         const endUnix = Math.floor(match.voteEndTime.getTime() / 1000);
         const totalPlayers = match.teamA.length + match.teamB.length;
 
+        // 1. Participant Data Hazırla
+        const allPlayersData = [];
+        const allPlayers = [...match.teamA, ...match.teamB];
+        const votedIds = match.votes.map(v => v.userId);
+
+        for (const pid of allPlayers) {
+            const member = await channel.guild.members.fetch(pid).catch(() => null);
+            allPlayersData.push({
+                id: pid,
+                name: member?.displayName || 'Unknown',
+                avatar: member?.user.displayAvatarURL({ extension: 'png', size: 128 }),
+                hasVoted: votedIds.includes(pid)
+            });
+        }
+
+        // 2. Vote Counts Hazırla
+        const votedMaps = {};
+        match.votes.forEach(v => { votedMaps[v.mapName] = (votedMaps[v.mapName] || 0) + 1; });
+
+        // 3. Canvas Oluştur
+        const canvasGenerator = require('../../utils/canvasGenerator');
+        const buffer = await canvasGenerator.createMapVotingImage(votedMaps, allPlayersData, match);
+        const fileName = `map-voting-${Date.now()}.png`;
+        const attachment = new AttachmentBuilder(buffer, { name: fileName });
+
         const embed = new EmbedBuilder()
             .setColor(0xFFA500)
             .setTitle('🗳️ [ NEXORA ] • HARİTA OYLAMASI')
-            .setThumbnail('https://cdn-icons-png.flaticon.com/512/854/854929.png') // Map icon
             .setDescription(
                 `**Mücadele hangi haritada geçecek?**\n` +
-                `Lütfen oynamak istediğiniz haritayı aşağıdaki menüden seçin.\n\n` +
-                `⏰ **Oylama Bitiş:** <t:${endUnix}:R>`
+                `Favori haritanı seçerek takımına destek ol!\n\n` +
+                `⏰ **Oylama Bitişi:** <t:${endUnix}:R>`
             )
-            .addFields(
-                { name: '✅ Oy Verenler (0)', value: '> *Henüz kimse oy vermedi.*', inline: false },
-                { name: '⏳ Bekleyenler', value: '> *Tüm oyuncular bekleniyor.*', inline: false },
-                { name: '🎮 Lobi Kodu', value: match.lobbyCode ? `\`\`\`${match.lobbyCode}\`\`\`` : '`BEKLENİYOR`', inline: true }
-            )
+            .setImage(`attachment://${fileName}`)
             .setFooter({ text: `Nexora Voting • 0/${totalPlayers} Oy Kullanıldı` });
 
-        if (played.length > 0) {
-            embed.addFields({ name: '🚫 Oynanmış Haritalar', value: `\`${played.join(', ')}\``, inline: true });
-        }
-
-        const options = mapsToVote.map(m => ({ label: m.name, value: m.name, emoji: '🗺️' }));
-        const finalOptions = options.length > 0 ? options : MAPS.map(m => ({ label: m.name, value: m.name, emoji: '🗺️' }));
+        const options = mapsToVote.slice(0, 9).map(m => ({ label: m.name, value: m.name, emoji: '🗺️' }));
+        const finalOptions = options.length > 0 ? options : MAPS.slice(0, 9).map(m => ({ label: m.name, value: m.name, emoji: '🗺️' }));
 
         const row = new ActionRowBuilder().addComponents(
             new StringSelectMenuBuilder()
                 .setCustomId(`match_vote_${match.matchId}`)
-                .setPlaceholder('Favori haritanı seç!')
+                .setPlaceholder(' Favori haritanı seç!')
                 .addOptions(finalOptions)
         );
         const row2 = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('Maçı İptal Et').setEmoji('🛑').setStyle(ButtonStyle.Danger)
         );
 
-        const msg = await channel.send({ embeds: [embed], components: [row, row2] });
+        const msg = await channel.send({ embeds: [embed], components: [row, row2], files: [attachment] });
 
-        // Mesaj ID sakla ki edit yapabilelim
         match.votingMessageId = msg.id;
         await match.save();
 
-        // Timer
         setTimeout(() => this.endVoting(channel, match.matchId), 60000);
     },
 
@@ -99,23 +113,39 @@ module.exports = {
         // GÖRSEL GÜNCELLE
         const totalPlayers = match.teamA.length + match.teamB.length;
         const votedIds = match.votes.map(v => v.userId);
-        const notVotedIds = allPlayers.filter(id => !votedIds.includes(id));
 
-        const votedList = votedIds.length > 0 ? votedIds.map(id => `<@${id}>`).join(', ') : 'Kimse yok';
-        const notVotedList = notVotedIds.length > 0 ? notVotedIds.map(id => `<@${id}>`).join(', ') : 'Herkes oy verdi!';
+        const allPlayersData = [];
+        for (const pid of allPlayers) {
+            const member = await interaction.guild.members.fetch(pid).catch(() => null);
+            allPlayersData.push({
+                id: pid,
+                name: member?.displayName || 'Unknown',
+                avatar: member?.user.displayAvatarURL({ extension: 'png', size: 128 }),
+                hasVoted: votedIds.includes(pid)
+            });
+        }
+
+        const votedMaps = {};
+        match.votes.forEach(v => { votedMaps[v.mapName] = (votedMaps[v.mapName] || 0) + 1; });
 
         try {
             const votingMsg = await interaction.channel.messages.fetch(match.votingMessageId);
-            if (votingMsg && votingMsg.embeds && votingMsg.embeds.length > 0) {
-                const embed = EmbedBuilder.from(votingMsg.embeds[0]);
-                embed.setFields(
-                    { name: `✅ Oy Verenler (${match.votes.length})`, value: votedList, inline: false },
-                    { name: `⏳ Bekleyenler (${notVotedIds.length})`, value: notVotedList, inline: false },
-                    { name: '🎮 Lobi Kodu', value: match.lobbyCode ? `\`\`\`${match.lobbyCode}\`\`\`` : '`BEKLENİYOR`', inline: true },
-                    { name: '🚫 Oynananlar', value: match.playedMaps && match.playedMaps.length > 0 ? `\`${match.playedMaps.join(', ')}\`` : '`Yok`', inline: true }
-                );
-                embed.setFooter({ text: `Nexora Voting • ${match.votes.length}/${totalPlayers} Oy Kullanıldı` });
-                await votingMsg.edit({ embeds: [embed] });
+            if (votingMsg) {
+                const canvasGenerator = require('../../utils/canvasGenerator');
+                const buffer = await canvasGenerator.createMapVotingImage(votedMaps, allPlayersData, match);
+                const fileName = `map-voting-${Date.now()}.png`;
+                const attachment = new AttachmentBuilder(buffer, { name: fileName });
+
+                const oldEmbed = votingMsg.embeds[0];
+                const newEmbed = EmbedBuilder.from(oldEmbed)
+                    .setImage(`attachment://${fileName}`)
+                    .setFooter({ text: `Nexora Voting • ${match.votes.length}/${totalPlayers} Oy Kullanıldı` });
+
+                await votingMsg.edit({
+                    embeds: [newEmbed],
+                    files: [attachment],
+                    attachments: [] // Clear previous
+                });
             }
         } catch (e) {
             if (e.code !== 10008) console.error('Vote Update Error:', e);

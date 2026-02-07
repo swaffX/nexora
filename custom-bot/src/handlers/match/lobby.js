@@ -309,10 +309,19 @@ module.exports = {
         if (match.captainA && match.captainB) {
             match.status = 'DRAFT_COINFLIP';
             await match.save();
-            await interaction.message.delete().catch(() => { });
 
-            // Draft yerine önce Kaptanlar Arası Yazı Tura (Pick Order)
-            await this.startDraftCoinFlip(interaction.channel, match);
+            // Edit the message to show "Ready" instead of deleting immediately
+            const readyEmbed = EmbedBuilder.from(embed)
+                .setDescription(`✅ **Kaptanlar Hazır!**\nMaç kurulumu başlıyor...\n\n👑 **Host:** <@${match.hostId}>`)
+                .setFooter({ text: 'Yönlendiriliyorsunuz...' });
+
+            await interaction.update({ embeds: [readyEmbed], components: [], files: [attachment], attachments: [] }).catch(() => { });
+
+            // Wait 3 seconds before moving to Duel
+            setTimeout(async () => {
+                await interaction.message.delete().catch(() => { });
+                await this.startDraftCoinFlip(interaction.channel, match);
+            }, 3000);
         } else {
             const voiceChannel = interaction.guild.channels.cache.get(match.lobbyVoiceId);
             const voiceMembers = voiceChannel ? voiceChannel.members.filter(m => !m.user.bot) : new Map();
@@ -366,20 +375,20 @@ module.exports = {
 
     async startDraftCoinFlip(channel, match) {
         const embed = new EmbedBuilder()
-            .setColor(0xF1C40F)
-            .setTitle('🎡 [ NEXORA ] • KURA ÇARKI')
-            .setThumbnail('https://cdn-icons-png.flaticon.com/512/2855/2855473.png') // Wheel Icon
+            .setColor(0x1ABC9C)
+            .setTitle('⚔️ [ NEXORA ] • KAPTANLAR DÜELLOSU')
+            .setThumbnail('https://cdn-icons-png.flaticon.com/512/1041/1041168.png')
             .setDescription(
-                `**Kaptanlar Hazır!**\n` +
-                `Sıra seçimlerini belirlemek için şans çarkını çevirin.\n\n` +
-                `👤 **Kaptan A:** <@${match.captainA}>\n` +
-                `👤 **Kaptan B:** <@${match.captainB}>\n\n` +
-                `*Herhangi bir kaptan butona basarak çarkı başlatabilir.*`
+                `Kaptanlar Belirlendi!\n` +
+                `Seçim sırasını belirlemek için düelloyu başlatın.\n\n` +
+                `� **Kaptan A:** <@${match.captainA}>\n` +
+                `� **Kaptan B:** <@${match.captainB}>\n\n` +
+                `*Herhangi bir kaptan butona basarak düelloyu başlatabilir.*`
             )
             .setFooter({ text: 'Kazanan taraf Harita veya Oyuncu seçme hakkına sahip olur.' });
 
         const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId(`match_draftcoin_${match.matchId}`).setLabel('🎡 Çarkı Çevir').setStyle(ButtonStyle.Primary),
+            new ButtonBuilder().setCustomId(`match_draftcoin_${match.matchId}`).setLabel('⚔️ Düelloyu Başlat').setStyle(ButtonStyle.Danger),
             new ButtonBuilder().setCustomId(`match_autobalance_${match.matchId}`).setLabel('⚖️ Takımları Dengele').setStyle(ButtonStyle.Secondary)
         );
 
@@ -393,22 +402,20 @@ module.exports = {
 
         if (!match) return;
         if (interaction.user.id !== match.captainA && interaction.user.id !== match.captainB) {
-            return interaction.reply({ content: 'Sadece kaptanlar çarkı çevirebilir!', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: 'Sadece kaptanlar düelloyu başlatabilir!', flags: MessageFlags.Ephemeral });
         }
 
-        // 1. Animasyon Mesajı (GIF)
+        // 1. Animasyon Mesajı
         const animationEmbed = new EmbedBuilder()
-            .setColor(0x3498DB)
-            .setTitle('🎡 ÇARK DÖNÜYOR...')
-            .setDescription('Kaptanlar için şans perisi dönüyor... Acaba kim kazanacak?')
-            .setImage('https://media.tenor.com/-eJ9y3A-0iMAAAAM/spinning-wheel-spin.gif'); // Spinning Wheel GIF
+            .setColor(0xE74C3C)
+            .setTitle('⚔️ DÜELLO BAŞLADI!')
+            .setDescription('Kılıçlar çekildi, şans kimden yana?')
+            .setImage('https://media.tenor.com/_q1E8H8u8-oAAAAd/anime-sword-fight.gif');
 
         await interaction.update({ content: null, embeds: [animationEmbed], components: [] });
 
-        // 2. Bekle (4 Saniye)
         await new Promise(r => setTimeout(r, 4000));
 
-        // 3. Sonuç Belirle
         const winnerTeam = Math.random() < 0.5 ? 'A' : 'B';
         const winnerId = winnerTeam === 'A' ? match.captainA : match.captainB;
         const loserId = winnerTeam === 'A' ? match.captainB : match.captainA;
@@ -417,32 +424,30 @@ module.exports = {
         await match.save();
 
         // 4. Canvas Görseli Oluştur
-        const winnerUser = await interaction.guild.members.fetch(winnerId).catch(() => null);
-        const loserUser = await interaction.guild.members.fetch(loserId).catch(() => null);
+        const winnerMember = await interaction.guild.members.fetch(winnerId).catch(() => null);
+        const loserMember = await interaction.guild.members.fetch(loserId).catch(() => null);
 
-        const winnerData = {
-            name: winnerUser?.displayName || (winnerTeam === 'A' ? 'Team A' : 'Team B'),
-            user: winnerUser?.user || { displayAvatarURL: () => '' },
-            team: winnerTeam
-        };
-        const loserData = {
-            name: loserUser?.displayName || 'Loser',
-            user: loserUser?.user || { displayAvatarURL: () => '' },
-            team: winnerTeam === 'A' ? 'B' : 'A'
-        };
+        const capA = await interaction.guild.members.fetch(match.captainA).catch(() => null);
+        const capB = await interaction.guild.members.fetch(match.captainB).catch(() => null);
+
+        const buildCap = (m) => ({
+            id: m?.id,
+            name: m?.displayName || 'Unknown',
+            avatar: m?.user.displayAvatarURL({ extension: 'png', size: 512 })
+        });
 
         let attachment = null;
         try {
-            const buffer = await canvasGenerator.createWheelResult(winnerData, loserData);
-            attachment = new AttachmentBuilder(buffer, { name: 'wheel-result.png' });
-        } catch (e) { console.error('Wheel Canvas Error:', e); }
+            const buffer = await canvasGenerator.createDuelImage(buildCap(capA), buildCap(capB), winnerId);
+            attachment = new AttachmentBuilder(buffer, { name: 'duel-result.png' });
+        } catch (e) { console.error('Duel Canvas Error:', e); }
 
         const resultEmbed = new EmbedBuilder()
             .setColor(winnerTeam === 'A' ? 0x3498DB : 0xE74C3C)
-            .setTitle('🎉 KURA SONUCU!')
-            .setDescription(`**Kazanan:** <@${winnerId}> (Team ${winnerTeam})\n\n**Seçim Hakkı Sizde!** Hangisini istersiniz?\n\n👤 **Player Priority:** İlk oyuncuyu sen seçersin.\n🛡️ **Side Priority:** Tarafı (Saldırı/Savunma) sen seçersin.`);
+            .setTitle('� DÜELLO SONUCU!')
+            .setDescription(`🏁 **Kazanan:** <@${winnerId}> (Team ${winnerTeam})\n\n**Seçim Hakkı Sizde!** Hangi avantajı istersiniz?\n\n👤 **Player Priority:** İlk oyuncuyu sen seçersin.\n�️ **Map Priority:** Haritayı (Oylama/Veto) sen başlatırsın.`);
 
-        if (attachment) resultEmbed.setImage('attachment://wheel-result.png');
+        if (attachment) resultEmbed.setImage('attachment://duel-result.png');
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`match_priority_PLAYER_${match.matchId}_${winnerTeam}`).setLabel('İlk Oyuncuyu Seç').setStyle(ButtonStyle.Primary).setEmoji('👤'),

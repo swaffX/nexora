@@ -212,71 +212,44 @@ module.exports = {
         const nameA = `TEAM ${shortNameA}`;
         const nameB = `TEAM ${shortNameB}`;
 
-        // --- GÖRSEL HAZIRLIĞI (VERSUS & ROSTER) ---
-        const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
-        let mapAttachment = null;
-        let mapImageName = 'versus.png';
-        let rosterAttachment = null;
+        // --- GÖRSEL HAZIRLIĞI (Match Live Image) ---
+        let liveAttachment = null;
+        let liveImageName = `match-live-${Date.now()}.png`;
 
-        // 1. VERSUS
         try {
-            // Stats Çek
-            const captainUserDataA = await User.findOne({ odasi: match.captainA, odaId: channel.guild.id });
-            const captainUserDataB = await User.findOne({ odasi: match.captainB, odaId: channel.guild.id });
-
-            const statsA = captainUserDataA?.matchStats || { matchLevel: 1, elo: 200 };
-            const statsB = captainUserDataB?.matchStats || { matchLevel: 1, elo: 200 };
-
-            // Canvas Oluştur
-            if (captainA && captainB) {
-                const buffer = await canvasGenerator.createVersusImage(
-                    { user: captainA.user, stats: statsA, name: shortNameA },
-                    { user: captainB.user, stats: statsB, name: shortNameB },
-                    match.selectedMap || 'Unknown'
-                );
-                mapAttachment = new AttachmentBuilder(buffer, { name: 'versus.png' });
-            }
-        } catch (e) {
-            console.error('Versus Image Gen Error:', e);
-        }
-
-        // Fallback: Versus başarısızsa statik harita
-        if (!mapAttachment) {
-            const assetsPath = path.join(__dirname, '..', '..', '..', 'assets', 'maps');
-            const mapName = match.selectedMap || 'Unknown';
-            let mapPath = path.join(assetsPath, `${mapName}.png`);
-            if (!fs.existsSync(mapPath)) mapPath = path.join(assetsPath, `${mapName.toLowerCase()}.png`);
-
-            if (fs.existsSync(mapPath)) {
-                mapAttachment = new AttachmentBuilder(mapPath, { name: `${mapName}.png` });
-                mapImageName = `${mapName}.png`;
-            }
-        }
-
-        // 2. ROSTER
-        try {
-            const fetchTeamData = async (ids) => {
-                return Promise.all(ids.map(async (id) => {
-                    const m = await channel.guild.members.fetch(id).catch(() => null);
-                    const u = await User.findOne({ odasi: id, odaId: channel.guild.id });
-                    return {
-                        username: m ? m.displayName : 'Unknown',
-                        avatarURL: m ? m.user.displayAvatarURL({ extension: 'png', size: 128, forceStatic: true }) : null,
-                        level: u?.matchStats?.matchLevel || 1
-                    };
-                }));
+            const fetchPlayerData = async (id) => {
+                const m = await channel.guild.members.fetch(id).catch(() => null);
+                const u = await User.findOne({ odasi: id, odaId: channel.guild.id });
+                return {
+                    id: id,
+                    name: m?.displayName || 'Unknown',
+                    avatar: m?.user.displayAvatarURL({ extension: 'png', size: 128 }),
+                    elo: u?.matchStats?.elo || 200,
+                    level: u?.matchStats?.matchLevel || 1
+                };
             };
 
-            const teamAData = await fetchTeamData(match.teamA);
-            const teamBData = await fetchTeamData(match.teamB);
+            const teamAIds = match.teamA;
+            const teamBIds = match.teamB;
 
-            // Roster Image Removed as per request
-        } catch (e) { console.error('Roster Gen Error:', e); }
+            const teamAData = {
+                captain: await fetchPlayerData(match.captainA),
+                players: await Promise.all(teamAIds.map(id => fetchPlayerData(id)))
+            };
+            const teamBData = {
+                captain: await fetchPlayerData(match.captainB),
+                players: await Promise.all(teamBIds.map(id => fetchPlayerData(id)))
+            };
 
+            const buffer = await canvasGenerator.createMatchLiveImage(match, teamAData, teamBData);
+            liveAttachment = new AttachmentBuilder(buffer, { name: liveImageName });
+        } catch (e) {
+            console.error('Match Live Image Gen Error:', e);
+        }
 
         // --- ÖNCEKİ MESAJLARI TEMİZLE ---
         try {
-            const messages = await channel.messages.fetch({ limit: 50 });
+            const messages = await channel.messages.fetch({ limit: 20 });
             const botMessages = messages.filter(m => m.author.id === channel.client.user.id);
             if (botMessages.size > 0) {
                 await channel.bulkDelete(botMessages).catch(() => { });
@@ -285,7 +258,6 @@ module.exports = {
 
         const divider = '<a:ayrma:1468003499072688309>'.repeat(5);
 
-        // Level emojileriyle oyuncu listesi oluştur
         const buildPlayerList = async (playerIds) => {
             const lines = [];
             for (const id of playerIds) {
@@ -300,13 +272,12 @@ module.exports = {
         const sideAIcon = match.teamASide === 'ATTACK' ? '🗡️ ATTACK' : '🛡️ DEFEND';
         const sideBIcon = match.teamBSide === 'ATTACK' ? '🗡️ ATTACK' : '🛡️ DEFEND';
 
-        // Taraf bilgisi artik listenin basinda
         const listA = `**${sideAIcon}**\n${divider}\n${await buildPlayerList(match.teamA)}`;
         const listB = `**${sideBIcon}**\n${divider}\n${await buildPlayerList(match.teamB)}`;
 
         const embed = new EmbedBuilder()
-            .setColor(0xE74C3C) // Live Red
-            .setTitle(`🔴 [ NEXORA ] • MAÇ BAŞLADI (LIVE)`)
+            .setColor(0xE74C3C)
+            .setTitle(`🔴 [ NEXORA ] • MAÇ CANLI (LIVE)`)
             .setDescription(
                 `## 🗺️ Harita: **${match.selectedMap.toUpperCase()}**\n` +
                 `${divider}\n` +
@@ -317,20 +288,14 @@ module.exports = {
                 { name: `🔹 ${nameA}`, value: listA, inline: true },
                 { name: `🔸 ${nameB}`, value: listB, inline: true }
             )
+            .setImage(`attachment://${liveImageName}`)
             .setFooter({ text: 'Match Live • Her iki kaptan da maç bitince skoru girebilir.' })
             .setTimestamp();
-
-        if (mapAttachment) {
-            embed.setImage(`attachment://${mapImageName}`);
-        } else {
-            // Fallback
-            embed.setImage('https://media1.tenor.com/m/xR0y16wVbQcAAAAC/valorant-clutch.gif');
-        }
 
         const row = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
-                    .setCustomId(`match_prefinish_${match.matchId}`) // Önce temizlik, sonra skor
+                    .setCustomId(`match_prefinish_${match.matchId}`)
                     .setLabel('Maçı Bitir')
                     .setStyle(ButtonStyle.Success)
                     .setEmoji('🏁'),
@@ -344,13 +309,8 @@ module.exports = {
         const payload = {
             embeds: [embed],
             components: [row],
-            files: []
+            files: liveAttachment ? [liveAttachment] : []
         };
-
-        if (mapAttachment) payload.files.push(mapAttachment);
-
-        // Roster'ı ikinci embed olarak ekle
-        // Roster image removed
 
         await channel.send(payload);
     },
@@ -839,36 +799,54 @@ module.exports = {
             console.error("Log error:", e);
         }
 
-        // -------------------------------------------
+        // --- GÖRSEL (Match Result) ---
+        let resultAttachment = null;
+        let resultImageName = `match-result-${Date.now()}.png`;
 
-        match.status = 'FINISHED';
-        await match.save();
+        try {
+            const playersData = {};
+            const allPlayers = [...match.teamA, ...match.teamB];
+
+            for (const pid of allPlayers) {
+                const member = await interaction.guild.members.fetch(pid).catch(() => null);
+                playersData[pid] = {
+                    username: member?.displayName || 'Unknown',
+                    avatarURL: member?.user.displayAvatarURL({ extension: 'png', size: 128 })
+                };
+            }
+
+            const buffer = await canvasGenerator.createMatchResultImage(match, match.eloChanges, playersData);
+            resultAttachment = new AttachmentBuilder(buffer, { name: resultImageName });
+        } catch (e) {
+            console.error('Match Result Image Gen Error:', e);
+        }
 
         // Özet Mesajı ve Kanal Silme
         if (interaction.channel) {
-            const winnerTeamName = winnerTeam === 'A' ? 'Team A' : 'Team B';
-            const mvpWinnerMention = match.mvpPlayerId ? `<@${match.mvpPlayerId}>` : 'Seçilmedi';
-            const mvpLoserMention = match.mvpLoserId ? `<@${match.mvpLoserId}>` : 'Seçilmedi';
-
+            const winnerTeamName = winnerTeam === 'A' ? 'Blue Team' : (winnerTeam === 'B' ? 'Red Team' : 'Berabere');
             const summaryEmbed = new EmbedBuilder()
                 .setColor(0x2ECC71)
-                .setTitle('✅ Maç Tamamlandı!')
-                .setDescription(`**Skor:** ${match.scoreA} - ${match.scoreB}`)
+                .setTitle('⚔️ [ NEXORA ] • MAÇ SONUCU')
+                .setDescription(`Mücadele sona erdi! Kazanan: **${winnerTeamName}**`)
                 .addFields(
-                    { name: '🏆 Kazanan', value: winnerTeam === 'DRAW' ? 'Berabere' : winnerTeamName, inline: true },
-                    { name: '📊 Team Ortalamaları', value: `A: ${avgEloA} | B: ${avgEloB}`, inline: true },
-                    { name: '⭐ Kazanan MVP', value: mvpWinnerMention, inline: true },
-                    { name: '💔 Kaybeden MVP', value: mvpLoserMention, inline: true }
+                    { name: '📊 Skor', value: `\`${match.scoreA} - ${match.scoreB}\``, inline: true },
+                    { name: '🏆 Kazanan', value: winnerTeamName, inline: true },
+                    { name: '⭐ Kazanan MVP', value: match.mvpPlayerId ? `<@${match.mvpPlayerId}>` : 'Seçilmedi', inline: true },
+                    { name: '💔 Kaybeden MVP', value: match.mvpLoserId ? `<@${match.mvpLoserId}>` : 'Seçilmedi', inline: true }
                 )
-                .setFooter({ text: 'Kanal 5 saniye sonra silinecek...' })
+                .setImage(`attachment://${resultImageName}`)
+                .setFooter({ text: 'Kanal 10 saniye sonra silinecek...' })
                 .setTimestamp();
 
-            await interaction.channel.send({ embeds: [summaryEmbed] });
+            const payload = { embeds: [summaryEmbed] };
+            if (resultAttachment) payload.files = [resultAttachment];
+
+            await interaction.channel.send(payload);
 
             // Text kanalını en son sil
             setTimeout(() => {
                 interaction.channel.delete().catch(() => { });
-            }, 5000);
+            }, 10000);
             // Leaderboard'u anında güncelle
             try {
                 const leaderboard = require('../leaderboard');
