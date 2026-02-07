@@ -59,6 +59,7 @@ const ELO_CONFIG = {
         'Pearl': { path: 'pearl.png', name: 'Pearl' },
         'Sunset': { path: 'sunset.png', name: 'Sunset' },
         'Abyss': { path: 'abyss.png', name: 'Abyss' },
+        'Raze': { path: 'Raze.png', name: 'Raze Special' },
     },
 };
 
