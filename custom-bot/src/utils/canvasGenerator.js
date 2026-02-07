@@ -1944,6 +1944,166 @@ module.exports = {
         return canvas.toBuffer('image/png');
     },
 
+
+    async createVersusFullImage(data) {
+        // data: { map, teamA: [{name, agent, level, title}], teamB: [{name, agent, level, title}] }
+        const width = 1920;
+        const height = 1080;
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext('2d');
+
+        // 1. Background (Map)
+        try {
+            const assetsPath = path.join(__dirname, '..', '..', 'assets', 'maps');
+            const mapName = data.map || 'Unknown';
+            let p = path.join(assetsPath, `${mapName}.png`);
+            if (!fs.existsSync(p)) p = path.join(assetsPath, `${mapName.toLowerCase()}.png`);
+
+            if (fs.existsSync(p)) {
+                const img = await loadImage(p);
+                const scale = Math.max(width / img.width, height / img.height);
+                const w = img.width * scale;
+                const h = img.height * scale;
+                ctx.drawImage(img, (width - w) / 2, (height - h) / 2, w, h);
+            }
+        } catch (e) { }
+
+        // Dark Overlay
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
+        ctx.fillRect(0, 0, width, height);
+
+        // Gradient Overlays for sides
+        const gradLeft = ctx.createLinearGradient(0, 0, width / 2, 0);
+        gradLeft.addColorStop(0, 'rgba(30, 64, 175, 0.4)');
+        gradLeft.addColorStop(1, 'transparent');
+        ctx.fillStyle = gradLeft;
+        ctx.fillRect(0, 0, width / 2, height);
+
+        const gradRight = ctx.createLinearGradient(width, 0, width / 2, 0);
+        gradRight.addColorStop(0, 'rgba(185, 28, 28, 0.4)');
+        gradRight.addColorStop(1, 'transparent');
+        ctx.fillStyle = gradRight;
+        ctx.fillRect(width / 2, 0, width / 2, height);
+
+        // 2. Center Text (Map & VS)
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 150px "VALORANT", sans-serif';
+        ctx.fillText((data.map || 'UNKNOWN').toUpperCase(), width / 2, 250);
+
+        ctx.font = 'bold 60px "VALORANT", sans-serif';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText('FRANKFURT', width / 2, 330);
+
+        // Center Diamond & VS
+        ctx.save();
+        ctx.translate(width / 2, height / 2);
+        ctx.rotate(Math.PI / 4);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-100, -100, 200, 200);
+        ctx.restore();
+
+        ctx.font = 'bold 120px "VALORANT", sans-serif';
+        ctx.fillStyle = '#fff';
+        ctx.fillText('VS', width / 2, height / 2 + 40);
+
+        // 3. Side Headers
+        ctx.font = 'bold 30px "VALORANT", sans-serif';
+        ctx.letterSpacing = '10px';
+
+        // SALDIRI (Attackers)
+        ctx.fillStyle = '#4ade80';
+        ctx.textAlign = 'left';
+        ctx.fillText('SALDIRI', 150, 150);
+        ctx.fillRect(150, 170, 300, 2);
+
+        // SAVUNMA (Defenders)
+        ctx.fillStyle = '#f87171';
+        ctx.textAlign = 'right';
+        ctx.fillText('SAVUNMA', width - 150, 150);
+        ctx.fillRect(width - 450, 170, 300, 2);
+
+        // 4. Player Cards
+        const drawPlayerCard = async (player, x, y, isRight) => {
+            const cardW = 550;
+            const cardH = 140;
+            const drawX = isRight ? x - cardW : x;
+
+            // Background
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+            ctx.beginPath();
+            ctx.roundRect(drawX, y, cardW, cardH, 5);
+            ctx.fill();
+
+            // Agent Drawing
+            try {
+                const agentPath = path.join(__dirname, '..', '..', 'agents', `${player.agent.toLowerCase()}.png`);
+                const agentAvifPath = path.join(__dirname, '..', '..', 'agents', `${player.agent.toLowerCase()}.avif`);
+                let finalAgentPath = fs.existsSync(agentPath) ? agentPath : (fs.existsSync(agentAvifPath) ? agentAvifPath : null);
+
+                if (finalAgentPath) {
+                    const agentImg = await loadImage(finalAgentPath);
+                    ctx.save();
+                    // Clip to card
+                    ctx.beginPath();
+                    ctx.rect(drawX, y, cardW, cardH);
+                    ctx.clip();
+
+                    const imgW = 200;
+                    const imgH = 200;
+                    const imgX = isRight ? drawX + cardW - 120 : drawX - 30;
+                    const imgY = y - 30;
+                    ctx.drawImage(agentImg, imgX, imgY, imgW, imgH);
+                    ctx.restore();
+                }
+            } catch (e) { }
+
+            // Name & Title
+            ctx.textAlign = isRight ? 'right' : 'left';
+            const textX = isRight ? drawX + cardW - 140 : drawX + 140;
+
+            ctx.font = 'bold 28px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#fff';
+            ctx.fillText(player.name, textX, y + 60);
+
+            ctx.font = '18px "Segoe UI", sans-serif';
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillText(player.title || 'OYUNCU', textX, y + 90);
+
+            // Level Hexagon (Mock)
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            const hexX = isRight ? drawX + 50 : drawX + cardW - 50;
+            const hexY = y + 70;
+
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                ctx.lineTo(hexX + 30 * Math.cos(i * Math.PI / 3), hexY + 30 * Math.sin(i * Math.PI / 3));
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 16px sans-serif';
+            ctx.fillStyle = '#fff';
+            ctx.fillText(player.level || '1', hexX, hexY + 6);
+        };
+
+        let playerY = 200;
+        for (const p of data.teamA) {
+            await drawPlayerCard(p, 50, playerY, false);
+            playerY += 160;
+        }
+
+        playerY = 200;
+        for (const p of data.teamB) {
+            await drawPlayerCard(p, width - 50, playerY, true);
+            playerY += 160;
+        }
+
+        return canvas.toBuffer('image/png');
+    },
+
     async createPanelBanner() {
         const width = 1200;
         const height = 400;
