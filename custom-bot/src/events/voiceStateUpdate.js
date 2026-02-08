@@ -1,14 +1,15 @@
 const { PermissionsBitField } = require('discord.js');
 const logger = require('../../../shared/logger');
+const CONFIG = require('../config');
 
 module.exports = {
     name: 'voiceStateUpdate',
     async execute(oldState, newState) {
-        const VALORANT_ROLE_ID = '1466189076347486268';
+        const VALORANT_ROLE_ID = CONFIG.ROLES.VALORANT;
         const LOBBY_VOICE_IDS = [
-            '1469371485855547587', // Lobby 1
-            '1469371487965286400', // Lobby 2
-            '1469371490163097600'  // Lobby 3
+            CONFIG.CHANNELS.LOBBY_VOICE_1,
+            CONFIG.CHANNELS.LOBBY_VOICE_2,
+            CONFIG.CHANNELS.LOBBY_VOICE_3
         ];
 
         const member = newState.member;

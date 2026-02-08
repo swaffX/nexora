@@ -4,6 +4,25 @@ const path = require('path');
 const fs = require('fs');
 const eloService = require('../services/eloService');
 
+// --- ASSET CACHE ---
+const assetCache = new Map();
+
+async function loadCachedImage(imagePath) {
+    if (assetCache.has(imagePath)) {
+        return assetCache.get(imagePath);
+    }
+    try {
+        if (fs.existsSync(imagePath)) {
+            const img = await loadImage(imagePath);
+            assetCache.set(imagePath, img);
+            return img;
+        }
+    } catch (e) {
+        console.error("Image load error:", e);
+    }
+    return null;
+}
+
 const hexToRgba = (hex, alpha) => {
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
@@ -80,9 +99,7 @@ module.exports = {
             let p = path.join(assetsPath, `${mapName}.png`);
             if (!fs.existsSync(p)) p = path.join(assetsPath, `${mapName.toLowerCase()}.png`);
 
-            if (fs.existsSync(p)) {
-                mapBg = await loadImage(p);
-            }
+            mapBg = await loadCachedImage(p);
         } catch (e) { console.log('Map load error', e); }
 
         if (mapBg) {

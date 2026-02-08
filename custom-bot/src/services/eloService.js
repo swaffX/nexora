@@ -404,6 +404,9 @@ async function recalculateStatsFromHistory(user) {
     let streak = 0;
     let mvps = 0;
 
+    // Harita İstatistikleri
+    const mapStats = {}; // { 'Ascent': { wins: 0, losses: 0 } }
+
     for (const m of matches) {
         let actualWinner = m.winner;
         if (m.scoreA !== undefined && m.scoreB !== undefined) {
@@ -413,13 +416,19 @@ async function recalculateStatsFromHistory(user) {
 
         const isTeamA = m.teamA.some(id => String(id) === String(user.odasi));
         const isWin = (isTeamA && actualWinner === 'A') || (!isTeamA && actualWinner === 'B');
+        const mapName = m.selectedMap || 'Unknown';
+
+        // Harita Stats Init
+        if (!mapStats[mapName]) mapStats[mapName] = { wins: 0, losses: 0 };
 
         if (isWin) {
             wins++;
+            mapStats[mapName].wins++;
             if (streak < 0) streak = 1;
             else streak++;
         } else {
             losses++;
+            mapStats[mapName].losses++;
             if (streak > 0) streak = -1;
             else streak--;
         }
@@ -436,6 +445,7 @@ async function recalculateStatsFromHistory(user) {
     user.matchStats.totalLosses = losses;
     user.matchStats.winStreak = streak;
     user.matchStats.totalMVPs = mvps;
+    user.matchStats.mapStats = mapStats; // Kaydet
 
     await user.save();
     return user;

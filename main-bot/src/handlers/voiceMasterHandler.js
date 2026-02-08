@@ -234,14 +234,62 @@ async function handleInteraction(interaction, client) {
     }
 
     if (type === 'kick') {
-        // Kanaldaki üyeleri listele
-        const members = channel.members.filter(m => m.id !== interaction.user.id);
-        if (members.size === 0) return interaction.reply({ content: '❌ Odada atılacak kimse yok.', flags: MessageFlags.Ephemeral });
+        const { UserSelectMenuBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
 
-        // Buna basitçe "kimi atmak istersin" diye select menu açabiliriz ama şimdilik basit tutalım.
-        // Burada ilk kişiyi atmasın, kullanıcıya soralım.
-        // V2'de UserSelectMenu eklenebilir.
-        interaction.reply({ content: '⚠️ Bu özellik şu an bakımda (UserSelectMenu eklenecek).', flags: MessageFlags.Ephemeral });
+        // 1. Yetkili Rol Kontrolü (Owner OR Admin OR Mod)
+        const path = require('path');
+        const CONFIG = require(path.join(__dirname, '..', '..', '..', 'custom-bot', 'src', 'config'));
+        // Yollar farklı olduğu için basitçe hard-code veya require path'i ayarlamak gerek.
+        // Şimdilik interaction.member.permissions ile yetkilendirelim (ManageChannels)
+        // Veya konfigüre edilebilir rol ID'leri.
+
+        if (interaction.user.id !== voiceData.ownerId && !interaction.member.permissions.has(PermissionFlagsBits.ManageChannels)) {
+            return interaction.reply({ content: '❌ Sadece oda sahibi veya yetkililer atabilir.', flags: MessageFlags.Ephemeral });
+        }
+
+        const userSelect = new UserSelectMenuBuilder()
+            .setCustomId(`voice_kick_confirm_${channelId}`)
+            .setPlaceholder('Atılacak kullanıcıyı seçin')
+            .setMaxValues(1);
+
+        const row = new ActionRowBuilder().addComponents(userSelect);
+
+        await interaction.reply({
+            content: '🚫 **Kimi atmak istersin?**\n(Oda sahibi veya yetkililer atılamaz)',
+            components: [row],
+            flags: MessageFlags.Ephemeral
+        });
+    }
+
+}
+
+// 🦶 KICK HANDLER (Yeni Eklenen)
+async function handleKickConfirm(interaction) {
+    // Custom ID: voice_kick_confirm_CHANNELID
+    const channelId = interaction.customId.split('_')[3];
+    const targetUserId = interaction.values[0];
+
+    const channel = interaction.guild.channels.cache.get(channelId);
+    if (!channel) return interaction.reply({ content: '❌ Kanal bulunamadı.', flags: MessageFlags.Ephemeral });
+
+    // Hedef kişi kanalda mı?
+    const member = channel.members.get(targetUserId);
+    if (!member) return interaction.reply({ content: '❌ Kullanıcı şu an odada değil.', flags: MessageFlags.Ephemeral });
+
+    // Kendini atamaz
+    if (member.id === interaction.user.id) return interaction.reply({ content: '❌ Kendini atamazsın.', flags: MessageFlags.Ephemeral });
+
+    // Yetkiliyi atamaz (Basit kontrol)
+    if (member.permissions.has(PermissionFlagsBits.Administrator)) return interaction.reply({ content: '❌ Yöneticileri atamazsın.', flags: MessageFlags.Ephemeral });
+
+    try {
+        await member.voice.disconnect(`Voice Master: Kicked by ${interaction.user.tag}`);
+        // Opsiyonel: Banlamak istersen permissionOverwrites kullanabilirsin.
+        await channel.permissionOverwrites.edit(member, { Connect: false });
+
+        interaction.reply({ content: `✅ **${member.user.tag}** odadan atıldı ve girişi engellendi.`, flags: MessageFlags.Ephemeral });
+    } catch (error) {
+        interaction.reply({ content: `❌ Hata: ${error.message}`, flags: MessageFlags.Ephemeral });
     }
 }
 
@@ -274,5 +322,6 @@ module.exports = {
     handleJoin,
     handleLeave,
     handleInteraction,
-    handleModal
+    handleModal,
+    handleKickConfirm // Exported
 };

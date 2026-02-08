@@ -14,7 +14,8 @@ module.exports = {
             return interaction.reply({ content: 'Yetkiniz yok.', flags: MessageFlags.Ephemeral });
         }
 
-        const categoryId = '1463883244436197397';
+        const CONFIG = require('../../config');
+        const categoryId = CONFIG.CATEGORIES.LOBBY_PANEL;
         const guild = interaction.guild;
         const customText = interaction.options.getString('yazi');
 
@@ -31,12 +32,12 @@ module.exports = {
             }
 
             // 1. Kanalları Kontrol Et / Oluştur (Eğer silindiyse tamir et)
-            let panelChannel = category.children.cache.find(c => c.name === '🕹️-maç-panel' && c.type === ChannelType.GuildText);
+            let panelChannel = category.children.cache.find(c => c.name === CONFIG.SETTINGS.PANEL_CHANNEL_NAME && c.type === ChannelType.GuildText);
 
             // Eğer panel kanalı yoksa oluştur
             if (!panelChannel) {
                 panelChannel = await guild.channels.create({
-                    name: '🕹️-maç-panel',
+                    name: CONFIG.SETTINGS.PANEL_CHANNEL_NAME,
                     type: ChannelType.GuildText,
                     parent: category.id,
                     permissionOverwrites: [

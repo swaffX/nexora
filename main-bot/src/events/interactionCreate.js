@@ -105,6 +105,13 @@ module.exports = {
                     await reactionRoleHandler.handleSelect(interaction, args, client);
                 }
 
+                if (action === 'voice') {
+                    const voiceMasterHandler = require('../handlers/voiceMasterHandler');
+                    if (interaction.customId.startsWith('voice_kick_confirm_')) {
+                        await voiceMasterHandler.handleKickConfirm(interaction);
+                    }
+                }
+
                 // match_select_team1 -> action=match
                 if (action === 'match') {
                     const matchHandler = require('../handlers/matchHandler');

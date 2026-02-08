@@ -530,7 +530,8 @@ module.exports = {
 
     async handleWinnerMVP(interaction, match) {
         // ROL KONTROLÜ
-        const MVP_SELECTOR_ROLE_ID = '1463875325019557920';
+        const CONFIG = require('../../config');
+        const MVP_SELECTOR_ROLE_ID = CONFIG.ROLES.MVP_SELECTOR;
         if (!interaction.member.roles.cache.has(MVP_SELECTOR_ROLE_ID)) {
             return interaction.reply({ content: `❌ Yetkiniz yok! (<@&${MVP_SELECTOR_ROLE_ID}> gerekli)`, flags: MessageFlags.Ephemeral });
         }
@@ -550,7 +551,8 @@ module.exports = {
 
     async handleLoserMVP(interaction, match) {
         // ROL KONTROLÜ
-        const MVP_SELECTOR_ROLE_ID = '1463875325019557920';
+        const CONFIG = require('../../config');
+        const MVP_SELECTOR_ROLE_ID = CONFIG.ROLES.MVP_SELECTOR;
         if (!interaction.member.roles.cache.has(MVP_SELECTOR_ROLE_ID)) {
             return interaction.reply({ content: `❌ Yetkiniz yok! (<@&${MVP_SELECTOR_ROLE_ID}> gerekli)`, flags: MessageFlags.Ephemeral });
         }

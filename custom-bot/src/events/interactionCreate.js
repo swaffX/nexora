@@ -89,6 +89,8 @@ module.exports = {
                 await panelHandler.handleInteraction(interaction, client);
             }
 
+
+
         } catch (error) {
             logger.error('Custom Bot Interaction Error:', error);
         }
