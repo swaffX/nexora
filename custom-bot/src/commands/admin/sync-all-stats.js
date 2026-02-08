@@ -18,13 +18,29 @@ module.exports = {
 
             // 1. Tüm Kullanıcıları Al
             const allUsers = await User.find({ odaId: guildId });
+
+            // 2. Sunucudaki üyeleri çek (Rol kontrolü için)
+            await interaction.editReply(`🔄 Üye listesi güncelleniyor...`);
+            await interaction.guild.members.fetch();
+
+            const VALORANT_ROLE_ID = CONFIG.ROLES.VALORANT;
+
             let updatedCount = 0;
+            let skippedCount = 0;
             let errorCount = 0;
 
-            await interaction.editReply(`🔄 Senkronizasyon başladı... Toplam Kullanıcı: ${allUsers.length}`);
+            await interaction.editReply(`🔄 Senkronizasyon başladı... Toplam Kayıt: ${allUsers.length}`);
 
             for (const userDoc of allUsers) {
                 try {
+                    const member = interaction.guild.members.cache.get(userDoc.odasi);
+
+                    // ROL KONTROLÜ: Sadece rolü olanları güncelle
+                    if (!member || !member.roles.cache.has(VALORANT_ROLE_ID)) {
+                        skippedCount++;
+                        continue;
+                    }
+
                     // 2. İstatistikleri Sıfırla/Doğrula
                     eloService.ensureValidStats(userDoc);
 
@@ -38,8 +54,8 @@ module.exports = {
                     updatedCount++;
 
                     // Her 10 kullanıcıda bir bilgi ver
-                    if (updatedCount % 20 === 0) {
-                        await interaction.editReply(`🔄 İşleniyor... (${updatedCount}/${allUsers.length})`);
+                    if (updatedCount % 10 === 0) {
+                        await interaction.editReply(`🔄 İşleniyor... (${updatedCount} kişi güncellendi)`);
                     }
 
                 } catch (e) {
@@ -49,8 +65,9 @@ module.exports = {
             }
 
             await interaction.editReply(`✅ **Tamamlandı!**\n\n` +
-                `• Toplam Kullanıcı: ${allUsers.length}\n` +
-                `• Güncellenen: ${updatedCount}\n` +
+                `• Toplam Kayıt: ${allUsers.length}\n` +
+                `• Güncellenen (Aktif): ${updatedCount}\n` +
+                `• Atlanan (Rolü Yok/Ayrılmış): ${skippedCount}\n` +
                 `• Hatalı: ${errorCount}`);
 
         } catch (error) {
