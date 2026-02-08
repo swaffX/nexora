@@ -15,6 +15,10 @@ module.exports = {
             opt.setName('channel')
                 .setDescription('Görselin gönderileceği kanal (boş bırakılırsa buraya gönderilir)')
                 .setRequired(false))
+        .addBooleanOption(opt =>
+            opt.setName('fix_status')
+                .setDescription('Maç durumunu FINISHED olarak düzelt (varsayılan: true)')
+                .setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
     async execute(interaction) {
@@ -23,6 +27,7 @@ module.exports = {
         try {
             const matchId = interaction.options.getString('match_id');
             const targetChannel = interaction.options.getChannel('channel') || interaction.channel;
+            const fixStatus = interaction.options.getBoolean('fix_status') ?? true;
 
             // 1. Maçı bul
             const match = await Match.findOne({ matchId });
@@ -30,9 +35,21 @@ module.exports = {
                 return interaction.editReply(`❌ **Hata:** \`${matchId}\` ID'li maç bulunamadı.`);
             }
 
+            // Status kontrolü - sadece uyarı ver, engelleme
+            let statusWarning = '';
             if (match.status !== 'FINISHED') {
-                return interaction.editReply(`⚠️ Bu maç henüz tamamlanmamış. Durum: \`${match.status}\``);
+                statusWarning = `⚠️ **Uyarı:** Maç durumu \`${match.status}\` olarak kayıtlı.\n`;
+
+                // Eğer ELO değişiklikleri varsa ve fixStatus true ise, düzelt
+                if (fixStatus && (match.eloChanges?.length > 0 || match.winner)) {
+                    match.status = 'FINISHED';
+                    await match.save();
+                    statusWarning += `✅ Durum \`FINISHED\` olarak düzeltildi.\n\n`;
+                } else {
+                    statusWarning += `💡 ELO verisi varsa \`fix_status: true\` ile düzeltebilirsiniz.\n\n`;
+                }
             }
+
 
             // 2. Oyuncu verilerini hazırla
             const playersData = {};
@@ -92,7 +109,8 @@ module.exports = {
             });
 
             await interaction.editReply({
-                content: `✅ **Başarılı!** Maç görseli ${targetChannel} kanalına gönderildi.\n\n` +
+                content: statusWarning +
+                    `✅ **Başarılı!** Maç görseli ${targetChannel} kanalına gönderildi.\n\n` +
                     `**Maç Bilgileri:**\n` +
                     `• ID: \`${matchId}\`\n` +
                     `• Harita: ${match.selectedMap || 'Bilinmiyor'}\n` +
