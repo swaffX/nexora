@@ -481,7 +481,7 @@ module.exports = {
                     const emoji = eloService.LEVEL_EMOJIS[userDoc.matchStats.matchLevel] || eloService.LEVEL_EMOJIS[1];
                     levelEmojiId = emoji.match(/:([0-9]+)>/)?.[1];
                 }
-            } catch (e) { }
+            } catch (e) { console.error(`[MVP Menu] Error processing winner ${id}:`, e); }
             winnerOptions.push({ label: username, value: id, description: 'Kazanan Takım', emoji: levelEmojiId });
         }
 
@@ -498,7 +498,7 @@ module.exports = {
                     const emoji = eloService.LEVEL_EMOJIS[userDoc.matchStats.matchLevel] || eloService.LEVEL_EMOJIS[1];
                     levelEmojiId = emoji.match(/:([0-9]+)>/)?.[1];
                 }
-            } catch (e) { }
+            } catch (e) { console.error(`[MVP Menu] Error processing loser ${id}:`, e); }
             loserOptions.push({ label: username, value: id, description: 'Kaybeden Takım', emoji: levelEmojiId });
         }
 
