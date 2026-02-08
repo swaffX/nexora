@@ -384,7 +384,7 @@ module.exports = {
                     try {
                         const member = guild.members.cache.get(pid) || await guild.members.fetch(pid).catch(() => null);
                         if (member && member.voice.channelId) {
-                            await member.voice.setChannel(match.lobbyVoiceId).catch(() => { });
+                            await member.voice.setChannel(match.lobbyVoiceId).catch(err => console.log(`[CLEANUP] Move error (${pid}): ${err.message}`));
                         }
                     } catch (e) { }
                 }));
@@ -401,12 +401,17 @@ module.exports = {
 
                     try {
                         const ch = guild.channels.cache.get(cid) || await guild.channels.fetch(cid).catch(() => null);
-                        if (ch) await ch.delete().catch(() => { });
+                        if (ch) {
+                            // "Unknown Channel" hatalarını yut, ama diğerlerini logla
+                            await ch.delete().catch(err => {
+                                if (err.code !== 10003) console.log(`[CLEANUP] Channel delete error (${cid}): ${err.message}`);
+                            });
+                        }
                     } catch (e) { }
                 }
             }
         } catch (e) {
-            console.error("Cleanup error:", e);
+            console.error("Cleanup Critical Error:", e);
         }
     },
 

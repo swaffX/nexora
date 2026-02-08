@@ -4,16 +4,28 @@ const path = require('path');
 const fs = require('fs');
 const eloService = require('../services/eloService');
 
-// --- ASSET CACHE ---
+// --- ASSET CACHE (LRU Implementation) ---
 const assetCache = new Map();
+const MAX_CACHE_SIZE = 50; // Maksimum 50 resim sakla (RAM Koruması)
 
 async function loadCachedImage(imagePath) {
     if (assetCache.has(imagePath)) {
-        return assetCache.get(imagePath);
+        // LRU Mantığı: Erişilen öğeyi silip sona ekle (En yeni yap)
+        const img = assetCache.get(imagePath);
+        assetCache.delete(imagePath);
+        assetCache.set(imagePath, img);
+        return img;
     }
     try {
         if (fs.existsSync(imagePath)) {
             const img = await loadImage(imagePath);
+
+            // Kapasite Dolduysa En Eskiyi Sil (Map'in başındaki eleman)
+            if (assetCache.size >= MAX_CACHE_SIZE) {
+                const oldestKey = assetCache.keys().next().value;
+                assetCache.delete(oldestKey);
+            }
+
             assetCache.set(imagePath, img);
             return img;
         }

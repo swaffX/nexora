@@ -200,4 +200,9 @@ userSchema.methods.getTotalInvites = function () {
     return this.invites.regular + this.invites.bonus - this.invites.fake - this.invites.left;
 };
 
+// --- KRİTİK PERFORMANS İNDEKSLERİ (Added by Nexora AI) ---
+userSchema.index({ odasi: 1, odaId: 1 }); // Kullanıcı Bulma (En Sık Kullanılan)
+userSchema.index({ 'matchStats.elo': -1 }); // Leaderboard Sıralaması
+userSchema.index({ 'matchStats.totalWins': -1 }); // İstatistik Sıralaması
+
 module.exports = mongoose.model('User', userSchema);
