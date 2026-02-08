@@ -52,6 +52,9 @@ const ELO_CONFIG = {
         'Raze': { path: 'Raze.png', name: 'Raze Special' },
         'Jett': { path: 'Jett.png', name: 'Jett Special' },
         'Phoenix': { path: 'Phoenix.png', name: 'Phoenix Special' },
+        'Vyse': { path: 'Vyse.jpg', name: 'Vyse' },
+        'Jett 2': { path: 'Jett 2.jpg', name: 'Jett 2' },
+        'Yoru': { path: 'Yoru.jpg', name: 'Yoru' },
     },
 };
 

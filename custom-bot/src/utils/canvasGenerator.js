@@ -416,8 +416,12 @@ module.exports = {
         let bgImgPrimary = null;
         if (currentBg !== 'Default') {
             try {
-                const mapPath = path.join(__dirname, '..', '..', 'assets', 'maps', `${currentBg}.png`);
-                if (fs.existsSync(mapPath)) bgImgPrimary = await loadImage(mapPath);
+                // Config'den dosya yolunu al (örn: Vyse.jpg veya Raze.png)
+                const themeConfig = eloService.ELO_CONFIG.BACKGROUND_THEMES[currentBg];
+                const fileName = themeConfig ? themeConfig.path : `${currentBg}.png`;
+
+                const mapPath = path.join(__dirname, '..', '..', 'assets', 'maps', fileName);
+                if (fs.existsSync(mapPath)) bgImgPrimary = await loadCachedImage(mapPath); // loadCachedImage kullanalım
             } catch (e) { }
         }
 
