@@ -284,13 +284,12 @@ async function applyEloChange(user, change, reason = 'Unknown', client = null) {
 }
 
 /**
- * Maç sonrası ELO değişikliğini hesapla (Gelişmiş Rekabetçi Modu)
+ * Maç sonrası ELO değişikliğini hesapla (Gelişmiş / İnsaflı Versiyon)
  * @param {Object} params Hesaplama parametreleri
  * @param {number} currentElo Oyuncunun mevcut ELO'su (Varsayılan: 1200)
- * @param {number} totalMatches Oyuncunun toplam maç sayısı (Placement için)
- * @returns {number} Final ELO değişikliği
+ * @returns {Object} { change: number, reason: string } Değişiklik ve Açıklaması
  */
-function calculateMatchEloChange({ isWin, roundDiff, myTeamAvg, enemyTeamAvg, isMvpWinner, isMvpLoser, currentStreak = 0 }, currentElo = 1200, totalMatches = 0) {
+function calculateMatchEloChange({ isWin, roundDiff, myTeamAvg, enemyTeamAvg, isMvpWinner, isMvpLoser, currentStreak = 0 }, currentElo = 1200) {
     // 1. Temel Hesaplama (Adalet + Raund)
     let eloDiff = enemyTeamAvg - myTeamAvg;
     let fairnessAdjustment = Math.round(eloDiff / ELO_CONFIG.FAIRNESS_DIVISOR);
@@ -302,53 +301,61 @@ function calculateMatchEloChange({ isWin, roundDiff, myTeamAvg, enemyTeamAvg, is
     const roundBonus = Math.min(roundDiff || 0, ELO_CONFIG.MAX_ROUND_BONUS);
 
     let rawChange = 0;
+    let reasons = [];
 
     if (isWin) {
         // Kazanma Formülü
         rawChange = ELO_CONFIG.BASE_WIN + roundBonus + fairnessAdjustment;
+        if (fairnessAdjustment > 0) reasons.push(`Fairness +${fairnessAdjustment}`);
 
-        // Win Streak Bonusu (Sadece Placement bittiyse)
-        // Placement maçlarında zaten x2.5 alıyor, bir de streak eklersek x3-x4 olur, çok fazla.
-        if (totalMatches >= ELO_CONFIG.PLACEMENT_MATCHES && (currentStreak + 1) >= ELO_CONFIG.WIN_STREAK_THRESHOLD) {
+        // Streak Bonusu
+        if ((currentStreak + 1) >= ELO_CONFIG.WIN_STREAK_THRESHOLD) {
             rawChange += ELO_CONFIG.WIN_STREAK_BONUS;
+            reasons.push(`Streak x${currentStreak + 1}`);
         }
 
-        if (isMvpWinner) rawChange += ELO_CONFIG.MVP_BONUS;
+        if (isMvpWinner) {
+            rawChange += ELO_CONFIG.MVP_BONUS;
+            reasons.push("MVP");
+        }
     } else {
         // Kaybetme Formülü
         rawChange = ELO_CONFIG.BASE_LOSS + fairnessAdjustment;
-        if (isMvpLoser) rawChange += ELO_CONFIG.MVP_BONUS;
-
-        // Asla pozitif olamaz (Kaybeden kazanmaz)
+        if (isMvpLoser) {
+            rawChange += ELO_CONFIG.MVP_BONUS;
+            reasons.push("MVP Protection");
+        }
         if (rawChange > 0) rawChange = 0;
     }
 
-    // 2. GELİŞMİŞ ÇARPANLAR (Placement & K-Factor)
+    // 2. GELİŞMİŞ ÇARPANLAR (Dynamic K-Factor)
     let multiplier = 1.0;
 
-    // A) Placement Matches (İlk 5 Maç)
-    // Yeni oyuncu veya sezon başı
-    if (totalMatches <= ELO_CONFIG.PLACEMENT_MATCHES) {
-        multiplier = ELO_CONFIG.PLACEMENT_BONUS_MULTIPLIER;
-    }
-    // B) Dinamik K-Factor (Lig Seviyesine Göre)
-    else {
-        if (currentElo < 800) {
-            multiplier = ELO_CONFIG.K_FACTOR.LOW; // Hızlı lig atlama/düşme
-        } else if (currentElo >= 1600) {
-            multiplier = ELO_CONFIG.K_FACTOR.HIGH; // Zorlu rekabet (daha az puan)
+    if (currentElo < 800) {
+        // Düşük ELO: Kazanırken çok ver, kaybederken az al (İnsaflı Mod)
+        if (isWin) {
+            multiplier = ELO_CONFIG.K_FACTOR.LOW_WIN;
+            // reasons.push("Low ELO Boost");
         } else {
-            multiplier = ELO_CONFIG.K_FACTOR.MID; // Standart
+            multiplier = ELO_CONFIG.K_FACTOR.LOW_LOSS;
+            reasons.push("Forgiveness");
         }
+    } else if (currentElo >= 1600) {
+        // Yüksek ELO: Stabilite (Hem win hem loss zordur)
+        multiplier = ELO_CONFIG.K_FACTOR.HIGH;
+        reasons.push("High ELO Stability");
+    } else {
+        // Orta ELO: Standart
+        multiplier = ELO_CONFIG.K_FACTOR.MID;
     }
 
     // Final Hesaplama
     let finalChange = Math.round(rawChange * multiplier);
 
-    // Düşük seviyede (0-800) kayıp koruması (Opsiyonel ama iyi)
-    // Eğer K-Factor LOW ise ve kaybediyorsa, kaybı biraz azaltabiliriz. Ama şimdilik standart bırakalım.
+    // Açıklama metni oluştur
+    const reasonText = reasons.length > 0 ? reasons.join(", ") : (isWin ? "Win" : "Loss");
 
-    return finalChange;
+    return { change: finalChange, reason: reasonText };
 }
 
 /**

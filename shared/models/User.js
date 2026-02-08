@@ -201,7 +201,7 @@ userSchema.methods.getTotalInvites = function () {
 };
 
 // --- KRİTİK PERFORMANS İNDEKSLERİ (Added by Nexora AI) ---
-userSchema.index({ odasi: 1, odaId: 1 }); // Kullanıcı Bulma (En Sık Kullanılan)
+// userSchema.index({ odasi: 1, odaId: 1 }); // Already defined at line 145 (Unique)
 userSchema.index({ 'matchStats.elo': -1 }); // Leaderboard Sıralaması
 userSchema.index({ 'matchStats.totalWins': -1 }); // İstatistik Sıralaması
 
