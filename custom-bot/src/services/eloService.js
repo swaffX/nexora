@@ -22,6 +22,14 @@ const ELO_CONFIG = {
     WIN_STREAK_THRESHOLD: 3,  // 3. maçtan itibaren bonus başlar
     FAIRNESS_DIVISOR: 40, // Her 40 ELO farkı = ±1 puan
     MAX_FAIRNESS_ADJUSTMENT: 10,
+    // --- YENİ ELO AYARLARI (Gelişmiş Rekabetçi Modu) ---
+    // PLACEMENT_MATCHES iptal edildi (Mevcut oyunculara haksızlık olmaması için)
+    K_FACTOR: {
+        LOW_WIN: 1.25,   // 0-800 ELO (Kazanırken HIZLI)
+        LOW_LOSS: 0.75,  // 0-800 ELO (Kaybederken YAVAŞ - İnsaflı Mod)
+        MID: 1.0,        // 800-1600 ELO (Standart)
+        HIGH: 0.75       // 1600+ ELO (Stabilite - Zorlu Rekabet)
+    },
     LEVEL_THRESHOLDS: [
         { max: 199, level: 1, name: 'Challenger I' },
         { max: 400, level: 2, name: 'Challenger II' },
@@ -276,50 +284,69 @@ async function applyEloChange(user, change, reason = 'Unknown', client = null) {
 }
 
 /**
- * Maç sonrası ELO değişikliğini hesapla
+ * Maç sonrası ELO değişikliğini hesapla (Gelişmiş Rekabetçi Modu)
  * @param {Object} params Hesaplama parametreleri
+ * @param {number} currentElo Oyuncunun mevcut ELO'su (Varsayılan: 1200)
+ * @param {number} totalMatches Oyuncunun toplam maç sayısı (Placement için)
  * @returns {number} Final ELO değişikliği
  */
-function calculateMatchEloChange({ isWin, roundDiff, myTeamAvg, enemyTeamAvg, isMvpWinner, isMvpLoser, currentStreak = 0 }) {
-    // Adalet faktörü hesapla
+function calculateMatchEloChange({ isWin, roundDiff, myTeamAvg, enemyTeamAvg, isMvpWinner, isMvpLoser, currentStreak = 0 }, currentElo = 1200, totalMatches = 0) {
+    // 1. Temel Hesaplama (Adalet + Raund)
     let eloDiff = enemyTeamAvg - myTeamAvg;
     let fairnessAdjustment = Math.round(eloDiff / ELO_CONFIG.FAIRNESS_DIVISOR);
 
-    // Sınırla
-    if (fairnessAdjustment > ELO_CONFIG.MAX_FAIRNESS_ADJUSTMENT) {
-        fairnessAdjustment = ELO_CONFIG.MAX_FAIRNESS_ADJUSTMENT;
-    }
-    if (fairnessAdjustment < -ELO_CONFIG.MAX_FAIRNESS_ADJUSTMENT) {
-        fairnessAdjustment = -ELO_CONFIG.MAX_FAIRNESS_ADJUSTMENT;
-    }
+    // Limitler
+    if (fairnessAdjustment > ELO_CONFIG.MAX_FAIRNESS_ADJUSTMENT) fairnessAdjustment = ELO_CONFIG.MAX_FAIRNESS_ADJUSTMENT;
+    if (fairnessAdjustment < -ELO_CONFIG.MAX_FAIRNESS_ADJUSTMENT) fairnessAdjustment = -ELO_CONFIG.MAX_FAIRNESS_ADJUSTMENT;
 
-    // Raund bonusu (max 10)
     const roundBonus = Math.min(roundDiff || 0, ELO_CONFIG.MAX_ROUND_BONUS);
 
-    let finalChange = 0;
-    let reasonText = '';
+    let rawChange = 0;
 
     if (isWin) {
-        // Kazanma: Baz + Raund Bonusu + Adalet + MVP
-        finalChange = ELO_CONFIG.BASE_WIN + roundBonus + fairnessAdjustment;
+        // Kazanma Formülü
+        rawChange = ELO_CONFIG.BASE_WIN + roundBonus + fairnessAdjustment;
 
-        // Win Streak Bonusu
-        // currentStreak, maç ÖNCESİ seri. Bu maçı kazandığı için +1 olacak.
-        // Eğer (currentStreak + 1) >= 3 ise Bonus Alır.
-        if ((currentStreak + 1) >= ELO_CONFIG.WIN_STREAK_THRESHOLD) {
-            finalChange += ELO_CONFIG.WIN_STREAK_BONUS;
-            reasonText = `Win + Streak x${currentStreak + 1}`;
+        // Win Streak Bonusu (Sadece Placement bittiyse)
+        // Placement maçlarında zaten x2.5 alıyor, bir de streak eklersek x3-x4 olur, çok fazla.
+        if (totalMatches >= ELO_CONFIG.PLACEMENT_MATCHES && (currentStreak + 1) >= ELO_CONFIG.WIN_STREAK_THRESHOLD) {
+            rawChange += ELO_CONFIG.WIN_STREAK_BONUS;
         }
 
-        if (isMvpWinner) finalChange += ELO_CONFIG.MVP_BONUS;
+        if (isMvpWinner) rawChange += ELO_CONFIG.MVP_BONUS;
     } else {
-        // Kaybetme: Baz + Adalet + MVP Koruması
-        finalChange = ELO_CONFIG.BASE_LOSS + fairnessAdjustment;
-        if (isMvpLoser) finalChange += ELO_CONFIG.MVP_BONUS;
+        // Kaybetme Formülü
+        rawChange = ELO_CONFIG.BASE_LOSS + fairnessAdjustment;
+        if (isMvpLoser) rawChange += ELO_CONFIG.MVP_BONUS;
 
-        // Limit: Kayıp asla pozitif olamaz
-        if (finalChange > 0) finalChange = 0;
+        // Asla pozitif olamaz (Kaybeden kazanmaz)
+        if (rawChange > 0) rawChange = 0;
     }
+
+    // 2. GELİŞMİŞ ÇARPANLAR (Placement & K-Factor)
+    let multiplier = 1.0;
+
+    // A) Placement Matches (İlk 5 Maç)
+    // Yeni oyuncu veya sezon başı
+    if (totalMatches <= ELO_CONFIG.PLACEMENT_MATCHES) {
+        multiplier = ELO_CONFIG.PLACEMENT_BONUS_MULTIPLIER;
+    }
+    // B) Dinamik K-Factor (Lig Seviyesine Göre)
+    else {
+        if (currentElo < 800) {
+            multiplier = ELO_CONFIG.K_FACTOR.LOW; // Hızlı lig atlama/düşme
+        } else if (currentElo >= 1600) {
+            multiplier = ELO_CONFIG.K_FACTOR.HIGH; // Zorlu rekabet (daha az puan)
+        } else {
+            multiplier = ELO_CONFIG.K_FACTOR.MID; // Standart
+        }
+    }
+
+    // Final Hesaplama
+    let finalChange = Math.round(rawChange * multiplier);
+
+    // Düşük seviyede (0-800) kayıp koruması (Opsiyonel ama iyi)
+    // Eğer K-Factor LOW ise ve kaybediyorsa, kaybı biraz azaltabiliriz. Ama şimdilik standart bırakalım.
 
     return finalChange;
 }

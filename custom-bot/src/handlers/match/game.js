@@ -669,8 +669,8 @@ module.exports = {
                         else user.matchStats.winStreak = currentStreak - 1;
                     }
 
-                    // ELO değişikliğini hesapla
-                    const eloChange = eloService.calculateMatchEloChange({
+                    // ELO değişikliğini hesapla (GELİŞMİŞ SİSTEM)
+                    const eloResult = eloService.calculateMatchEloChange({
                         isWin,
                         roundDiff,
                         myTeamAvg,
@@ -678,10 +678,13 @@ module.exports = {
                         isMvpWinner: match.mvpPlayerId === pid,
                         isMvpLoser: match.mvpLoserId === pid,
                         currentStreak: currentStreak
-                    });
+                    }, oldElo);
+
+                    const eloChange = eloResult.change;
+                    const changeReason = eloResult.reason;
 
                     // ELO'yu uygula (Audit log ile)
-                    const reason = isWin ? `Win vs Avg:${enemyTeamAvg}` : `Loss vs Avg:${enemyTeamAvg}`;
+                    const reason = isWin ? `Win (${changeReason})` : `Loss (${changeReason})`;
                     await eloService.applyEloChange(user, eloChange, `Match #${match.matchNumber} | ${reason}`);
 
                     // Rank Rolü Senkronizasyonu
