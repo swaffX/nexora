@@ -100,29 +100,34 @@ module.exports = {
     /**
      * Üyenin rank rolünü günceller (Veritabanından ID alır)
      */
+    /**
+     * Üyenin rank rolünü günceller (Veritabanından ID alır)
+     */
     async syncRank(member, newLevel) {
         if (!member || !member.guild || !newLevel) return;
 
-        const LEVEL_ROLES = {
-            1: '1469097452199088169', 2: '1469097453109383221', 3: '1469097454979911813',
-            4: '1469097456523284500', 5: '1469097457303687180', 6: '1469097485514575895',
-            7: '1469097487016132810', 8: '1469097488429355158', 9: '1469097489457090754',
-            10: '1469097490824564747'
-        };
+        // Rolleri veritabanından/cache'den al (Hardcoded ID'lerden kurtulduk)
+        // ensureRolesExist zaten mevcut ID'leri döndürür veya oluşturur
+        const rolesMap = await this.ensureRolesExist(member.guild);
 
-        const REQUIRED_VALORANT_ROLE = '1466189076347486268';
-        const ALL_LEVEL_ROLES = Object.values(LEVEL_ROLES);
-        const targetRoleId = LEVEL_ROLES[newLevel];
+        if (!rolesMap) {
+            console.error('[RankHandler] Roller yüklenemedi, sync iptal.');
+            return;
+        }
+
+        const REQUIRED_VALORANT_ROLE = '1466189076347486268'; // Bu rol ID'si sabit (Giriş rolü)
+        const ALL_LEVEL_ROLE_IDS = Object.values(rolesMap);
+        const targetRoleId = rolesMap[newLevel];
 
         // 1. Üye sunucuda değilse veya Valorant rolü yoksa tüm level rollerini sil
         if (!member.roles.cache.has(REQUIRED_VALORANT_ROLE)) {
-            const hasAny = member.roles.cache.filter(r => ALL_LEVEL_ROLES.includes(r.id));
+            const hasAny = member.roles.cache.filter(r => ALL_LEVEL_ROLE_IDS.includes(r.id));
             if (hasAny.size > 0) await member.roles.remove(hasAny).catch(() => { });
             return;
         }
 
         // 2. Yanlış olan tüm level rollerini tespit et
-        const rolesToRemove = member.roles.cache.filter(r => ALL_LEVEL_ROLES.includes(r.id) && r.id !== targetRoleId);
+        const rolesToRemove = member.roles.cache.filter(r => ALL_LEVEL_ROLE_IDS.includes(r.id) && r.id !== targetRoleId);
         const hasTarget = member.roles.cache.has(targetRoleId);
 
         // 3. Değişiklik Gerekiyorsa Uygula
@@ -132,7 +137,7 @@ module.exports = {
                 let currentRoleIds = Array.from(member.roles.cache.keys());
 
                 // Cleanup level roles
-                currentRoleIds = currentRoleIds.filter(id => !ALL_LEVEL_ROLES.includes(id));
+                currentRoleIds = currentRoleIds.filter(id => !ALL_LEVEL_ROLE_IDS.includes(id));
 
                 // Add target level role
                 if (targetRoleId) currentRoleIds.push(targetRoleId);
@@ -141,7 +146,7 @@ module.exports = {
 
                 await member.roles.set(currentRoleIds, `Auto Rank Update: Level ${newLevel}`);
 
-                logger.success(`[SYNC-SUCCESS] ${member.user.tag} artık Level ${newLevel}.`);
+                logger.success(`[SYNC-SUCCESS] ${member.user.tag} artık Level ${newLevel} (${this.getRoleName(newLevel)}).`);
             } catch (e) {
                 logger.error(`[SYNC-ERROR] ${member.user.tag} işlemi başarısız: ${e.message}`);
                 if (e.message.includes('Missing Permissions')) {
