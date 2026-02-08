@@ -19,9 +19,8 @@ module.exports = {
             // 1. Tüm Kullanıcıları Al
             const allUsers = await User.find({ odaId: guildId });
 
-            // 2. Sunucudaki üyeleri çek (Rol kontrolü için)
-            await interaction.editReply(`🔄 Üye listesi güncelleniyor...`);
-            await interaction.guild.members.fetch();
+            // 2. Global fetch verimsiz ve rate limit (Opcode 8) riski taşıyor.
+            // Bunun yerine aşağıda cache kontrolü ve individual fetch yapacağız.
 
             const VALORANT_ROLE_ID = CONFIG.ROLES.VALORANT;
 
@@ -33,7 +32,17 @@ module.exports = {
 
             for (const userDoc of allUsers) {
                 try {
-                    const member = interaction.guild.members.cache.get(userDoc.odasi);
+                    let member = interaction.guild.members.cache.get(userDoc.odasi);
+
+                    if (!member) {
+                        try {
+                            member = await interaction.guild.members.fetch(userDoc.odasi);
+                        } catch (e) {
+                            // Üye sunucuda yok veya bulunamadı
+                            skippedCount++;
+                            continue;
+                        }
+                    }
 
                     // ROL KONTROLÜ: Sadece rolü olanları güncelle
                     if (!member || !member.roles.cache.has(VALORANT_ROLE_ID)) {
@@ -45,11 +54,7 @@ module.exports = {
                     eloService.ensureValidStats(userDoc);
 
                     // 3. Geçmiş Maçlardan Tekrar Hesapla
-                    // (recalculateStatsFromHistory zaten eloService içinde var ve geçmiş maçları tarıyor)
                     await eloService.recalculateStatsFromHistory(userDoc);
-
-                    // 4. ELO'yu kontrol et (Gelecekte opsiyonel olarak ELO'yu da sıfırdan hesaplatabiliriz ama şimdilik sadece Win/Loss/MVP sayısını düzeltiyoruz)
-                    // ELO'yu sıfırdan hesaplamak riskli olabilir (maç sırası önemli), o yüzden şimdilik sadece istatistikleri senkronize edelim.
 
                     updatedCount++;
 
