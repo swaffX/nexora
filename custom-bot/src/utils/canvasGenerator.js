@@ -277,8 +277,10 @@ module.exports = {
         let bgImg = null;
         if (currentBg !== 'Default') {
             try {
-                const mapPath = path.join(__dirname, '..', '..', 'assets', 'maps', `${currentBg}.png`);
-                if (fs.existsSync(mapPath)) bgImg = await loadImage(mapPath);
+                const themeConfig = eloService.ELO_CONFIG.BACKGROUND_THEMES[currentBg];
+                const fileName = themeConfig ? themeConfig.path : `${currentBg}.png`;
+                const mapPath = path.join(__dirname, '..', '..', 'assets', 'maps', fileName);
+                if (fs.existsSync(mapPath)) bgImg = await loadCachedImage(mapPath);
             } catch (e) { }
         }
 
@@ -911,8 +913,10 @@ module.exports = {
         let bgImg = null;
         if (currentBg !== 'Default') {
             try {
-                const mapPath = path.join(__dirname, '..', '..', 'assets', 'maps', `${currentBg}.png`);
-                if (fs.existsSync(mapPath)) bgImg = await loadImage(mapPath);
+                const themeConfig = eloService.ELO_CONFIG.BACKGROUND_THEMES[currentBg];
+                const fileName = themeConfig ? themeConfig.path : `${currentBg}.png`;
+                const mapPath = path.join(__dirname, '..', '..', 'assets', 'maps', fileName);
+                if (fs.existsSync(mapPath)) bgImg = await loadCachedImage(mapPath);
             } catch (e) { }
         }
 
