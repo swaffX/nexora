@@ -9,7 +9,7 @@ const {
     ModalBuilder,
     TextInputBuilder,
     TextInputStyle
-, MessageFlags } = require('discord.js');
+    , MessageFlags } = require('discord.js');
 const path = require('path');
 const { TempVoice } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
 
@@ -104,29 +104,66 @@ async function handleLeave(oldState) {
     }
 }
 
-// 🎛️ KONTROL PANELİ
+// 🎛️ KONTROL PANELİ (Modern Design)
 async function sendControlPanel(channel, owner) {
     const embed = new EmbedBuilder()
-        .setColor('#2F3136')
-        .setTitle(`🎛️ ${owner.user.username}'s Voice Control`)
-        .setDescription('Kanalınızı yönetmek için aşağıdaki butonları kullanın.')
-        .addFields(
-            { name: '🔒 Kilitle/Aç', value: 'Odayı herkese kapatır/açar.', inline: true },
-            { name: '✏️ İsim Değiştir', value: 'Odanın adını değiştirir.', inline: true },
-            { name: '👥 Limit Koy', value: 'Kullanıcı limiti belirler.', inline: true }
+        .setColor('#5865F2') // Discord Blurple
+        .setAuthor({
+            name: '🎧 Voice Master',
+            iconURL: owner.user.displayAvatarURL({ dynamic: true })
+        })
+        .setTitle(`✨ ${owner.user.displayName || owner.user.username}'s Room`)
+        .setDescription(
+            `> Hoş geldin! Bu senin özel ses odan.\n` +
+            `> Aşağıdaki butonlarla odanı yönetebilirsin.\n\n` +
+            `**🔐 Güvenlik**\n` +
+            `\`Kilitle\` - Odayı herkese kapat\n` +
+            `\`Aç\` - Odayı herkese aç\n\n` +
+            `**⚙️ Ayarlar**\n` +
+            `\`İsim\` - Oda ismini değiştir\n` +
+            `\`Limit\` - Kişi sınırı belirle\n` +
+            `\`At\` - Birini odadan at`
         )
-        .setFooter({ text: 'Nexora Voice Master' });
+        .setThumbnail(owner.user.displayAvatarURL({ dynamic: true, size: 128 }))
+        .setFooter({ text: '🌟 Nexora Voice Master • Odandan çıkınca oda silinir' })
+        .setTimestamp();
 
-    const row = new ActionRowBuilder()
+    // Row 1: Güvenlik Butonları
+    const row1 = new ActionRowBuilder()
         .addComponents(
-            new ButtonBuilder().setCustomId(`voice_lock_${channel.id}`).setEmoji('🔒').setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId(`voice_unlock_${channel.id}`).setEmoji('🔓').setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId(`voice_edit_${channel.id}`).setEmoji('✏️').setStyle(ButtonStyle.Primary),
-            new ButtonBuilder().setCustomId(`voice_limit_${channel.id}`).setEmoji('👥').setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId(`voice_kick_${channel.id}`).setEmoji('🚫').setStyle(ButtonStyle.Danger)
+            new ButtonBuilder()
+                .setCustomId(`voice_lock_${channel.id}`)
+                .setLabel('Kilitle')
+                .setEmoji('🔒')
+                .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+                .setCustomId(`voice_unlock_${channel.id}`)
+                .setLabel('Aç')
+                .setEmoji('🔓')
+                .setStyle(ButtonStyle.Success)
         );
 
-    const msg = await channel.send({ embeds: [embed], components: [row] });
+    // Row 2: Ayar Butonları
+    const row2 = new ActionRowBuilder()
+        .addComponents(
+            new ButtonBuilder()
+                .setCustomId(`voice_edit_${channel.id}`)
+                .setLabel('İsim Değiştir')
+                .setEmoji('✏️')
+                .setStyle(ButtonStyle.Primary),
+            new ButtonBuilder()
+                .setCustomId(`voice_limit_${channel.id}`)
+                .setLabel('Limit Koy')
+                .setEmoji('👥')
+                .setStyle(ButtonStyle.Primary),
+            new ButtonBuilder()
+                .setCustomId(`voice_kick_${channel.id}`)
+                .setLabel('Birini At')
+                .setEmoji('🚫')
+                .setStyle(ButtonStyle.Danger)
+        );
+
+    const msg = await channel.send({ embeds: [embed], components: [row1, row2] });
 
     // Pin at ki mesaj kaybolmasın (Opsiyonel)
     // await msg.pin().catch(() => {});

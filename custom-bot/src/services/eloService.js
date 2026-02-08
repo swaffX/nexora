@@ -23,7 +23,7 @@ const ELO_CONFIG = {
     FAIRNESS_DIVISOR: 40, // Her 40 ELO farkı = ±1 puan
     MAX_FAIRNESS_ADJUSTMENT: 10,
     LEVEL_THRESHOLDS: [
-        { max: 200, level: 1, name: 'Challenger I' },
+        { max: 199, level: 1, name: 'Challenger I' },
         { max: 400, level: 2, name: 'Challenger II' },
         { max: 600, level: 3, name: 'Challenger III' },
         { max: 850, level: 4, name: 'Expert' },
@@ -51,6 +51,7 @@ const ELO_CONFIG = {
         'Default': { path: null, name: 'Varsayılan Dark' },
         'Raze': { path: 'Raze.png', name: 'Raze Special' },
         'Jett': { path: 'Jett.png', name: 'Jett Special' },
+        'Phoenix': { path: 'Phoenix.png', name: 'Phoenix Special' },
     },
 };
 

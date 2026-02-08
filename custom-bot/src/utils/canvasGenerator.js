@@ -76,7 +76,7 @@ module.exports = {
         let mapBg = null;
         try {
             const assetsPath = path.join(__dirname, '..', '..', 'assets', 'maps');
-            const mapName = match.selectedMap || 'Unknown';
+            const mapName = match.selectedMap || match.map || 'Unknown';
             let p = path.join(assetsPath, `${mapName}.png`);
             if (!fs.existsSync(p)) p = path.join(assetsPath, `${mapName.toLowerCase()}.png`);
 
@@ -102,13 +102,14 @@ module.exports = {
 
         // 2. Header (Skor)
         ctx.textAlign = 'center';
-        ctx.font = 'bold 30px "Segoe UI", sans-serif';
+        ctx.font = 'bold 30px Arial, sans-serif';
         ctx.fillStyle = '#a1a1aa';
-        ctx.fillText((match.selectedMap || 'MAP').toUpperCase(), width / 2, 60);
+        const mapName = (match.selectedMap || match.map || 'MAP').toUpperCase();
+        ctx.fillText(mapName, width / 2, 60);
 
-        ctx.font = 'bold 120px "DIN Alternate", sans-serif';
-        const scoreA = match.scoreA || 0;
-        const scoreB = match.scoreB || 0;
+        ctx.font = 'bold 120px Arial, sans-serif';
+        const scoreA = match.scoreA ?? match.score?.A ?? 0;
+        const scoreB = match.scoreB ?? match.score?.B ?? 0;
         const colorA = scoreA > scoreB ? '#3b82f6' : (scoreA < scoreB ? '#ef4444' : '#fff');
         const colorB = scoreB > scoreA ? '#3b82f6' : (scoreB < scoreA ? '#ef4444' : '#fff');
 
@@ -136,7 +137,7 @@ module.exports = {
         const teamBX = width - 80 - colWidth;
 
         ctx.textAlign = 'left';
-        ctx.font = 'bold 35px "VALORANT", sans-serif';
+        ctx.font = 'bold 35px Arial, sans-serif';
         ctx.fillStyle = '#3b82f6';
         ctx.shadowColor = '#3b82f6'; ctx.shadowBlur = 10;
         ctx.fillText('TEAM A', teamAX, startY - 20);
@@ -148,11 +149,16 @@ module.exports = {
         ctx.fillText('TEAM B', teamBX + colWidth, startY - 20);
         ctx.shadowBlur = 0;
 
+        // Ensure eloChanges is a valid array
+        const safeEloChanges = Array.isArray(eloChanges) ? eloChanges : [];
+
         const drawPlayerRow = async (userId, x, y, isRightAlign, teamColor) => {
             const user = playersData[userId] || { username: 'Unknown' };
-            const eloLog = eloChanges.find(l => l.userId === userId) || { change: 0, newElo: 100 };
+            const eloLog = safeEloChanges.find(l => l.userId === userId) || { change: 0, newElo: 100 };
             const level = eloService.getLevelFromElo(eloLog.newElo);
-            const isMvp = (match.mvpPlayerId === userId) || (match.mvpLoserId === userId);
+            const mvpPlayer = match.mvpPlayerId || match.mvp;
+            const mvpLoser = match.mvpLoserId || match.loserMvp;
+            const isMvp = (mvpPlayer === userId) || (mvpLoser === userId);
 
             const grad = ctx.createLinearGradient(x, y, x + colWidth, y);
             if (isRightAlign) {
@@ -187,17 +193,17 @@ module.exports = {
                 } catch (e) { }
             }
 
-            ctx.font = 'bold 22px "Segoe UI", sans-serif';
+            ctx.font = 'bold 22px Arial, sans-serif';
             ctx.fillStyle = '#fff';
             const nameX = isRightAlign ? avatarX - 15 : avatarX + avatarSize + 15;
             ctx.textAlign = isRightAlign ? 'right' : 'left';
-            let name = user.username.toUpperCase();
+            let name = (user.username || 'Unknown').toUpperCase();
             if (name.length > 12) name = name.substring(0, 12) + '..';
             ctx.fillText(name, nameX, y + 38);
 
             const changeText = eloLog.change > 0 ? `+${eloLog.change}` : `${eloLog.change}`;
             const changeColor = eloLog.change >= 0 ? '#2ecc71' : '#ef4444';
-            ctx.font = 'bold 22px "DIN Alternate", sans-serif';
+            ctx.font = 'bold 22px Arial, sans-serif';
             ctx.fillStyle = changeColor;
 
 
@@ -210,14 +216,16 @@ module.exports = {
 
         // Draw Team A (Left)
         let curY = startY;
-        for (const userId of match.teams.A) {
+        const teamAVector = match.teamA || match.teams?.A || [];
+        for (const userId of teamAVector) {
             await drawPlayerRow(userId, teamAX, curY, false, '#3b82f6');
             curY += 70;
         }
 
         // Draw Team B (Right)
         curY = startY;
-        for (const userId of match.teams.B) {
+        const teamBVector = match.teamB || match.teams?.B || [];
+        for (const userId of teamBVector) {
             await drawPlayerRow(userId, teamBX, curY, true, '#ef4444');
             curY += 70;
         }
@@ -226,10 +234,10 @@ module.exports = {
         ctx.fillStyle = 'rgba(255,255,255,0.05)';
         ctx.fillRect(0, height - 60, width, 60);
 
-        ctx.font = '18px "Segoe UI", sans-serif';
+        ctx.font = '18px Arial, sans-serif';
         ctx.fillStyle = '#52525b';
         ctx.textAlign = 'left';
-        ctx.fillText(`MATCH ID: ${match.matchId}`, 30, height - 23);
+        ctx.fillText(`MATCH ID: ${match.matchId || match.matchNumber}`, 30, height - 23);
 
         ctx.textAlign = 'right';
         ctx.fillText(new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }), width - 30, height - 23);
@@ -297,7 +305,7 @@ module.exports = {
         } catch (e) { }
 
         const textX = 380;
-        ctx.font = 'bold 70px "Segoe UI", sans-serif';
+        ctx.font = 'bold 70px Arial, sans-serif';
         const nameX = textX;
 
         ctx.fillStyle = '#ffffff';
@@ -307,7 +315,7 @@ module.exports = {
 
         // Title
         if (stats.activeTitle) {
-            ctx.font = 'bold 24px "Segoe UI", sans-serif';
+            ctx.font = 'bold 24px Arial, sans-serif';
             ctx.fillStyle = eloService.getTitleColor(stats.activeTitle);
             ctx.fillText(stats.activeTitle.toUpperCase(), nameX, 125);
         }
@@ -333,7 +341,7 @@ module.exports = {
             ctx.shadowBlur = 0;
         }
 
-        ctx.font = 'bold 32px "Segoe UI", sans-serif';
+        ctx.font = 'bold 32px Arial, sans-serif';
         ctx.fillStyle = '#cccccc';
         const eloText = `${elo} ELO (#${rank || 'Unranked'})`;
         ctx.fillText(eloText, textX, progressY + 55);
@@ -358,11 +366,11 @@ module.exports = {
             const x = textX + (idx * (boxWidth + gap));
             ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
             ctx.fillRect(x, statsY, boxWidth, boxHeight);
-            ctx.font = 'bold 45px "Segoe UI", sans-serif';
+            ctx.font = 'bold 45px Arial, sans-serif';
             ctx.fillStyle = color;
             ctx.textAlign = 'center';
             ctx.fillText(String(value), x + boxWidth / 2, statsY + 60);
-            ctx.font = '20px "Segoe UI", sans-serif';
+            ctx.font = '20px Arial, sans-serif';
             ctx.fillStyle = '#888';
             ctx.fillText(label.toUpperCase(), x + boxWidth / 2, statsY + 95);
             ctx.textAlign = 'left';
@@ -424,7 +432,7 @@ module.exports = {
         ctx.fillStyle = glow;
         ctx.fillRect(0, 0, width, height);
 
-        ctx.font = 'bold 30px "Segoe UI", sans-serif';
+        ctx.font = 'bold 30px Arial, sans-serif';
         ctx.fillStyle = '#666';
         ctx.fillText('LAST MATCHES (5)', 50, 70);
 
@@ -476,18 +484,18 @@ module.exports = {
             ctx.fillStyle = color;
             ctx.fillRect(50, matchY, 5, 80);
 
-            ctx.font = 'bold 35px "DIN Alternate", sans-serif';
+            ctx.font = 'bold 35px Arial, sans-serif';
             ctx.fillStyle = color;
             ctx.fillText(symbol, 80, matchY + 52);
 
             ctx.fillStyle = '#fff';
-            ctx.font = 'bold 30px "Segoe UI", sans-serif';
+            ctx.font = 'bold 30px Arial, sans-serif';
             ctx.fillText(match.map.toUpperCase(), 140, matchY + 50);
 
             let detailText = match.score;
 
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 50px Arial, sans-serif';
+            ctx.fillStyle = '#ccc';
+            ctx.font = 'bold 30px Arial, sans-serif';
             ctx.shadowColor = '#000'; ctx.shadowBlur = 5;
             ctx.textAlign = 'center';
             ctx.fillText(detailText, 340, matchY + 50); // Skoru map üzerinde merkeze çektik
@@ -499,7 +507,7 @@ module.exports = {
                 const sign = match.eloChange > 0 ? '+' : '';
                 const eloChangeText = `${sign}${match.eloChange}`;
                 ctx.fillStyle = match.eloChange >= 0 ? '#2ecc71' : '#e74c3c';
-                ctx.font = 'bold 32px "DIN Alternate", sans-serif';
+                ctx.font = 'bold 32px Arial, sans-serif';
                 ctx.textAlign = 'left';
                 ctx.fillText(eloChangeText, infoX, matchY + 35);
 
@@ -507,14 +515,14 @@ module.exports = {
                 if (match.isMvp) {
                     const eloWidth = ctx.measureText(eloChangeText).width;
                     ctx.fillStyle = '#fbbf24';
-                    ctx.font = 'bold 18px "VALORANT", sans-serif';
+                    ctx.font = 'bold 18px Arial, sans-serif';
                     ctx.fillText('MVP', infoX + eloWidth + 15, matchY + 33);
                     drawStar(ctx, infoX + eloWidth + 75, matchY + 28, 5, 8, 4, '#fbbf24');
                 }
             }
 
             // Tarih (ELO değişiminin altı)
-            ctx.font = 'italic 18px "Segoe UI", sans-serif';
+            ctx.font = 'italic 18px Arial, sans-serif';
             ctx.fillStyle = '#888';
             ctx.textAlign = 'left';
             ctx.fillText(match.date, infoX, matchY + 65);
@@ -530,19 +538,19 @@ module.exports = {
         // Box 1: Best Map (Stat-based)
         if (bestMap) {
             ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(rightX, 100, 430, 120);
-            ctx.font = 'bold 20px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('BEST MAP', rightX + 20, 140);
-            ctx.font = 'bold 45px "Segoe UI", sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText(bestMap.name.toUpperCase(), rightX + 20, 190);
-            ctx.font = '30px "DIN Alternate", sans-serif'; ctx.fillStyle = '#2ecc71'; ctx.textAlign = 'right'; ctx.fillText(`%${bestMap.wr} WR`, rightX + 410, 190); ctx.textAlign = 'left';
+            ctx.font = 'bold 20px Arial, sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('BEST MAP', rightX + 20, 140);
+            ctx.font = 'bold 45px Arial, sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText(bestMap.name.toUpperCase(), rightX + 20, 190);
+            ctx.font = '30px Arial, sans-serif'; ctx.fillStyle = '#2ecc71'; ctx.textAlign = 'right'; ctx.fillText(`%${bestMap.wr} WR`, rightX + 410, 190); ctx.textAlign = 'left';
         } else {
             ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(rightX, 100, 430, 120);
-            ctx.font = 'bold 20px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('BEST MAP', rightX + 20, 140);
-            ctx.font = 'bold 35px "Segoe UI", sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText('NO DATA', rightX + 20, 190);
+            ctx.font = 'bold 20px Arial, sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('BEST MAP', rightX + 20, 140);
+            ctx.font = 'bold 35px Arial, sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText('NO DATA', rightX + 20, 190);
         }
 
         // Box 2: Favorite Duo
         if (favoriteTeammate) {
             ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(rightX, 240, 430, 120);
-            ctx.font = 'bold 20px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('PLAYED MOST TEAMMATE', rightX + 20, 280);
+            ctx.font = 'bold 20px Arial, sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('PLAYED MOST TEAMMATE', rightX + 20, 280);
             if (favoriteTeammate.avatarURL) {
                 try {
                     const avatar = await loadImage(favoriteTeammate.avatarURL);
@@ -552,9 +560,9 @@ module.exports = {
             }
             ctx.fillStyle = '#fff';
             let duoName = favoriteTeammate.username.toUpperCase();
-            if (duoName.length > 15) ctx.font = 'bold 25px "Segoe UI", sans-serif';
-            else if (duoName.length > 10) ctx.font = 'bold 30px "Segoe UI", sans-serif';
-            else ctx.font = 'bold 35px "Segoe UI", sans-serif';
+            if (duoName.length > 15) ctx.font = 'bold 25px Arial, sans-serif';
+            else if (duoName.length > 10) ctx.font = 'bold 30px Arial, sans-serif';
+            else ctx.font = 'bold 35px Arial, sans-serif';
             ctx.fillText(duoName, rightX + 110, 330);
         }
 
@@ -562,14 +570,14 @@ module.exports = {
         ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(rightX, 380, 430, 120);
         const w = stats.totalWins || 0; const l = stats.totalLosses || 0; const mtotal = w + l;
         const wr_val = mtotal > 0 ? Math.round((w / mtotal) * 100) : 0;
-        ctx.font = 'bold 20px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('WIN RATE (SEASON)', rightX + 20, 420);
-        ctx.font = 'bold 50px "DIN Alternate", sans-serif'; ctx.fillStyle = wr_val >= 50 ? '#2ecc71' : '#e74c3c'; ctx.fillText(`%${wr_val}`, rightX + 20, 470);
-        ctx.font = '30px "DIN Alternate", sans-serif'; ctx.fillStyle = '#fff'; ctx.textAlign = 'right'; ctx.fillText(`${w}W / ${l}L`, rightX + 410, 470); ctx.textAlign = 'left';
+        ctx.font = 'bold 20px Arial, sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('WIN RATE (SEASON)', rightX + 20, 420);
+        ctx.font = 'bold 50px Arial, sans-serif'; ctx.fillStyle = wr_val >= 50 ? '#2ecc71' : '#e74c3c'; ctx.fillText(`%${wr_val}`, rightX + 20, 470);
+        ctx.font = '30px Arial, sans-serif'; ctx.fillStyle = '#fff'; ctx.textAlign = 'right'; ctx.fillText(`${w}W / ${l}L`, rightX + 410, 470); ctx.textAlign = 'left';
 
         // Total MVPs
         ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(rightX, 520, 430, 120);
-        ctx.font = 'bold 20px "Segoe UI", sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('TOTAL MVPs', rightX + 20, 560);
-        ctx.font = 'bold 55px "DIN Alternate", sans-serif'; ctx.fillStyle = '#fbbf24';
+        ctx.font = 'bold 20px Arial, sans-serif'; ctx.fillStyle = '#666'; ctx.fillText('TOTAL MVPs', rightX + 20, 560);
+        ctx.font = 'bold 55px Arial, sans-serif'; ctx.fillStyle = '#fbbf24';
         ctx.shadowColor = 'rgba(251, 191, 36, 0.3)'; ctx.shadowBlur = 15;
         ctx.fillText(String(stats.totalMVPs || 0), rightX + 20, 615);
         ctx.shadowBlur = 0;
@@ -579,7 +587,7 @@ module.exports = {
         // Ezeli Rakip (Nemesis)
         if (nemesisData) {
             ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(rightX, 660, 430, 120);
-            ctx.font = 'bold 20px "Segoe UI", sans-serif'; ctx.fillStyle = '#ef4444'; ctx.fillText('EZELİ RAKİP', rightX + 20, 700);
+            ctx.font = 'bold 20px Arial, sans-serif'; ctx.fillStyle = '#ef4444'; ctx.fillText('EZELİ RAKİP', rightX + 20, 700);
             if (nemesisData.avatarURL) {
                 try {
                     const av = await loadImage(nemesisData.avatarURL);
@@ -588,11 +596,11 @@ module.exports = {
                 } catch (e) { }
             }
             ctx.fillStyle = '#fff';
-            ctx.font = 'bold 30px "Segoe UI", sans-serif';
+            ctx.font = 'bold 30px Arial, sans-serif';
             let nName = nemesisData.username.toUpperCase();
             if (nName.length > 12) nName = nName.substring(0, 10) + '..';
             ctx.fillText(nName, rightX + 110, 750);
-            ctx.font = 'bold 24px "DIN Alternate", sans-serif'; ctx.fillStyle = '#ef4444'; ctx.textAlign = 'right';
+            ctx.font = 'bold 24px Arial, sans-serif'; ctx.fillStyle = '#ef4444'; ctx.textAlign = 'right';
             ctx.fillText(`${nemesisData.count} KEZ YENDİ`, rightX + 410, 750); ctx.textAlign = 'left';
         }
 
@@ -613,7 +621,7 @@ module.exports = {
                 ctx.drawImage(avatar, 40, footerMid - 40, 80, 80); ctx.restore();
             } catch (e) { }
         }
-        ctx.font = 'bold 50px "Segoe UI", sans-serif';
+        ctx.font = 'bold 50px Arial, sans-serif';
         let nameX = 140;
         if (rank) {
             ctx.fillStyle = '#666'; ctx.fillText(`#${rank}`, nameX, footerMid - (stats.activeTitle ? 15 : 0));
@@ -625,13 +633,13 @@ module.exports = {
         ctx.fillText(mainName, nameX, footerMid - (stats.activeTitle ? 15 : 0));
 
         if (stats.activeTitle) {
-            ctx.font = 'bold 22px "Segoe UI", sans-serif';
+            ctx.font = 'bold 22px Arial, sans-serif';
             ctx.fillStyle = eloService.getTitleColor(stats.activeTitle);
             ctx.fillText(stats.activeTitle.toUpperCase(), 140, footerMid + 25);
         }
 
         ctx.textAlign = 'right';
-        ctx.font = 'bold 50px "DIN Alternate", sans-serif';
+        ctx.font = 'bold 50px Arial, sans-serif';
         const eloText = `${stats.elo !== undefined ? stats.elo : 100} ELO`;
         const eloX = width - 50;
         const eloWidth = ctx.measureText(eloText).width;
@@ -679,14 +687,14 @@ module.exports = {
         ctx.restore();
 
         // Header
-        ctx.font = 'bold 70px "VALORANT", sans-serif';
+        ctx.font = 'bold 70px Arial, sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
         ctx.shadowColor = 'rgba(255,255,255,0.4)'; ctx.shadowBlur = 30;
         ctx.fillText('NEXORA TITLE\'S', width / 2, 100);
         ctx.shadowBlur = 0;
 
-        ctx.font = '24px "Segoe UI", sans-serif';
+        ctx.font = '24px Arial, sans-serif';
         ctx.fillStyle = '#a1a1aa';
         ctx.fillText('Maçlardaki performansına göre nadir ünvanlar kazan!', width / 2, 150);
 
@@ -721,7 +729,7 @@ module.exports = {
 
             // Description
             ctx.textAlign = 'right';
-            ctx.font = 'italic 22px "Segoe UI", sans-serif';
+            ctx.font = 'italic 22px Arial, sans-serif';
             ctx.fillStyle = '#d4d4d8';
             ctx.fillText(data.description, rowX + rowW - 40, y);
 
@@ -769,10 +777,10 @@ module.exports = {
         ctx.shadowColor = 'rgba(255,255,255,0.3)';
         ctx.shadowBlur = 20;
 
-        ctx.font = 'bold 150px "VALORANT", sans-serif';
+        ctx.font = 'bold 150px Arial, sans-serif';
         ctx.fillText((data.map || 'UNKNOWN').toUpperCase(), width / 2, 250);
 
-        ctx.font = 'bold 60px "Segoe UI", sans-serif';
+        ctx.font = 'bold 60px Arial, sans-serif';
         ctx.fillStyle = '#94a3b8';
         ctx.fillText('FRANKFURT', width / 2, 330);
 
@@ -785,13 +793,13 @@ module.exports = {
         ctx.strokeRect(-100, -100, 200, 200);
         ctx.restore();
 
-        ctx.font = 'bold 120px "VALORANT", sans-serif';
+        ctx.font = 'bold 120px Arial, sans-serif';
         ctx.fillStyle = '#fff';
         ctx.fillText('VS', width / 2, height / 2 + 40);
         ctx.shadowBlur = 0; // Reset shadow after VS
 
         // 3. Side Headers
-        ctx.font = 'bold 40px "Segoe UI", sans-serif';
+        ctx.font = 'bold 40px Arial, sans-serif';
         ctx.letterSpacing = '10px';
 
         ctx.fillStyle = '#4ade80';
@@ -836,12 +844,12 @@ module.exports = {
             // Dynamic Font Scaling for Long Names
             let fontSize = 34;
             const maxNameWidth = 350;
-            ctx.font = `bold ${fontSize}px "Segoe UI", sans-serif`;
+            ctx.font = `bold ${fontSize}px Arial, sans-serif`;
             let nameWidth = ctx.measureText(player.name.toUpperCase()).width;
 
             while (nameWidth > maxNameWidth && fontSize > 18) {
                 fontSize -= 2;
-                ctx.font = `bold ${fontSize}px "Segoe UI", sans-serif`;
+                ctx.font = `bold ${fontSize}px Arial, sans-serif`;
                 nameWidth = ctx.measureText(player.name.toUpperCase()).width;
             }
 
@@ -850,7 +858,7 @@ module.exports = {
 
             // Connect to Title System (activeTitle)
             const playerTitle = (player.activeTitle || player.title || 'OYUNCU').toUpperCase();
-            ctx.font = '20px "Segoe UI", sans-serif';
+            ctx.font = '20px Arial, sans-serif';
             ctx.fillStyle = '#94a3b8';
             ctx.globalAlpha = 0.7;
             ctx.fillText(playerTitle, textX, y + 90);
@@ -902,8 +910,7 @@ module.exports = {
             ctx.fillRect(0, 0, width, height);
         }
 
-
-        ctx.font = 'bold 50px Arial, sans-serif';
+        ctx.font = '50px Arial, sans-serif';
         ctx.textAlign = 'center';
         ctx.fillStyle = '#fff';
         ctx.fillText('VS', width / 2, height / 2 + 20);
@@ -927,7 +934,7 @@ module.exports = {
             ctx.font = 'bold 45px Arial, sans-serif';
             ctx.fillStyle = '#fff';
             ctx.textAlign = 'center';
-            ctx.fillText((user.username || 'Unknown').toUpperCase(), midX, 320);
+            ctx.fillText(user.username.toUpperCase(), midX, 320);
 
             // Title
             if (stats.activeTitle) {
@@ -1018,14 +1025,14 @@ module.exports = {
 
         // Title
         ctx.textAlign = 'center';
-        ctx.font = 'bold 80px Arial, sans-serif';
+        ctx.font = 'bold 150px Arial, sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.shadowColor = 'rgba(255, 255, 255, 0.4)'; ctx.shadowBlur = 40;
         ctx.fillText("LEADERBOARD", width / 2, 200);
         ctx.shadowBlur = 0;
 
         // Subtitle
-        ctx.font = '50px "DIN Alternate", sans-serif';
+        ctx.font = '50px Arial, sans-serif';
         ctx.fillStyle = '#a1a1aa';
         ctx.letterSpacing = "10px";
         ctx.fillText(`SEASON 1  //  TOP ${users.length} PLAYERS`, width / 2, 280);
@@ -1098,7 +1105,7 @@ module.exports = {
 
             // 1. Rank (#1)
             ctx.textAlign = 'center';
-            ctx.font = 'bold 110px "DIN Alternate", sans-serif'; // Huge Rank
+            ctx.font = 'bold 110px Arial, sans-serif'; // Huge Rank
             ctx.fillStyle = rankFontColor;
             if (isTop3) { ctx.shadowColor = themeColor; ctx.shadowBlur = 20; }
             ctx.fillText(`#${rank}`, cardX + 120, y + 145);
@@ -1125,7 +1132,7 @@ module.exports = {
 
             // 3. Username
             ctx.textAlign = 'left';
-            ctx.font = 'bold 70px "Segoe UI", sans-serif'; // Reduced from 80
+            ctx.font = 'bold 70px Arial, sans-serif'; // Reduced from 80
             ctx.fillStyle = '#ffffff';
             let name = user.username ? user.username.toUpperCase() : 'UNKNOWN';
 
@@ -1159,7 +1166,7 @@ module.exports = {
             const t = w + l;
             const wr = t > 0 ? Math.round((w / t) * 100) : 0;
 
-            ctx.font = 'bold 50px "DIN Alternate", sans-serif'; // Restored to 50px (was 70)
+            ctx.font = 'bold 50px Arial, sans-serif'; // Restored to 50px (was 70)
             ctx.textAlign = 'center';
 
             // Wins
@@ -1175,18 +1182,18 @@ module.exports = {
             ctx.fillStyle = wr >= 50 ? '#2ecc71' : '#e74c3c';
             ctx.fillText(`${wr}%`, statsStart + 480, y + 120);
 
-            ctx.font = 'bold 24px "Segoe UI", sans-serif';
+            ctx.font = 'bold 24px Arial, sans-serif';
             ctx.fillStyle = '#71717a';
             ctx.fillText("WIN RATE", statsStart + 480, y + 160);
 
             // 6. ELO (Far Right)
             const eloX = width - 100;
             ctx.textAlign = 'right';
-            ctx.font = 'bold 90px "DIN Alternate", sans-serif';
+            ctx.font = 'bold 90px Arial, sans-serif';
             ctx.fillStyle = '#ffffff';
             ctx.fillText(`${stats.elo}`, eloX, y + 115);
 
-            ctx.font = 'bold 28px "Segoe UI", sans-serif';
+            ctx.font = 'bold 28px Arial, sans-serif';
             ctx.fillStyle = isTop3 ? themeColor : '#71717a';
             ctx.fillText("ELO POINTS", eloX, y + 160);
 
@@ -1195,7 +1202,7 @@ module.exports = {
 
         // Footer Text
         ctx.textAlign = 'center';
-        ctx.font = '30px "Segoe UI", sans-serif';
+        ctx.font = '30px Arial, sans-serif';
         ctx.fillStyle = '#52525b';
         ctx.fillText("NEXORA RANKED SYSTEM • DEVELOPED BY SWAFF", width / 2, height - 25);
 
@@ -1231,9 +1238,9 @@ module.exports = {
         // Header Info
         ctx.textAlign = 'center';
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 35px sans-serif';
+        ctx.font = ' Arial, sans-serif';
         ctx.fillText(`MATCH #${data.matchNumber}`, width / 2, 80);
-        ctx.font = '20px sans-serif';
+        ctx.font = ' Arial, sans-serif';
         ctx.fillStyle = '#71717a';
         ctx.fillText(data.lobbyName.toUpperCase(), width / 2, 110);
 
@@ -1266,11 +1273,11 @@ module.exports = {
                 ctx.beginPath(); ctx.arc(x, y - 50, 82, 0, Math.PI * 2); ctx.stroke();
 
                 ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 38px sans-serif';
+                ctx.font = ' Arial, sans-serif';
                 ctx.fillText(cap.name.toUpperCase().substring(0, 15), x, y + 80);
 
                 const lvInfo = getLevelInfo(cap.elo || 200);
-                ctx.font = 'bold 24px sans-serif';
+                ctx.font = ' Arial, sans-serif';
                 ctx.fillStyle = lvInfo.color;
                 ctx.fillText(`LV.${lvInfo.lv} • ${cap.elo} ELO`, x, y + 115);
             } else {
@@ -1280,9 +1287,9 @@ module.exports = {
                 ctx.setLineDash([]);
 
                 ctx.fillStyle = '#3f3f46';
-                ctx.font = 'bold 28px sans-serif';
+                ctx.font = ' Arial, sans-serif';
                 ctx.fillText(isLeft ? "TEAM A CAPTAIN" : "TEAM B CAPTAIN", x, y + 80);
-                ctx.font = '18px sans-serif';
+                ctx.font = ' Arial, sans-serif';
                 ctx.fillText("WAITING...", x, y + 110);
             }
         };
@@ -1353,7 +1360,7 @@ module.exports = {
 
         // VS Text
         ctx.textAlign = 'center';
-        ctx.font = 'bold italic 150px "VALORANT", sans-serif';
+        ctx.font = 'bold italic 150px Arial, sans-serif';
         ctx.fillStyle = '#fff';
         ctx.shadowColor = '#000'; ctx.shadowBlur = 30;
         ctx.fillText("VS", width / 2, height / 2 + 50);
@@ -1394,7 +1401,7 @@ module.exports = {
             // Name
             const name = captain.name ? captain.name.toUpperCase() : (user.username ? user.username.toUpperCase() : 'UNKNOWN');
             ctx.textAlign = 'center';
-            ctx.font = 'bold 80px "VALORANT", sans-serif';
+            ctx.font = 'bold 80px Arial, sans-serif';
             ctx.fillStyle = '#fff';
             ctx.shadowColor = '#000'; ctx.shadowBlur = 10;
             ctx.fillText(name, cx, cy + 160);
@@ -1403,7 +1410,7 @@ module.exports = {
             const stats = captain.stats || { elo: 100 };
             const lvlInfo = getLevelInfo(stats.elo);
 
-            ctx.font = 'bold 50px "DIN Alternate", sans-serif';
+            ctx.font = 'bold 50px Arial, sans-serif';
             ctx.fillStyle = '#ddd';
             ctx.fillText(`${stats.elo} ELO`, cx, cy + 220);
 
@@ -1427,171 +1434,84 @@ module.exports = {
     async createMapVetoImage(mapStates, selectedMap, statusText) {
         const maps = Object.keys(mapStates);
         const cardW = 220;
-        const cardH = 350;
+        const cardH = 320;
         const gap = 30;
 
-        // Dinamik Genişlik (Haritaların sığması için)
-        const totalContentWidth = maps.length * (cardW + gap) + 100;
-        const width = Math.max(2000, totalContentWidth); // Min 2000px
+        const totalWidth = maps.length * (cardW + gap) + 100;
+        const width = Math.max(1200, totalWidth);
         const height = 600;
 
         const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
 
         // Background
-        ctx.fillStyle = '#121212'; ctx.fillRect(0, 0, width, height);
+        const grad = ctx.createLinearGradient(0, 0, 0, height);
+        grad.addColorStop(0, '#0f172a');
+        grad.addColorStop(1, '#020617');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, width, height);
 
         // Header
-        ctx.font = 'bold 60px "VALORANT", sans-serif';
-        ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
-        ctx.fillText(statusText || "MAP SELECTION", width / 2, 80);
-
-        // Start X Update
-        const startX = (width - (maps.length * (cardW + gap) - gap)) / 2;
-        const getUI = () => {
-            const stats = userDoc.matchStats || {};
-            const myTitles = stats.titles || ['Rookie'];
-            const currentTitle = stats.activeTitle || 'Rookie';
-            const currentBg = userDoc.backgroundImage || 'Default';
-
-            const embed = new EmbedBuilder()
-                .setTitle('🎨 Profil Kişiselleştirme')
-                .setDescription('Profil kartlarınızda (ELO/Stats) görünecek tercihlerinizi ayarlayın.')
-                .addFields(
-                    { name: '🏆 Ünvan', value: `\`${currentTitle}\``, inline: true },
-                    { name: '🖼️ Arkaplan', value: `\`${currentBg}\``, inline: true }
-                )
-                .setColor('#fbbf24')
-                .setFooter({ text: 'Değişiklik yapmak için aşağıdaki menüleri kullanın.' });
-
-            // 1. Ünvan Menüsü
-            const titleOptions = myTitles.map(t => ({
-                label: t,
-                value: `title_${t}`,
-                description: eloService.ELO_CONFIG.TITLES[t]?.description || 'Nexora Title',
-                emoji: '🏆',
-                default: t === currentTitle
-            }));
-            const titleRow = new ActionRowBuilder().addComponents(
-                new StringSelectMenuBuilder()
-                    .setCustomId('select_title')
-                    .setPlaceholder('Ünvan seçin...')
-                    .addOptions(titleOptions)
-            );
-
-            // 2. Arkaplan Menüsü
-            const bgOptions = Object.keys(eloService.ELO_CONFIG.BACKGROUND_THEMES).slice(0, 25).map(bg => ({
-                label: bg,
-                value: `bg_${bg}`,
-                description: `${bg} temalı arkaplan.`,
-                emoji: '🖼️',
-                default: bg === currentBg
-            }));
-            const bgRow = new ActionRowBuilder().addComponents(
-                new StringSelectMenuBuilder()
-                    .setCustomId('select_bg')
-                    .setPlaceholder('Kart arkaplanı seçin...')
-                    .addOptions(bgOptions)
-            );
-
-            return { embeds: [embed], components: [titleRow, bgRow] };
-        };
-
-        const response = await interaction.editReply(getUI());
-        const collector = response.createMessageComponentCollector({ time: 300000 }); // 5 dk
-
-        collector.on('collect', async i => {
-            if (i.customId === 'select_title') {
-                const selected = i.values[0].replace('title_', '');
-                userDoc.matchStats.activeTitle = selected;
-                await userDoc.save();
-                await i.update(getUI());
-            }
-            else if (i.customId === 'select_bg') {
-                const selected = i.values[0].replace('bg_', '');
-                userDoc.backgroundImage = selected;
-                await userDoc.save();
-                await i.update(getUI());
-            }
-        }); 120;
-
-        // Background
-        const grad = ctx.createLinearGradient(0, 0, width, height);
-        grad.addColorStop(0, '#0f172a'); grad.addColorStop(1, '#1e293b');
-        ctx.fillStyle = grad; ctx.fillRect(0, 0, width, height);
-
-        // Center Divider
-        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-        ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(width / 2, 50); ctx.lineTo(width / 2, height - 50); ctx.stroke();
-
-        // Headers
         ctx.textAlign = 'center';
-        ctx.font = 'bold 80px Arial, sans-serif';
+        ctx.font = 'bold 60px Arial, sans-serif';
+        ctx.fillStyle = '#fff';
+        ctx.fillText(statusText || "MAP VETO RESULTS", width / 2, 80);
 
-        ctx.fillStyle = '#38bdf8'; // Team A Blue
-        ctx.fillText("TEAM A", width * 0.25, 120);
+        const startX = (width - (maps.length * (cardW + gap) - gap)) / 2;
 
-        ctx.fillStyle = '#f87171'; // Team B Red
-        ctx.fillText("TEAM B", width * 0.75, 120);
+        for (let i = 0; i < maps.length; i++) {
+            const mapName = maps[i];
+            const state = mapStates[mapName];
+            const isSelected = mapName === selectedMap;
+            const x = startX + i * (cardW + gap);
+            const y = 180;
 
-        const drawPlayer = async (player, index, isLeft) => {
-            const x = isLeft ? 100 : width - 100;
-            const y = startY + (index * (rowH + 20));
-            const w = (width / 2) - 200;
-            const align = isLeft ? 'left' : 'right';
-
-            // Card
-            ctx.fillStyle = 'rgba(255,255,255,0.05)';
-            ctx.beginPath(); ctx.roundRect(isLeft ? x : width / 2 + 100, y, w, rowH, 10); ctx.fill();
-
-            const pX = isLeft ? x : width / 2 + 100;
-
-            // Avatar
-            const avSize = 90;
-            const avX = isLeft ? pX + 20 : pX + w - avSize - 20;
-            const avY = y + (rowH - avSize) / 2;
-
-            if (player.avatarURL) {
-                try {
-                    const av = await loadImage(player.avatarURL);
-                    ctx.save();
-                    ctx.beginPath(); ctx.arc(avX + avSize / 2, avY + avSize / 2, avSize / 2, 0, Math.PI * 2); ctx.clip();
-                    ctx.drawImage(av, avX, avY, avSize, avSize);
-                    ctx.restore();
-                } catch (e) { }
-            }
-
-            // Name Scaling for Duel
-            const name = player.username ? player.username.toUpperCase() : 'UNKNOWN';
-            let fontSize = 45;
-            const maxNameWidth = w - 150;
-            ctx.font = `bold ${fontSize}px Arial, sans-serif`;
-            while (ctx.measureText(name).width > maxNameWidth && fontSize > 20) {
-                fontSize -= 2;
-                ctx.font = `bold ${fontSize}px Arial, sans-serif`;
-            }
-            ctx.fillStyle = '#fff';
-            ctx.textAlign = isLeft ? 'left' : 'right';
-            const textX = isLeft ? avX + avSize + 30 : avX - 30;
-            ctx.fillText(name, textX, y + 80);
-
-            // Level Icon
-            const lvlInfo = getLevelInfo(player.stats ? player.stats.elo : 100);
+            // Map Image
             try {
-                const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
-                if (fs.existsSync(iconPath)) {
-                    const icon = await loadImage(iconPath);
-                    const iSize = 50;
-                    const iX = isLeft ? textX + ctx.measureText(name).width + 20 : textX - ctx.measureText(name).width - iSize - 20;
-                    ctx.drawImage(icon, iX, y + 35, iSize, iSize);
+                const assetsPath = path.join(__dirname, '..', '..', 'assets', 'maps');
+                let p = path.join(assetsPath, `${mapName}.png`);
+                if (!fs.existsSync(p)) p = path.join(assetsPath, `${mapName.toLowerCase()}.png`);
+
+                if (fs.existsSync(p)) {
+                    const img = await loadImage(p);
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.roundRect(x, y, cardW, cardH, 20);
+                    ctx.clip();
+
+                    if (state.banned && !isSelected) {
+                        ctx.filter = 'grayscale(100%) brightness(0.3)';
+                    }
+
+                    ctx.drawImage(img, x, y, cardW, cardH);
+                    ctx.restore();
                 }
             } catch (e) { }
-        };
 
-        for (let i = 0; i < 5; i++) {
-            if (teamA[i]) await drawPlayer(teamA[i], i, true);
-            if (teamB[i]) await drawPlayer(teamB[i], i, false);
+            // Border
+            ctx.strokeStyle = isSelected ? '#3b82f6' : (state.banned ? '#ef4444' : '#52525b');
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.roundRect(x, y, cardW, cardH, 20);
+            ctx.stroke();
+
+            // Status Text
+            ctx.font = 'bold 24px Arial, sans-serif';
+            ctx.textAlign = 'center';
+            if (isSelected) {
+                ctx.fillStyle = '#3b82f6';
+                ctx.fillText("SELECTED", x + cardW / 2, y + cardH + 40);
+            } else if (state.banned) {
+                ctx.fillStyle = '#ef4444';
+                ctx.fillText("BANNED", x + cardW / 2, y + cardH + 40);
+            }
+
+            // Map Name Overlay
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(x, y + cardH - 60, cardW, 60);
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 28px Arial, sans-serif';
+            ctx.fillText(mapName.toUpperCase(), x + cardW / 2, y + cardH - 20);
         }
 
         return canvas.toBuffer('image/png');
@@ -1658,7 +1578,7 @@ module.exports = {
 
         // Subtext
         ctx.fillStyle = '#AAAAAA';
-        ctx.font = '30px "Segoe UI", sans-serif';
+        ctx.font = '30px Arial, sans-serif';
         ctx.fillText('SEÇİM HAKKINI KAZANDI', width / 2, 330);
 
         return canvas.toBuffer('image/png');
@@ -1680,7 +1600,7 @@ module.exports = {
         // VS Pattern
         ctx.globalAlpha = 0.05;
         ctx.textAlign = 'center';
-        ctx.font = 'bold 300px "VALORANT", sans-serif';
+        ctx.font = 'bold 300px Arial, sans-serif';
         ctx.fillStyle = '#fff';
         ctx.fillText("VS", width / 2, height / 2 + 100);
         ctx.globalAlpha = 1.0;
@@ -1721,12 +1641,12 @@ module.exports = {
 
             // Name
             ctx.textAlign = 'center';
-            ctx.font = 'bold 50px "VALORANT", sans-serif';
+            ctx.font = 'bold 50px Arial, sans-serif';
             ctx.fillStyle = '#fff';
             ctx.fillText(cap.name.toUpperCase(), x, y + 150);
 
             if (isWinner) {
-                ctx.font = 'bold 30px sans-serif';
+                ctx.font = ' Arial, sans-serif';
                 ctx.fillStyle = '#f1c40f'; // Gold
                 ctx.fillText("WINNER", x, y - 190);
                 // Mini Crown Emoji or similar would be nice but let's stick to text
@@ -1738,7 +1658,7 @@ module.exports = {
 
         // Center Text
         ctx.textAlign = 'center';
-        ctx.font = 'bold italic 60px "VALORANT", sans-serif';
+        ctx.font = 'bold italic 60px Arial, sans-serif';
         ctx.fillStyle = '#fff';
         ctx.shadowColor = '#000'; ctx.shadowBlur = 20;
         ctx.fillText("DUEL", width / 2, height / 2 + 30);
@@ -1798,7 +1718,7 @@ module.exports = {
 
         // Whose Turn?
         const selectorName = (selectorId === captainA.id) ? captainA.name : captainB.name;
-        ctx.font = 'bold 35px sans-serif';
+        ctx.font = ' Arial, sans-serif';
         ctx.fillStyle = '#f1c40f';
         ctx.fillText(`${selectorName.toUpperCase()}'S CHOICE`, width / 2, height - 80);
 
@@ -1826,7 +1746,7 @@ module.exports = {
             ctx.fillText(label, x + boxW / 2, boxY + boxH / 2 + 20);
 
             // Subtitle
-            ctx.font = '24px sans-serif';
+            ctx.font = ' Arial, sans-serif';
             ctx.fillStyle = '#71717a';
             ctx.fillText("CHOOSE YOUR SIDE", x + boxW / 2, boxY + boxH / 2 + 70);
         };
@@ -1835,7 +1755,7 @@ module.exports = {
         drawChoiceBox("DEFEND", width - 150 - boxW, '#3b82f6');
 
         // Middle VS or similar
-        ctx.font = 'italic bold 40px sans-serif';
+        ctx.font = ' Arial, sans-serif';
         ctx.fillStyle = '#333';
         ctx.fillText("OR", width / 2, boxY + boxH / 2);
 
@@ -1986,15 +1906,24 @@ module.exports = {
     },
 
     async createMapVotingImage(votedMaps, allPlayersData, match) {
-        // votedMaps: { mapName: voteCount }
-        // allPlayersData: [{ id, name, avatar, hasVoted }]
+        const fullMaps = require('../handlers/match/constants').MAPS;
         const width = 1200;
-        const height = 600;
+        const sidebarWidth = 300;
+        const gridX = 50;
+        const gridY = 150;
+        const itemW = 250;
+        const itemH = 150;
+        const gap = 30;
+        const cols = 3;
+
+        const rows = Math.ceil(fullMaps.length / cols);
+        const height = Math.max(600, gridY + rows * (itemH + gap) + 50);
+
         const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
 
         // Dark Gradient Background
-        const bg = ctx.createLinearGradient(0, 0, width, height);
+        const bg = ctx.createLinearGradient(0, 0, 0, height);
         bg.addColorStop(0, '#0a0a0c');
         bg.addColorStop(1, '#18181b');
         ctx.fillStyle = bg;
@@ -2004,21 +1933,20 @@ module.exports = {
         ctx.textAlign = 'center';
         ctx.font = 'bold 50px Arial, sans-serif';
         ctx.fillStyle = '#fff';
-        ctx.fillText("MAP VOTING", width / 2, 80);
+        ctx.fillText("MAP VOTING", (width - sidebarWidth) / 2, 80);
 
         // Sidebar: Voters Info
-        const sidebarX = 900;
+        const sidebarX = width - sidebarWidth;
         ctx.fillStyle = 'rgba(255,255,255,0.02)';
-        ctx.fillRect(sidebarX, 0, 300, height);
+        ctx.fillRect(sidebarX, 0, sidebarWidth, height);
 
         ctx.textAlign = 'left';
-        ctx.font = 'bold 24px sans-serif';
+        ctx.font = 'bold 24px Arial, sans-serif';
         ctx.fillStyle = '#71717a';
         ctx.fillText("PARTICIPANTS", sidebarX + 20, 50);
 
         let pY = 100;
         for (const p of allPlayersData) {
-            // Avatar
             const avSize = 40;
             ctx.save();
             ctx.beginPath(); ctx.arc(sidebarX + 40, pY - 8, avSize / 2, 0, Math.PI * 2); ctx.clip();
@@ -2030,36 +1958,26 @@ module.exports = {
             }
             ctx.restore();
 
-            // Status Icon (Tick or Waiting)
-            ctx.font = '20px sans-serif';
+            ctx.font = '20px Arial, sans-serif';
             ctx.fillStyle = p.hasVoted ? '#2ecc71' : '#52525b';
             ctx.fillText(p.hasVoted ? '●' : '○', sidebarX + 70, pY);
 
-            // Name
             ctx.fillStyle = p.hasVoted ? '#fff' : '#52525b';
-            ctx.font = '18px sans-serif';
-            ctx.fillText(p.name.toUpperCase().substring(0, 15), sidebarX + 95, pY);
+            ctx.font = '18px Arial, sans-serif';
+            ctx.fillText((p.name || 'Unknown').toUpperCase().substring(0, 15), sidebarX + 95, pY);
 
             pY += 50;
         }
 
         // Map Grid
-        const maps = require('../handlers/match/constants').MAPS.slice(0, 6); // First 6 maps
-        const gridX = 50;
-        const gridY = 150;
-        const itemW = 250;
-        const itemH = 150;
-        const gap = 30;
-
         ctx.textAlign = 'center';
-        for (let i = 0; i < maps.length; i++) {
-            const m = maps[i];
-            const col = i % 3;
-            const row = Math.floor(i / 3);
+        for (let i = 0; i < fullMaps.length; i++) {
+            const m = fullMaps[i];
+            const col = i % cols;
+            const row = Math.floor(i / cols);
             const x = gridX + col * (itemW + gap);
             const y = gridY + row * (itemH + gap);
 
-            // Map Image
             try {
                 const assetsPath = path.join(__dirname, '..', '..', 'assets', 'maps');
                 let p = path.join(assetsPath, `${m.name}.png`);
@@ -2069,41 +1987,34 @@ module.exports = {
                     ctx.save();
                     ctx.beginPath(); ctx.roundRect(x, y, itemW, itemH, 15); ctx.clip();
                     ctx.drawImage(img, x, y, itemW, itemH);
-
-                    // Dark Filter
                     ctx.fillStyle = 'rgba(0,0,0,0.4)';
                     ctx.fillRect(x, y, itemW, itemH);
                     ctx.restore();
                 }
             } catch (e) { }
 
-            // Border
             ctx.strokeStyle = (votedMaps[m.name] > 0) ? '#f1c40f' : '#27272a';
             ctx.lineWidth = 3;
             ctx.beginPath(); ctx.roundRect(x, y, itemW, itemH, 15); ctx.stroke();
 
-            // Map Name
-            ctx.font = 'bold 22px sans-serif';
+            ctx.font = 'bold 22px Arial, sans-serif';
             ctx.fillStyle = '#fff';
             ctx.shadowColor = '#000'; ctx.shadowBlur = 10;
             ctx.fillText(m.name.toUpperCase(), x + itemW / 2, y + itemH / 2 + 10);
             ctx.shadowBlur = 0;
 
-            // Vote Count Badge
             if (votedMaps[m.name] > 0) {
                 const badgeR = 25;
                 ctx.fillStyle = '#f1c40f';
                 ctx.beginPath(); ctx.arc(x + itemW, y, badgeR, 0, Math.PI * 2); ctx.fill();
                 ctx.fillStyle = '#000';
-                ctx.font = 'bold 20px sans-serif';
+                ctx.font = 'bold 20px Arial, sans-serif';
                 ctx.fillText(votedMaps[m.name], x + itemW, y + 7);
             }
         }
 
         return canvas.toBuffer('image/png');
     },
-
-
 
     async createVersusFullImage(data) {
         // data: { map, teamA: [{name, elo, title, activeTitle}], teamB: [{name, elo, title, activeTitle}] }

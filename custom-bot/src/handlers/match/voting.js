@@ -65,8 +65,8 @@ module.exports = {
             .setImage(`attachment://${fileName}`)
             .setFooter({ text: `Nexora Voting • 0/${totalPlayers} Oy Kullanıldı` });
 
-        const options = mapsToVote.slice(0, 9).map(m => ({ label: m.name, value: m.name, emoji: '🗺️' }));
-        const finalOptions = options.length > 0 ? options : MAPS.slice(0, 9).map(m => ({ label: m.name, value: m.name, emoji: '🗺️' }));
+        const options = mapsToVote.map(m => ({ label: m.name, value: m.name, emoji: '🗺️' }));
+        const finalOptions = options.length > 0 ? options : MAPS.map(m => ({ label: m.name, value: m.name, emoji: '🗺️' }));
 
         const row = new ActionRowBuilder().addComponents(
             new StringSelectMenuBuilder()

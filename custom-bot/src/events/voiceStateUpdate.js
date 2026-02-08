@@ -6,9 +6,9 @@ module.exports = {
     async execute(oldState, newState) {
         const VALORANT_ROLE_ID = '1466189076347486268';
         const LOBBY_VOICE_IDS = [
-            '1463922466467483801', // Lobby 1
-            '1467987380530184194', // Lobby 2
-            '1467987533039403119'  // Lobby 3
+            '1469371485855547587', // Lobby 1
+            '1469371487965286400', // Lobby 2
+            '1469371490163097600'  // Lobby 3
         ];
 
         const member = newState.member;
