@@ -59,6 +59,22 @@ module.exports = {
                     user.voiceJoinedAt = new Date();
                     user.currentVoiceChannel = newState.channelId;
                     await user.save();
+
+                    // SES GİRİŞ LOGU GÖNDER
+                    const channelName = newState.channel?.name || 'Bilinmiyor';
+                    const joinLogEmbed = new EmbedBuilder()
+                        .setColor('#22c55e')
+                        .setAuthor({ name: '🎙️ Ses Oturumu Başladı', iconURL: member.user.displayAvatarURL() })
+                        .setDescription(`<@${userId}> ses kanalına katıldı.`)
+                        .addFields(
+                            { name: '🔊 Kanal', value: `\`${channelName}\``, inline: true },
+                            { name: '⏰ Giriş', value: `<t:${Math.floor(Date.now() / 1000)}:T>`, inline: true }
+                        )
+                        .setFooter({ text: `ID: ${userId}` })
+                        .setTimestamp();
+
+                    const { sendLog } = require('../utils/logHelper');
+                    await sendLog(client, guildId, 'voice', joinLogEmbed);
                 }
             }
 
@@ -126,15 +142,16 @@ async function processVoiceSession(user, guild, client) {
 
     // XP Kazanımı kaldırıldı.
 
-    // SES LOGU GÖNDER (MODLOG)
+    // SES ÇIKIŞ LOGU GÖNDER (Modern Tasarım)
     const voiceLogEmbed = new EmbedBuilder()
-        .setColor('#3498db')
-        .setTitle('🔊 Ses Oturumu Sonlandı')
+        .setColor('#ef4444')
+        .setAuthor({ name: '🔇 Ses Oturumu Sonlandı', iconURL: guild.client.users.cache.get(user.odasi)?.displayAvatarURL() || null })
         .setDescription(`<@${user.odasi}> ses kanalından ayrıldı.`)
         .addFields(
-            { name: 'Kanal', value: `${channelName}`, inline: true },
-            { name: 'Süre', value: `⏱️ ${durationMinutes} dakika (${durationSeconds} sn)`, inline: true }
+            { name: '🔊 Kanal', value: `\`${channelName}\``, inline: true },
+            { name: '⏱️ Süre', value: `**${durationMinutes}** dakika (**${durationSeconds}** sn)`, inline: true }
         )
+        .setFooter({ text: `ID: ${user.odasi}` })
         .setTimestamp();
 
     const { sendLog } = require('../utils/logHelper');

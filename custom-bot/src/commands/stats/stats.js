@@ -36,7 +36,7 @@ module.exports = {
                 )),
 
     async execute(interaction) {
-        await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
+        await interaction.deferReply();
 
         try {
             const targetUser = interaction.options.getUser('user') || interaction.user;
