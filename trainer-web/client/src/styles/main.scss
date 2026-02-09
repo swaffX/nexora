@@ -1,0 +1,49 @@
+// Nexora Trainer - Main SCSS Entry Point
+
+// Variables and Mixins (must be first)
+@use 'variables' as *;
+@use 'mixins' as *;
+@use 'animations';
+
+// Base styles
+@use 'base/reset';
+@use 'base/typography';
+
+// Components
+@use 'components/button';
+@use 'components/card';
+
+// Global styles
+body {
+  background: map-get($colors, bg-dark);
+  color: map-get($colors, text-primary);
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+// Container
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 $spacing-md;
+  
+  @include desktop {
+    padding: 0 $spacing-xl;
+  }
+}
+
+// Utility classes
+.text-center {
+  text-align: center;
+}
+
+.mt-auto {
+  margin-top: auto;
+}
+
+.mb-auto {
+  margin-bottom: auto;
+}

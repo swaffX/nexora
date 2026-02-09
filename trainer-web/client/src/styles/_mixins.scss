@@ -1,0 +1,70 @@
+// Nexora Trainer - SCSS Mixins
+
+@use 'variables' as *;
+
+// Glow effect mixin
+@mixin glow($color, $intensity: 1) {
+  box-shadow: 
+    0 0 #{10px * $intensity} rgba($color, 0.4),
+    0 0 #{20px * $intensity} rgba($color, 0.3),
+    0 0 #{30px * $intensity} rgba($color, 0.2);
+  
+  &:hover {
+    box-shadow: 
+      0 0 #{15px * $intensity} rgba($color, 0.6),
+      0 0 #{30px * $intensity} rgba($color, 0.4),
+      0 0 #{45px * $intensity} rgba($color, 0.3);
+  }
+}
+
+// Text glow effect
+@mixin text-glow($color) {
+  text-shadow:
+    0 0 10px rgba($color, 0.8),
+    0 0 20px rgba($color, 0.6),
+    0 0 30px rgba($color, 0.4);
+}
+
+// Glass morphism effect
+@mixin glass-morphism {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+// Responsive breakpoints
+@mixin mobile {
+  @media (max-width: $breakpoint-mobile) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media (max-width: $breakpoint-tablet) {
+    @content;
+  }
+}
+
+@mixin desktop {
+  @media (min-width: $breakpoint-desktop) {
+    @content;
+  }
+}
+
+// Flexbox utilities
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+// Gradient background
+@mixin gradient-bg($color1, $color2, $angle: 135deg) {
+  background: linear-gradient($angle, $color1, $color2);
+}

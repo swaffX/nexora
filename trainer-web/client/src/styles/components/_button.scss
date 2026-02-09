@@ -1,0 +1,71 @@
+// Button Component
+@use '../variables' as *;
+@use '../mixins' as *;
+
+.btn {
+  padding: 12px 32px;
+  border: none;
+  border-radius: $radius-md;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all $transition-normal;
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+  }
+  
+  &:hover::before {
+    width: 300px;
+    height: 300px;
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  &--primary {
+    @include gradient-bg(map-get($colors, primary), map-get($colors, accent));
+    color: map-get($colors, text-primary);
+    @include glow(map-get($colors, primary));
+  }
+  
+  &--secondary {
+    @include gradient-bg(map-get($colors, secondary), map-get($colors, primary));
+    color: map-get($colors, text-primary);
+    @include glow(map-get($colors, secondary));
+  }
+  
+  &--outline {
+    background: transparent;
+    border: 2px solid map-get($colors, primary);
+    color: map-get($colors, primary);
+    
+    &:hover {
+      background: map-get($colors, primary);
+      color: map-get($colors, text-primary);
+    }
+  }
+  
+  &--sm {
+    padding: 8px 20px;
+    font-size: 14px;
+  }
+  
+  &--lg {
+    padding: 16px 48px;
+    font-size: 18px;
+  }
+}

@@ -1,0 +1,65 @@
+// Typography
+@use '../variables' as *;
+@use '../mixins' as *;
+
+body {
+  color: map-get($colors, text-primary);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: $spacing-md;
+}
+
+h1 {
+  font-size: 3rem;
+  @include text-glow(map-get($colors, primary));
+  
+  @include mobile {
+    font-size: 2rem;
+  }
+}
+
+h2 {
+  font-size: 2.5rem;
+  
+  @include mobile {
+    font-size: 1.75rem;
+  }
+}
+
+h3 {
+  font-size: 2rem;
+  
+  @include mobile {
+    font-size: 1.5rem;
+  }
+}
+
+h4 {
+  font-size: 1.5rem;
+}
+
+p {
+  margin-bottom: $spacing-md;
+  color: map-get($colors, text-secondary);
+}
+
+.text-primary {
+  color: map-get($colors, primary);
+}
+
+.text-secondary {
+  color: map-get($colors, secondary);
+}
+
+.text-accent {
+  color: map-get($colors, accent);
+}
+
+.text-glow {
+  @include text-glow(map-get($colors, accent));
+}

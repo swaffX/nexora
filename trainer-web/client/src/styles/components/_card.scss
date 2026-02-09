@@ -1,0 +1,47 @@
+// Card Component
+@use '../variables' as *;
+@use '../mixins' as *;
+
+.card {
+  @include glass-morphism;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  transition: all $transition-normal;
+  
+  &:hover {
+    transform: translateY(-8px) scale(1.02);
+    border-color: map-get($colors, primary);
+    @include glow(map-get($colors, primary), 0.5);
+  }
+  
+  &__title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: $spacing-sm;
+    @include text-glow(map-get($colors, accent));
+  }
+  
+  &__description {
+    color: map-get($colors, text-secondary);
+    font-size: 14px;
+    margin-bottom: $spacing-md;
+  }
+  
+  &__footer {
+    @include flex-between;
+    margin-top: $spacing-md;
+    padding-top: $spacing-md;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  &--clickable {
+    cursor: pointer;
+  }
+  
+  &--gradient {
+    background: linear-gradient(135deg, 
+      rgba(map-get($colors, primary), 0.1), 
+      rgba(map-get($colors, secondary), 0.1)
+    );
+  }
+}
