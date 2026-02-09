@@ -73,8 +73,12 @@ module.exports = {
                         .setFooter({ text: `ID: ${userId}` })
                         .setTimestamp();
 
-                    const { sendLog } = require('../utils/logHelper');
-                    await sendLog(client, guildId, 'voice', joinLogEmbed);
+                    // Direkt kanala gönder
+                    const VOICE_LOG_CHANNEL = '1463957862744195103';
+                    const logChannel = client.channels.cache.get(VOICE_LOG_CHANNEL);
+                    if (logChannel) {
+                        await logChannel.send({ embeds: [joinLogEmbed] }).catch(e => console.error('[VoiceJoinLog]', e.message));
+                    }
                 }
             }
 
@@ -154,11 +158,12 @@ async function processVoiceSession(user, guild, client) {
         .setFooter({ text: `ID: ${user.odasi}` })
         .setTimestamp();
 
-    const { sendLog } = require('../utils/logHelper');
-
-    // DM Bildirimi devre dışı bırakıldı.
-
-    await sendLog(client, guild.id, 'voice', voiceLogEmbed);
+    // Direkt kanala gönder
+    const VOICE_LOG_CHANNEL = '1463957862744195103';
+    const logChannel = client.channels.cache.get(VOICE_LOG_CHANNEL);
+    if (logChannel) {
+        await logChannel.send({ embeds: [voiceLogEmbed] }).catch(e => console.error('[VoiceLeaveLog]', e.message));
+    }
 
     // Quest Update (Saniye olarak gönder)
     try {
