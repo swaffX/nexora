@@ -75,9 +75,16 @@ module.exports = {
 
                     // Direkt kanala gönder
                     const VOICE_LOG_CHANNEL = '1463957862744195103';
-                    const logChannel = client.channels.cache.get(VOICE_LOG_CHANNEL);
-                    if (logChannel) {
-                        await logChannel.send({ embeds: [joinLogEmbed] }).catch(e => console.error('[VoiceJoinLog]', e.message));
+                    try {
+                        const logChannel = await client.channels.fetch(VOICE_LOG_CHANNEL);
+                        if (logChannel) {
+                            await logChannel.send({ embeds: [joinLogEmbed] });
+                            console.log('[VoiceJoinLog] Log gönderildi:', userId);
+                        } else {
+                            console.error('[VoiceJoinLog] Kanal bulunamadı:', VOICE_LOG_CHANNEL);
+                        }
+                    } catch (e) {
+                        console.error('[VoiceJoinLog] Hata:', e.message);
                     }
                 }
             }
@@ -160,9 +167,13 @@ async function processVoiceSession(user, guild, client) {
 
     // Direkt kanala gönder
     const VOICE_LOG_CHANNEL = '1463957862744195103';
-    const logChannel = client.channels.cache.get(VOICE_LOG_CHANNEL);
-    if (logChannel) {
-        await logChannel.send({ embeds: [voiceLogEmbed] }).catch(e => console.error('[VoiceLeaveLog]', e.message));
+    try {
+        const logChannel = await client.channels.fetch(VOICE_LOG_CHANNEL);
+        if (logChannel) {
+            await logChannel.send({ embeds: [voiceLogEmbed] });
+        }
+    } catch (e) {
+        console.error('[VoiceLeaveLog] Hata:', e.message);
     }
 
     // Quest Update (Saniye olarak gönder)
