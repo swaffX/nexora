@@ -4,6 +4,7 @@
 @use 'variables' as *;
 @use 'mixins' as *;
 @use 'animations';
+@use 'sass:map';
 
 // Base styles
 @use 'base/reset';
@@ -17,8 +18,8 @@
 
 // Global styles
 body {
-  background: map-get($colors, bg-dark);
-  color: map-get($colors, text-primary);
+  background: map.get($colors, bg-dark);
+  color: map.get($colors, text-primary);
   min-height: 100vh;
 }
 

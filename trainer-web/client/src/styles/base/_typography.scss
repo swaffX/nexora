@@ -1,9 +1,10 @@
 // Typography
 @use '../variables' as *;
 @use '../mixins' as *;
+@use 'sass:map';
 
 body {
-  color: map-get($colors, text-primary);
+  color: map.get($colors, text-primary);
   font-size: 16px;
   line-height: 1.6;
 }
@@ -16,7 +17,7 @@ h1, h2, h3, h4, h5, h6 {
 
 h1 {
   font-size: 3rem;
-  @include text-glow(map-get($colors, primary));
+  @include text-glow(map.get($colors, primary));
   
   @include mobile {
     font-size: 2rem;
@@ -45,21 +46,21 @@ h4 {
 
 p {
   margin-bottom: $spacing-md;
-  color: map-get($colors, text-secondary);
+  color: map.get($colors, text-secondary);
 }
 
 .text-primary {
-  color: map-get($colors, primary);
+  color: map.get($colors, primary);
 }
 
 .text-secondary {
-  color: map-get($colors, secondary);
+  color: map.get($colors, secondary);
 }
 
 .text-accent {
-  color: map-get($colors, accent);
+  color: map.get($colors, accent);
 }
 
 .text-glow {
-  @include text-glow(map-get($colors, accent));
+  @include text-glow(map.get($colors, accent));
 }

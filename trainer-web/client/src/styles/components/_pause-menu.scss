@@ -1,5 +1,6 @@
 @use '../variables' as *;
 @use '../mixins' as *;
+@use 'sass:map';
 
 .pause-menu-overlay {
   position: fixed;
@@ -27,7 +28,7 @@
     font-size: 3rem;
     font-weight: 700;
     margin-bottom: $spacing-xl;
-    @include text-glow(map-get($colors, primary));
+    @include text-glow(map.get($colors, primary));
     letter-spacing: 0.2em;
   }
   
@@ -43,7 +44,7 @@
   }
   
   &__hint {
-    color: map-get($colors, text-secondary);
+    color: map.get($colors, text-secondary);
     font-size: 14px;
     opacity: 0.7;
     

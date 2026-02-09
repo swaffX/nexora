@@ -1,6 +1,7 @@
 // Card Component
 @use '../variables' as *;
 @use '../mixins' as *;
+@use 'sass:map';
 
 .card {
   @include glass-morphism;
@@ -10,19 +11,19 @@
   
   &:hover {
     transform: translateY(-8px) scale(1.02);
-    border-color: map-get($colors, primary);
-    @include glow(map-get($colors, primary), 0.5);
+    border-color: map.get($colors, primary);
+    @include glow(map.get($colors, primary), 0.5);
   }
   
   &__title {
     font-size: 24px;
     font-weight: 700;
     margin-bottom: $spacing-sm;
-    @include text-glow(map-get($colors, accent));
+    @include text-glow(map.get($colors, accent));
   }
   
   &__description {
-    color: map-get($colors, text-secondary);
+    color: map.get($colors, text-secondary);
     font-size: 14px;
     margin-bottom: $spacing-md;
   }
@@ -40,8 +41,8 @@
   
   &--gradient {
     background: linear-gradient(135deg, 
-      rgba(map-get($colors, primary), 0.1), 
-      rgba(map-get($colors, secondary), 0.1)
+      rgba(map.get($colors, primary), 0.1), 
+      rgba(map.get($colors, secondary), 0.1)
     );
   }
 }

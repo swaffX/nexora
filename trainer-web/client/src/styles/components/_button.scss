@@ -1,6 +1,7 @@
 // Button Component
 @use '../variables' as *;
 @use '../mixins' as *;
+@use 'sass:map';
 
 .btn {
   padding: 12px 32px;
@@ -37,25 +38,25 @@
   }
   
   &--primary {
-    @include gradient-bg(map-get($colors, primary), map-get($colors, accent));
-    color: map-get($colors, text-primary);
-    @include glow(map-get($colors, primary));
+    @include gradient-bg(map.get($colors, primary), map.get($colors, accent));
+    color: map.get($colors, text-primary);
+    @include glow(map.get($colors, primary));
   }
   
   &--secondary {
-    @include gradient-bg(map-get($colors, secondary), map-get($colors, primary));
-    color: map-get($colors, text-primary);
-    @include glow(map-get($colors, secondary));
+    @include gradient-bg(map.get($colors, secondary), map.get($colors, primary));
+    color: map.get($colors, text-primary);
+    @include glow(map.get($colors, secondary));
   }
   
   &--outline {
     background: transparent;
-    border: 2px solid map-get($colors, primary);
-    color: map-get($colors, primary);
+    border: 2px solid map.get($colors, primary);
+    color: map.get($colors, primary);
     
     &:hover {
-      background: map-get($colors, primary);
-      color: map-get($colors, text-primary);
+      background: map.get($colors, primary);
+      color: map.get($colors, text-primary);
     }
   }
   
