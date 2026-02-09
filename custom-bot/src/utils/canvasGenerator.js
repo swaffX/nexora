@@ -1717,84 +1717,145 @@ module.exports = {
 
             if (fs.existsSync(p)) {
                 const img = await loadImage(p);
-                // Cover
                 const scale = Math.max(width / img.width, height / img.height);
                 const w = img.width * scale;
                 const h = img.height * scale;
                 ctx.drawImage(img, (width - w) / 2, (height - h) / 2, w, h);
             } else {
-                ctx.fillStyle = '#111'; ctx.fillRect(0, 0, width, height);
+                ctx.fillStyle = '#0a0a0f'; ctx.fillRect(0, 0, width, height);
             }
-        } catch (e) { ctx.fillStyle = '#111'; ctx.fillRect(0, 0, width, height); }
+        } catch (e) { ctx.fillStyle = '#0a0a0f'; ctx.fillRect(0, 0, width, height); }
 
-        // Darkened Filter
-        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        // 2. Dark Cinematic Overlay
+        ctx.fillStyle = 'rgba(0,0,0,0.75)';
         ctx.fillRect(0, 0, width, height);
 
-        // Gradients for Sides
-        const gradL = ctx.createLinearGradient(0, 0, 400, 0);
-        gradL.addColorStop(0, 'rgba(231, 76, 60, 0.3)');
+        // 3. Team Color Gradients (Subtle side glow)
+        const gradL = ctx.createRadialGradient(0, height / 2, 0, 0, height / 2, 500);
+        gradL.addColorStop(0, 'rgba(239, 68, 68, 0.25)');
         gradL.addColorStop(1, 'transparent');
-        ctx.fillStyle = gradL; ctx.fillRect(0, 0, 400, height);
+        ctx.fillStyle = gradL; ctx.fillRect(0, 0, width / 2, height);
 
-        const gradR = ctx.createLinearGradient(width, 0, width - 400, 0);
-        gradR.addColorStop(0, 'rgba(52, 152, 219, 0.3)');
+        const gradR = ctx.createRadialGradient(width, height / 2, 0, width, height / 2, 500);
+        gradR.addColorStop(0, 'rgba(59, 130, 246, 0.25)');
         gradR.addColorStop(1, 'transparent');
-        ctx.fillStyle = gradR; ctx.fillRect(width - 400, 0, 400, height);
+        ctx.fillStyle = gradR; ctx.fillRect(width / 2, 0, width / 2, height);
 
-        // Header
+        // 4. Header Section
         ctx.textAlign = 'center';
-        ctx.font = 'bold 80px Arial, sans-serif';
-        ctx.fillStyle = '#fff';
-        ctx.shadowColor = '#000'; ctx.shadowBlur = 20;
-        ctx.fillText("SIDE SELECTION", width / 2, 120);
 
-        ctx.font = 'bold 40px Arial, sans-serif';
+        // Map name (smaller, above)
+        ctx.font = 'bold 28px Arial, sans-serif';
         ctx.fillStyle = '#71717a';
-        ctx.fillText(mapName.toUpperCase(), width / 2, 180);
+        ctx.letterSpacing = '8px';
+        ctx.fillText(mapName.toUpperCase(), width / 2, 60);
 
-        // Whose Turn?
-        const selectorName = (selectorId === captainA.id) ? captainA.name : captainB.name;
-        ctx.font = 'bold 30px Arial, sans-serif';
-        ctx.fillStyle = '#f1c40f';
-        ctx.fillText(`${selectorName.toUpperCase()}'S CHOICE`, width / 2, height - 80);
+        // Main Title with glow
+        ctx.font = 'bold 72px Arial, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = 'rgba(255,255,255,0.3)'; ctx.shadowBlur = 30;
+        ctx.fillText("CHOOSE YOUR SIDE", width / 2, 140);
+        ctx.shadowBlur = 0;
 
-        // Boxes
-        const boxY = 250;
-        const boxW = 400;
-        const boxH = 300;
+        // 5. Modern Choice Cards
+        const cardW = 380;
+        const cardH = 320;
+        const cardY = 200;
+        const attackX = 100;
+        const defendX = width - 100 - cardW;
 
-        const drawChoiceBox = (label, x, color, emoji) => {
-            // Shadow
-            ctx.shadowBlur = 30; ctx.shadowColor = 'rgba(0,0,0,0.5)';
-            ctx.fillStyle = 'rgba(20,20,23,0.8)';
-            ctx.beginPath(); ctx.roundRect(x, boxY, boxW, boxH, 20); ctx.fill();
+        const drawModernCard = (label, x, primaryColor, secondaryColor, icon) => {
+            // Outer Glow
+            ctx.shadowColor = primaryColor;
+            ctx.shadowBlur = 40;
+
+            // Glassmorphism Background
+            const cardGrad = ctx.createLinearGradient(x, cardY, x + cardW, cardY + cardH);
+            cardGrad.addColorStop(0, 'rgba(20, 20, 30, 0.9)');
+            cardGrad.addColorStop(1, 'rgba(30, 30, 45, 0.8)');
+
+            ctx.fillStyle = cardGrad;
+            ctx.beginPath(); ctx.roundRect(x, cardY, cardW, cardH, 24); ctx.fill();
             ctx.shadowBlur = 0;
 
-            // Border
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 5;
+            // Gradient Border
+            ctx.lineWidth = 4;
+            const borderGrad = ctx.createLinearGradient(x, cardY, x + cardW, cardY + cardH);
+            borderGrad.addColorStop(0, primaryColor);
+            borderGrad.addColorStop(1, secondaryColor);
+            ctx.strokeStyle = borderGrad;
             ctx.stroke();
 
-            // Text
+            // Icon Circle
+            const iconRadius = 50;
+            const iconX = x + cardW / 2;
+            const iconY = cardY + 90;
+
+            // Icon glow
+            ctx.shadowColor = primaryColor; ctx.shadowBlur = 20;
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.beginPath(); ctx.arc(iconX, iconY, iconRadius, 0, Math.PI * 2); ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.strokeStyle = primaryColor;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Icon Symbol (Sword for Attack, Shield for Defend)
+            ctx.font = 'bold 48px Arial, sans-serif';
+            ctx.fillStyle = primaryColor;
             ctx.textAlign = 'center';
-            ctx.font = 'bold 60px Arial, sans-serif';
-            ctx.fillStyle = color;
-            ctx.fillText(label, x + boxW / 2, boxY + boxH / 2 + 20);
+            ctx.fillText(icon, iconX, iconY + 16);
+
+            // Label
+            ctx.font = 'bold 52px Arial, sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = primaryColor; ctx.shadowBlur = 15;
+            ctx.fillText(label, x + cardW / 2, cardY + 200);
+            ctx.shadowBlur = 0;
 
             // Subtitle
-            ctx.font = 'bold 24px Arial, sans-serif';
-            ctx.fillStyle = '#71717a';
-            ctx.fillText("CHOOSE YOUR SIDE", x + boxW / 2, boxY + boxH / 2 + 70);
+            ctx.font = '20px Arial, sans-serif';
+            ctx.fillStyle = '#a1a1aa';
+            ctx.fillText(label === 'ATTACK' ? 'First Half Attackers' : 'First Half Defenders', x + cardW / 2, cardY + 240);
+
+            // Hover hint
+            ctx.font = 'bold 16px Arial, sans-serif';
+            ctx.fillStyle = primaryColor;
+            ctx.globalAlpha = 0.7;
+            ctx.fillText('CLICK TO SELECT', x + cardW / 2, cardY + cardH - 30);
+            ctx.globalAlpha = 1;
         };
 
-        drawChoiceBox("ATTACK", 150, '#ef4444');
-        drawChoiceBox("DEFEND", width - 150 - boxW, '#3b82f6');
+        drawModernCard('ATTACK', attackX, '#ef4444', '#dc2626', '⚔');
+        drawModernCard('DEFEND', defendX, '#3b82f6', '#2563eb', '🛡');
 
-        // Middle VS or similar
-        ctx.font = 'bold 50px Arial, sans-serif';
-        ctx.fillStyle = '#333';
-        ctx.fillText("OR", width / 2, boxY + boxH / 2);
+        // 6. Center "VS" Divider
+        ctx.textAlign = 'center';
+        ctx.font = 'bold italic 80px Arial, sans-serif';
+        ctx.fillStyle = '#27272a';
+        ctx.shadowColor = '#000'; ctx.shadowBlur = 10;
+        ctx.fillText('VS', width / 2, cardY + cardH / 2 + 20);
+        ctx.shadowBlur = 0;
+
+        // 7. Selector Info (Bottom)
+        const selectorName = (selectorId === captainA.id) ? captainA.name : captainB.name;
+        const selectorColor = (selectorId === captainA.id) ? '#3b82f6' : '#ef4444';
+
+        // Background bar
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(0, height - 100, width, 100);
+
+        // Accent line
+        ctx.fillStyle = selectorColor;
+        ctx.fillRect(0, height - 100, width, 3);
+
+        // Selector text
+        ctx.font = 'bold 32px Arial, sans-serif';
+        ctx.fillStyle = selectorColor;
+        ctx.shadowColor = selectorColor; ctx.shadowBlur = 15;
+        ctx.fillText(`${selectorName.toUpperCase()}'S TURN TO CHOOSE`, width / 2, height - 45);
+        ctx.shadowBlur = 0;
 
         return canvas.toBuffer('image/png');
     },
@@ -1844,15 +1905,12 @@ module.exports = {
         ctx.fillText("VS", centerX, centerY + 70);
         ctx.shadowBlur = 0;
 
-        // Istanbul & Map Info
-        ctx.font = 'bold 40px Arial, sans-serif';
-        ctx.fillStyle = '#ef4444';
-        ctx.fillText("ISTANBUL", centerX, centerY - 150);
-
-        ctx.font = 'bold 30px Arial, sans-serif';
+        // Map Info
+        ctx.font = 'bold 36px Arial, sans-serif';
         ctx.fillStyle = '#71717a';
         ctx.letterSpacing = "5px";
-        ctx.fillText((match.selectedMap || 'UNKNOWN').toUpperCase(), centerX, centerY - 100);
+        ctx.fillText((match.selectedMap || 'UNKNOWN').toUpperCase(), centerX, centerY - 120);
+
 
         // 4. Team Columns
         const drawTeamColumn = async (teamData, isLeft) => {
