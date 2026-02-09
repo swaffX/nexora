@@ -44,11 +44,11 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Overview */}
-      {!loading && stats && (
+      {!loading && stats && Object.keys(stats).length > 0 && (
         <div className="grid md:grid-cols-4 gap-4 mb-8">
-          <StatCard icon={<Target />} label="Toplam Oyun" value={Object.values(stats).filter(s => s.bestScore > 0).length} />
-          <StatCard icon={<TrendingUp />} label="En Yüksek Skor" value={Math.max(...Object.values(stats).map(s => s.bestScore))} />
-          <StatCard icon={<Award />} label="Ortalama Doğruluk" value={`${Math.round(Object.values(stats).reduce((acc, s) => acc + s.accuracy, 0) / 6)}%`} />
+          <StatCard icon={<Target />} label="Toplam Oyun" value={Object.values(stats).filter(s => s && s.bestScore > 0).length} />
+          <StatCard icon={<TrendingUp />} label="En Yüksek Skor" value={Math.max(0, ...Object.values(stats).filter(s => s).map(s => s.bestScore || 0))} />
+          <StatCard icon={<Award />} label="Ortalama Doğruluk" value={`${Math.round(Object.values(stats).filter(s => s).reduce((acc, s) => acc + (s.accuracy || 0), 0) / 6)}%`} />
           <StatCard icon={<Clock />} label="Toplam Süre" value="--" />
         </div>
       )}
