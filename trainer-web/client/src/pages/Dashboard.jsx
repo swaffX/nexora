@@ -95,7 +95,7 @@ function MapCard({ map, stats, onClick }) {
       <h3 className="text-2xl font-bold mb-2">{map.name}</h3>
       <p className="text-gray-400 mb-4">{map.description}</p>
       
-      {stats && stats.bestScore > 0 ? (
+      {stats && stats.bestScore && stats.bestScore > 0 ? (
         <div className="flex justify-between text-sm">
           <span className="text-gray-400">En İyi: <span className="text-nexora-accent font-bold">{stats.bestScore}</span></span>
           <span className="text-gray-400">Sıralama: <span className="text-nexora-accent font-bold">#{stats.rank || '--'}</span></span>
