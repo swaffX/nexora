@@ -48,7 +48,7 @@ const ELO_CONFIG = {
         'Headshot Machine': { color: '#ffffff', description: '25 kez maçın adamı (MVP) ol.' },
         'Veteran': { color: '#a1a1aa', description: '10 maç sınırını geç.' },
         'Clutch King': { color: '#60a5fa', description: '50 maç sınırını geç.' },
-        'Aura': { color: '#000000', description: '5 maçlık galibiyet serisi yakala.' },
+        'Aura': { color: '#ef4444', description: '5 maçlık galibiyet serisi yakala.' },
         'Unstoppable': { color: '#dc2626', description: '10 maçlık galibiyet serisi yakala.' },
         'Unlucky': { color: '#3b82f6', description: '5 maç üst üste mağlubiyet (Teselli).' },
         'Immortal': { color: '#a855f7', description: '2000 ELO barajını aş.' },
