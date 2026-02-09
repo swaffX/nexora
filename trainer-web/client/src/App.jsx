@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { isMobileDevice } from './utils/deviceDetection';
 
 // Pages
 import Landing from './pages/Landing';
@@ -12,12 +13,15 @@ import Settings from './pages/Settings';
 // Components
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
+import MobileWarning from './components/MobileWarning';
 
 function App() {
   const { checkAuth, loading } = useAuthStore();
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     checkAuth();
+    setIsMobile(isMobileDevice());
   }, [checkAuth]);
 
   if (loading) {
@@ -26,6 +30,11 @@ function App() {
         <div className="text-2xl text-nexora-accent animate-pulse">Loading...</div>
       </div>
     );
+  }
+
+  // Show mobile warning for mobile/tablet devices
+  if (isMobile) {
+    return <MobileWarning />;
   }
 
   return (

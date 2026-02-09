@@ -3,48 +3,33 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { TargetManager } from '../utils/TargetManager';
 import { HitDetector } from '../utils/HitDetector';
-import { useSessionStore } from '../store/sessionStore';
 
-// Grid positions for Gridshot
-const GRID_POSITIONS = [
-  new THREE.Vector3(-5, 0, -10),  // Left
-  new THREE.Vector3(5, 0, -10),   // Right
-  new THREE.Vector3(0, 3, -10),   // Top
-  new THREE.Vector3(0, -3, -10),  // Bottom
-  new THREE.Vector3(0, 0, -10)    // Center
-];
-
-export default function GridshotScene({ camera, onSceneReady }) {
+export default function SixshotScene({ gameState, onHit, sensitivity }) {
   const sceneRef = useRef();
   const targetManagerRef = useRef();
   const hitDetectorRef = useRef();
-  const lastSpawnTimeRef = useRef({});
-  
-  const { 
-    isPlaying, 
-    isPaused, 
-    recordHit, 
-    recordMiss,
-    updateScore,
-    calculateFinalScore 
-  } = useSessionStore();
+  const cameraRef = useRef();
+  const setStartTimeRef = useRef(0);
+  const setsCompletedRef = useRef(0);
   
   // Initialize scene
   useEffect(() => {
-    if (!sceneRef.current || !camera) return;
+    if (!sceneRef.current) return;
     
-    // Create target manager
+    // Get camera from parent
+    cameraRef.current = sceneRef.current.parent?.camera;
+    if (!cameraRef.current) return;
+    
+    // Create managers
     targetManagerRef.current = new TargetManager(sceneRef.current, 50);
+    hitDetectorRef.current = new HitDetector(cameraRef.current);
     
-    // Create hit detector
-    hitDetectorRef.current = new HitDetector(camera);
-    
-    // Spawn initial targets
-    spawnInitialTargets();
+    // Spawn initial set
+    spawnSixshotSet();
     
     // Setup click handler
     const handleClick = () => {
-      if (!isPlaying || isPaused) return;
+      if (gameState !== 'playing') return;
       
       const hitInfo = hitDetectorRef.current.checkHit(
         targetManagerRef.current.getActiveTargets()
@@ -52,14 +37,10 @@ export default function GridshotScene({ camera, onSceneReady }) {
       
       if (hitInfo) {
         handleTargetHit(hitInfo.target);
-      } else {
-        recordMiss();
       }
     };
     
     window.addEventListener('click', handleClick);
-    
-    if (onSceneReady) onSceneReady();
     
     return () => {
       window.removeEventListener('click', handleClick);
@@ -70,34 +51,31 @@ export default function GridshotScene({ camera, onSceneReady }) {
         hitDetectorRef.current.dispose();
       }
     };
-  }, [camera, isPlaying]);
+  }, [gameState]);
   
-  // Game loop
-  useFrame(() => {
-    if (!isPlaying || isPaused) return;
-    
-    // Update score
-    const score = calculateFinalScore();
-    updateScore(score);
-  });
-  
-  const spawnInitialTargets = () => {
+  const spawnSixshotSet = () => {
     if (!targetManagerRef.current) return;
     
-    // Spawn 5 targets at grid positions
-    for (let i = 0; i < 5; i++) {
-      const position = GRID_POSITIONS[i];
-      const target = targetManagerRef.current.spawnTarget(position, 1.0, { gridIndex: i });
-      lastSpawnTimeRef.current[i] = Date.now();
+    const radius = 8;
+    setStartTimeRef.current = Date.now();
+    
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      const position = new THREE.Vector3(
+        Math.cos(angle) * radius,
+        (Math.random() - 0.5) * 2, // Slight vertical variation
+        -Math.sin(angle) * radius
+      );
+      
+      targetManagerRef.current.spawnTarget(position, 1.0, { 
+        type: 'sixshot',
+        setIndex: setsCompletedRef.current 
+      });
     }
   };
   
   const handleTargetHit = (target) => {
     if (!targetManagerRef.current) return;
-    
-    // Calculate reaction time
-    const reactionTime = Date.now() - target.spawnTime;
-    recordHit(reactionTime);
     
     // Flash hit effect
     targetManagerRef.current.flashHit(target);
@@ -106,34 +84,36 @@ export default function GridshotScene({ camera, onSceneReady }) {
     setTimeout(() => {
       targetManagerRef.current.despawnTarget(target);
       
-      // Spawn new target at random grid position
-      spawnNewTarget();
+      // Check if set is complete
+      const activeTargets = targetManagerRef.current.getActiveTargets();
+      if (activeTargets.length === 0) {
+        handleSetComplete();
+      }
     }, 100);
   };
   
-  const spawnNewTarget = () => {
-    if (!targetManagerRef.current) return;
+  const handleSetComplete = () => {
+    // Calculate set completion time
+    const setCompletionTime = Date.now() - setStartTimeRef.current;
     
-    // Find available grid positions
-    const activeTargets = targetManagerRef.current.getActiveTargets();
-    const occupiedIndices = activeTargets
-      .map(t => t.userData.gridIndex)
-      .filter(i => i !== undefined);
+    // Speed bonus: under 3 seconds = 1.5x multiplier
+    const speedBonus = setCompletionTime < 3000 ? 1.5 : 1.0;
     
-    const availableIndices = GRID_POSITIONS
-      .map((_, i) => i)
-      .filter(i => !occupiedIndices.includes(i));
+    // Calculate points
+    const points = Math.floor(600 * speedBonus);
     
-    if (availableIndices.length === 0) return;
+    // Award points
+    if (onHit) {
+      onHit(points);
+    }
     
-    // Pick random available position
-    const randomIndex = availableIndices[
-      Math.floor(Math.random() * availableIndices.length)
-    ];
+    // Increment sets completed
+    setsCompletedRef.current++;
     
-    const position = GRID_POSITIONS[randomIndex];
-    const target = targetManagerRef.current.spawnTarget(position, 1.0, { gridIndex: randomIndex });
-    lastSpawnTimeRef.current[randomIndex] = Date.now();
+    // Spawn new set
+    setTimeout(() => {
+      spawnSixshotSet();
+    }, 500);
   };
   
   return (

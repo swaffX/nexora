@@ -4,12 +4,13 @@ import * as THREE from 'three';
 import { TargetManager } from '../utils/TargetManager';
 import { HitDetector } from '../utils/HitDetector';
 
-export default function FlickingScene({ gameState, onHit, sensitivity }) {
+export default function SpidershotScene({ gameState, onHit, sensitivity }) {
   const sceneRef = useRef();
   const targetManagerRef = useRef();
   const hitDetectorRef = useRef();
   const cameraRef = useRef();
   const nextSpawnTimeRef = useRef(0);
+  const audioContextRef = useRef(null);
   
   // Initialize scene
   useEffect(() => {
@@ -22,6 +23,13 @@ export default function FlickingScene({ gameState, onHit, sensitivity }) {
     // Create managers
     targetManagerRef.current = new TargetManager(sceneRef.current, 50);
     hitDetectorRef.current = new HitDetector(cameraRef.current);
+    
+    // Initialize Web Audio API for spatial audio
+    try {
+      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {
+      console.warn('Web Audio API not supported');
+    }
     
     // Setup click handler
     const handleClick = () => {
@@ -46,6 +54,9 @@ export default function FlickingScene({ gameState, onHit, sensitivity }) {
       if (hitDetectorRef.current) {
         hitDetectorRef.current.dispose();
       }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
     };
   }, [gameState]);
   
@@ -58,51 +69,92 @@ export default function FlickingScene({ gameState, onHit, sensitivity }) {
     // Spawn new target if needed
     if (time >= nextSpawnTimeRef.current) {
       const activeTargets = targetManagerRef.current.getActiveTargets();
-      if (activeTargets.length === 0) {
-        spawnFlickTarget();
-        // Random delay between 0.5-1.5 seconds
-        nextSpawnTimeRef.current = time + 0.5 + Math.random();
+      if (activeTargets.length < 2) { // Keep 2 targets active
+        spawnSpidershotTarget();
+        nextSpawnTimeRef.current = time + 0.5 + Math.random() * 0.5; // 0.5-1s
       }
     }
   });
   
-  const spawnFlickTarget = () => {
+  const spawnSpidershotTarget = () => {
     if (!targetManagerRef.current) return;
     
-    // Random angle 60° - 180° from center
-    const angle = (Math.random() * 120 + 60) * (Math.PI / 180);
-    const direction = Math.random() < 0.5 ? 1 : -1;
-    
-    // Random distance 10-15 units
-    const distance = 10 + Math.random() * 5;
+    // Full 360° horizontal, ±45° vertical
+    const horizontalAngle = Math.random() * Math.PI * 2;
+    const verticalAngle = (Math.random() - 0.5) * Math.PI / 2;
+    const distance = 8 + Math.random() * 4; // 8-12 units
     
     const position = new THREE.Vector3(
-      Math.sin(angle) * distance * direction,
-      (Math.random() - 0.5) * 4, // -2 to 2
-      -Math.cos(angle) * distance
+      Math.cos(horizontalAngle) * Math.cos(verticalAngle) * distance,
+      Math.sin(verticalAngle) * distance,
+      -Math.sin(horizontalAngle) * Math.cos(verticalAngle) * distance
     );
     
+    // Check if target is behind player (z > 0)
+    const isBehind = position.z > 0;
+    
+    // Check if target is outside FOV (±60°)
+    const angleFromCenter = Math.atan2(position.x, -position.z);
+    const isOutsideFOV = Math.abs(angleFromCenter) > Math.PI / 3;
+    
+    // Play spatial audio cue if target is behind or outside FOV
+    if ((isBehind || isOutsideFOV) && audioContextRef.current) {
+      playSpawnSound(position);
+    }
+    
     targetManagerRef.current.spawnTarget(position, 1.0, { 
-      type: 'flick',
-      distance 
+      type: 'spidershot',
+      isOutsideFOV 
     });
+  };
+  
+  const playSpawnSound = (position) => {
+    if (!audioContextRef.current) return;
+    
+    try {
+      // Create oscillator for spawn sound
+      const oscillator = audioContextRef.current.createOscillator();
+      const gainNode = audioContextRef.current.createGain();
+      const panner = audioContextRef.current.createPanner();
+      
+      // Configure panner for 3D audio
+      panner.panningModel = 'HRTF';
+      panner.distanceModel = 'inverse';
+      panner.refDistance = 1;
+      panner.maxDistance = 20;
+      panner.rolloffFactor = 1;
+      panner.coneInnerAngle = 360;
+      panner.coneOuterAngle = 0;
+      panner.coneOuterGain = 0;
+      
+      // Set position
+      panner.setPosition(position.x, position.y, position.z);
+      
+      // Configure sound
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(800, audioContextRef.current.currentTime);
+      gainNode.gain.setValueAtTime(0.3, audioContextRef.current.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContextRef.current.currentTime + 0.2);
+      
+      // Connect nodes
+      oscillator.connect(gainNode);
+      gainNode.connect(panner);
+      panner.connect(audioContextRef.current.destination);
+      
+      // Play sound
+      oscillator.start(audioContextRef.current.currentTime);
+      oscillator.stop(audioContextRef.current.currentTime + 0.2);
+    } catch (e) {
+      console.warn('Failed to play spawn sound:', e);
+    }
   };
   
   const handleTargetHit = (target) => {
     if (!targetManagerRef.current) return;
     
-    // Calculate reaction time
-    const reactionTime = Date.now() - target.spawnTime;
-    
-    // Speed bonus: faster = more points (max 1000ms)
-    const speedBonus = Math.max(0, 1000 - reactionTime) / 1000;
-    
-    // Distance bonus: farther = more points
-    const distance = target.userData.distance || 10;
-    const distanceMultiplier = distance / 10;
-    
-    // Calculate points
-    const points = Math.floor(100 * (1 + speedBonus) * distanceMultiplier);
+    // Bonus for targets outside initial FOV
+    const isOutsideFOV = target.userData.isOutsideFOV || false;
+    const points = isOutsideFOV ? 150 : 100;
     
     // Flash hit effect
     targetManagerRef.current.flashHit(target);

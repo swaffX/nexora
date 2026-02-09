@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { TargetManager } from '../utils/TargetManager';
 import { HitDetector } from '../utils/HitDetector';
 
-export default function FlickingScene({ gameState, onHit, sensitivity }) {
+export default function MicroshotScene({ gameState, onHit, sensitivity }) {
   const sceneRef = useRef();
   const targetManagerRef = useRef();
   const hitDetectorRef = useRef();
@@ -32,7 +32,7 @@ export default function FlickingScene({ gameState, onHit, sensitivity }) {
       );
       
       if (hitInfo) {
-        handleTargetHit(hitInfo.target);
+        handleTargetHit(hitInfo);
       }
     };
     
@@ -59,50 +59,50 @@ export default function FlickingScene({ gameState, onHit, sensitivity }) {
     if (time >= nextSpawnTimeRef.current) {
       const activeTargets = targetManagerRef.current.getActiveTargets();
       if (activeTargets.length === 0) {
-        spawnFlickTarget();
-        // Random delay between 0.5-1.5 seconds
-        nextSpawnTimeRef.current = time + 0.5 + Math.random();
+        spawnMicroshotTarget();
+        nextSpawnTimeRef.current = time + 0.3 + Math.random() * 0.4; // 0.3-0.7s
       }
     }
   });
   
-  const spawnFlickTarget = () => {
+  const spawnMicroshotTarget = () => {
     if (!targetManagerRef.current) return;
     
-    // Random angle 60° - 180° from center
-    const angle = (Math.random() * 120 + 60) * (Math.PI / 180);
-    const direction = Math.random() < 0.5 ? 1 : -1;
+    // Random angle (360°)
+    const angle = Math.random() * Math.PI * 2;
+    const elevation = (Math.random() - 0.5) * Math.PI / 4; // ±45°
     
-    // Random distance 10-15 units
-    const distance = 10 + Math.random() * 5;
+    // Random distance 5-15 units
+    const distance = 5 + Math.random() * 10;
     
     const position = new THREE.Vector3(
-      Math.sin(angle) * distance * direction,
-      (Math.random() - 0.5) * 4, // -2 to 2
-      -Math.cos(angle) * distance
+      Math.cos(angle) * Math.cos(elevation) * distance,
+      Math.sin(elevation) * distance,
+      -Math.sin(angle) * Math.cos(elevation) * distance
     );
     
-    targetManagerRef.current.spawnTarget(position, 1.0, { 
-      type: 'flick',
+    // Small size (50% of normal)
+    const size = 0.5;
+    
+    targetManagerRef.current.spawnTarget(position, size, { 
+      type: 'microshot',
       distance 
     });
   };
   
-  const handleTargetHit = (target) => {
-    if (!targetManagerRef.current) return;
+  const handleTargetHit = (hitInfo) => {
+    if (!targetManagerRef.current || !hitDetectorRef.current) return;
     
-    // Calculate reaction time
-    const reactionTime = Date.now() - target.spawnTime;
+    const target = hitInfo.target;
     
-    // Speed bonus: faster = more points (max 1000ms)
-    const speedBonus = Math.max(0, 1000 - reactionTime) / 1000;
+    // Check if center hit (within 25% of radius)
+    const isCenterHit = hitDetectorRef.current.isCenterHit(hitInfo, target);
     
-    // Distance bonus: farther = more points
-    const distance = target.userData.distance || 10;
-    const distanceMultiplier = distance / 10;
+    // Precision bonus for center hits
+    const precisionBonus = isCenterHit ? 1.5 : 1.0;
     
     // Calculate points
-    const points = Math.floor(100 * (1 + speedBonus) * distanceMultiplier);
+    const points = Math.floor(100 * precisionBonus);
     
     // Flash hit effect
     targetManagerRef.current.flashHit(target);
