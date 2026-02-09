@@ -1275,9 +1275,9 @@ module.exports = {
         // Header Info
         ctx.textAlign = 'center';
         ctx.fillStyle = '#ffffff';
-        ctx.font = ' Arial, sans-serif';
+        ctx.font = 'bold 50px Arial, sans-serif';
         ctx.fillText(`MATCH #${data.matchNumber}`, width / 2, 80);
-        ctx.font = ' Arial, sans-serif';
+        ctx.font = 'bold 24px Arial, sans-serif';
         ctx.fillStyle = '#71717a';
         ctx.fillText(data.lobbyName.toUpperCase(), width / 2, 110);
 
@@ -1310,11 +1310,11 @@ module.exports = {
                 ctx.beginPath(); ctx.arc(x, y - 50, 82, 0, Math.PI * 2); ctx.stroke();
 
                 ctx.fillStyle = '#ffffff';
-                ctx.font = ' Arial, sans-serif';
+                ctx.font = 'bold 30px Arial, sans-serif';
                 ctx.fillText(cap.name.toUpperCase().substring(0, 15), x, y + 80);
 
                 const lvInfo = getLevelInfo(cap.elo || 200);
-                ctx.font = ' Arial, sans-serif';
+                ctx.font = 'bold 24px Arial, sans-serif';
                 ctx.fillStyle = lvInfo.color;
                 ctx.fillText(`LV.${lvInfo.lv} • ${cap.elo} ELO`, x, y + 115);
             } else {
@@ -1324,9 +1324,9 @@ module.exports = {
                 ctx.setLineDash([]);
 
                 ctx.fillStyle = '#3f3f46';
-                ctx.font = ' Arial, sans-serif';
+                ctx.font = 'bold 26px Arial, sans-serif';
                 ctx.fillText(isLeft ? "TEAM A CAPTAIN" : "TEAM B CAPTAIN", x, y + 80);
-                ctx.font = ' Arial, sans-serif';
+                ctx.font = 'bold 22px Arial, sans-serif';
                 ctx.fillText("WAITING...", x, y + 110);
             }
         };
@@ -1683,7 +1683,7 @@ module.exports = {
             ctx.fillText(cap.name.toUpperCase(), x, y + 150);
 
             if (isWinner) {
-                ctx.font = ' Arial, sans-serif';
+                ctx.font = 'bold 40px Arial, sans-serif';
                 ctx.fillStyle = '#f1c40f'; // Gold
                 ctx.fillText("WINNER", x, y - 190);
                 // Mini Crown Emoji or similar would be nice but let's stick to text
@@ -1755,7 +1755,7 @@ module.exports = {
 
         // Whose Turn?
         const selectorName = (selectorId === captainA.id) ? captainA.name : captainB.name;
-        ctx.font = ' Arial, sans-serif';
+        ctx.font = 'bold 30px Arial, sans-serif';
         ctx.fillStyle = '#f1c40f';
         ctx.fillText(`${selectorName.toUpperCase()}'S CHOICE`, width / 2, height - 80);
 
@@ -1783,7 +1783,7 @@ module.exports = {
             ctx.fillText(label, x + boxW / 2, boxY + boxH / 2 + 20);
 
             // Subtitle
-            ctx.font = ' Arial, sans-serif';
+            ctx.font = 'bold 24px Arial, sans-serif';
             ctx.fillStyle = '#71717a';
             ctx.fillText("CHOOSE YOUR SIDE", x + boxW / 2, boxY + boxH / 2 + 70);
         };
@@ -1792,7 +1792,7 @@ module.exports = {
         drawChoiceBox("DEFEND", width - 150 - boxW, '#3b82f6');
 
         // Middle VS or similar
-        ctx.font = ' Arial, sans-serif';
+        ctx.font = 'bold 50px Arial, sans-serif';
         ctx.fillStyle = '#333';
         ctx.fillText("OR", width / 2, boxY + boxH / 2);
 
