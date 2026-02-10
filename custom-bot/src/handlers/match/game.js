@@ -669,6 +669,24 @@ module.exports = {
                         else user.matchStats.winStreak = currentStreak - 1;
                     }
 
+                    // MAP STATS GÜNCELLEME (FIX)
+                    const mapName = match.selectedMap || 'Unknown';
+                    if (!user.matchStats.mapStats) user.matchStats.mapStats = {};
+                    if (!user.matchStats.mapStats[mapName]) {
+                        user.matchStats.mapStats[mapName] = { wins: 0, losses: 0 };
+                    }
+                    if (isWin) {
+                        user.matchStats.mapStats[mapName].wins++;
+                    } else {
+                        user.matchStats.mapStats[mapName].losses++;
+                    }
+
+                    // MVP STATS GÜNCELLEME (FIX)
+                    if (match.mvpPlayerId === pid || match.mvpLoserId === pid) {
+                        if (!user.matchStats.totalMVPs) user.matchStats.totalMVPs = 0;
+                        user.matchStats.totalMVPs++;
+                    }
+
                     // ELO değişikliğini hesapla (GELİŞMİŞ SİSTEM)
                     const eloResult = eloService.calculateMatchEloChange({
                         isWin,
