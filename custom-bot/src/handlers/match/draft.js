@@ -102,8 +102,6 @@ module.exports = {
             } catch (e) { }
         }
 
-        const nextTime = Math.floor(Date.now() / 1000) + 30;
-
         // --- TAKIM LİSTELERİ İÇİN LEVEL VERİLERİ ---
         const allTeamUsers = [...match.teamA, ...match.teamB];
         const teamUserDocs = await User.find({ odasi: { $in: allTeamUsers }, odaId: interaction.guild.id });
@@ -139,7 +137,7 @@ module.exports = {
             .setDescription(
                 `**Sıra:** <@${currentTurnCaptain}> (Team ${match.pickTurn})\n` +
                 `Lütfen takımınıza bir oyuncu seçin.\n\n` +
-                `⏰ **Kalan Süre:** <t:${nextTime}:R>`
+                `⏰ **Kalan Süre:** 30 saniye`
             )
             .addFields(
                 { name: `🔵 Team A`, value: formatTeam(match.teamA), inline: true },

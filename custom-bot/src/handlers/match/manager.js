@@ -86,7 +86,7 @@ module.exports = {
                 const embed = new EmbedBuilder()
                     .setColor(0x2B2D31) // Modern Dark Grey
                     .setAuthor({ name: `Maç Özeti • #${match.matchNumber || match.matchId}`, iconURL: guild.iconURL() })
-                    .setDescription(`**Bitiş Nedeni:** ${reason}\n<t:${Math.floor(endTime.getTime() / 1000)}:R> sonlandırıldı.`)
+                    .setDescription(`**Bitiş Nedeni:** ${reason}\nAz önce sonlandırıldı.`)
                     .addFields(
                         { name: '🗺️ Oynanan Harita', value: `\`\`\`${match.selectedMap?.toUpperCase() || 'SEÇİLMEDİ'}\`\`\``, inline: true },
                         { name: '📍 Lobi', value: `**${lobbyName}**`, inline: true },

@@ -26,7 +26,6 @@ module.exports = {
         const played = match.playedMaps || [];
         const mapsToVote = MAPS.filter(m => !played.includes(m.name));
 
-        const endUnix = Math.floor(match.voteEndTime.getTime() / 1000);
         const totalPlayers = match.teamA.length + match.teamB.length;
 
         // 1. Participant Data Hazırla
@@ -60,7 +59,7 @@ module.exports = {
             .setDescription(
                 `**Mücadele hangi haritada geçecek?**\n` +
                 `Favori haritanı seçerek takımına destek ol!\n\n` +
-                `⏰ **Oylama Bitişi:** <t:${endUnix}:R>`
+                `⏰ **Oylama Süresi:** 60 saniye`
             )
             .setImage(`attachment://${fileName}`)
             .setFooter({ text: `Nexora Voting • 0/${totalPlayers} Oy Kullanıldı` });
