@@ -592,6 +592,7 @@ module.exports = {
         if (scoreB > scoreA) winnerTeam = 'B';
 
         match.winner = winnerTeam;
+        match.status = 'FINISHED';
         await match.save();
 
         // ELO Hesaplama (eloService kullanarak)
