@@ -159,7 +159,7 @@ module.exports = {
         ctx.textAlign = 'right';
         ctx.fillStyle = colorA;
         ctx.shadowColor = colorA;
-        ctx.shadowBlur = 30;
+        ctx.shadowBlur = 15;
         ctx.fillText(scoreA, width / 2 - 50, 160);
         ctx.shadowBlur = 0;
 
@@ -172,16 +172,29 @@ module.exports = {
         ctx.textAlign = 'left';
         ctx.fillStyle = colorB;
         ctx.shadowColor = colorB;
-        ctx.shadowBlur = 30;
+        ctx.shadowBlur = 15;
         ctx.fillText(scoreB, width / 2 + 50, 160);
         ctx.shadowBlur = 0;
 
-        // Result label
+        // WINNER pill badge under the winning score
         if (aWin || bWin) {
-            ctx.font = 'bold 20px Arial, sans-serif';
-            ctx.fillStyle = '#3f3f46';
+            const winnerX = aWin ? width / 2 - 100 : width / 2 + 100;
+            const pillW = 90;
+            const pillH = 24;
+            const pillY = 175;
+            ctx.beginPath();
+            ctx.roundRect(winnerX - pillW / 2, pillY, pillW, pillH, 12);
+            ctx.fillStyle = 'rgba(46, 204, 113, 0.15)';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.roundRect(winnerX - pillW / 2, pillY, pillW, pillH, 12);
+            ctx.strokeStyle = 'rgba(46, 204, 113, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.font = 'bold 13px Arial, sans-serif';
+            ctx.fillStyle = '#2ecc71';
             ctx.textAlign = 'center';
-            ctx.fillText('MATCH RESULT', width / 2, 185);
+            ctx.fillText('WINNER', winnerX, pillY + 16);
         }
 
         // ─── TEAM HEADERS ───
@@ -194,32 +207,13 @@ module.exports = {
         ctx.textAlign = 'left';
         ctx.font = 'bold 28px Arial, sans-serif';
         ctx.fillStyle = colorA;
-        ctx.shadowColor = colorA;
-        ctx.shadowBlur = 8;
-        ctx.fillText(aWin ? '🏆 TEAM A' : 'TEAM A', teamAX + 10, startY);
-        ctx.shadowBlur = 0;
-
-        if (aWin) {
-            ctx.font = '16px Arial, sans-serif';
-            ctx.fillStyle = '#2ecc71';
-            ctx.fillText('WINNER', teamAX + (aWin ? 155 : 110), startY);
-        }
+        ctx.fillText('TEAM A', teamAX + 10, startY);
 
         // Team B header
         ctx.textAlign = 'right';
         ctx.font = 'bold 28px Arial, sans-serif';
         ctx.fillStyle = colorB;
-        ctx.shadowColor = colorB;
-        ctx.shadowBlur = 8;
-        ctx.fillText(bWin ? 'TEAM B 🏆' : 'TEAM B', teamBX + colWidth - 10, startY);
-        ctx.shadowBlur = 0;
-
-        if (bWin) {
-            ctx.font = '16px Arial, sans-serif';
-            ctx.fillStyle = '#2ecc71';
-            ctx.textAlign = 'right';
-            ctx.fillText('WINNER', teamBX + colWidth - 160, startY);
-        }
+        ctx.fillText('TEAM B', teamBX + colWidth - 10, startY);
 
         // Divider lines under headers
         const divGradA = ctx.createLinearGradient(teamAX, 0, teamAX + colWidth, 0);
@@ -276,7 +270,7 @@ module.exports = {
                     isRightAlign ? x + colWidth : x, y + rowH / 2, 0,
                     isRightAlign ? x + colWidth : x, y + rowH / 2, 200
                 );
-                mvpGlow.addColorStop(0, 'rgba(251, 191, 36, 0.08)');
+                mvpGlow.addColorStop(0, 'rgba(251, 191, 36, 0.04)');
                 mvpGlow.addColorStop(1, 'transparent');
                 ctx.save();
                 ctx.beginPath();
@@ -291,8 +285,8 @@ module.exports = {
             if (!isRightAlign) {
                 // ─── LEFT SIDE (Team A) ───
                 // Level Icon
-                const iconSize = 55;
-                const iconX = x + 12;
+                const iconSize = 42;
+                const iconX = x + 14;
                 const iconY = y + (rowH - iconSize) / 2;
                 try {
                     const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
@@ -300,7 +294,7 @@ module.exports = {
                         const icon = await loadCachedImage(iconPath);
                         if (icon) {
                             ctx.shadowColor = lvlInfo.color;
-                            ctx.shadowBlur = 12;
+                            ctx.shadowBlur = 6;
                             ctx.drawImage(icon, iconX, iconY, iconSize, iconSize);
                             ctx.shadowBlur = 0;
                         }
@@ -357,12 +351,9 @@ module.exports = {
                 const changeText = eloLog.change > 0 ? `+${eloLog.change}` : `${eloLog.change}`;
                 const changeColor = eloLog.change >= 0 ? '#2ecc71' : '#ef4444';
                 ctx.textAlign = 'right';
-                ctx.font = 'bold 28px Arial, sans-serif';
+                ctx.font = 'bold 26px Arial, sans-serif';
                 ctx.fillStyle = changeColor;
-                ctx.shadowColor = changeColor;
-                ctx.shadowBlur = 8;
                 ctx.fillText(changeText, x + colWidth - 20, y + rowH / 2 + 8);
-                ctx.shadowBlur = 0;
 
             } else {
                 // ─── RIGHT SIDE (Team B) — mirrored ───
@@ -370,16 +361,13 @@ module.exports = {
                 const changeText = eloLog.change > 0 ? `+${eloLog.change}` : `${eloLog.change}`;
                 const changeColor = eloLog.change >= 0 ? '#2ecc71' : '#ef4444';
                 ctx.textAlign = 'left';
-                ctx.font = 'bold 28px Arial, sans-serif';
+                ctx.font = 'bold 26px Arial, sans-serif';
                 ctx.fillStyle = changeColor;
-                ctx.shadowColor = changeColor;
-                ctx.shadowBlur = 8;
                 ctx.fillText(changeText, x + 20, y + rowH / 2 + 8);
-                ctx.shadowBlur = 0;
 
                 // Level Icon (right side)
-                const iconSize = 55;
-                const iconX = x + colWidth - iconSize - 12;
+                const iconSize = 42;
+                const iconX = x + colWidth - iconSize - 14;
                 const iconY = y + (rowH - iconSize) / 2;
                 try {
                     const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
@@ -387,7 +375,7 @@ module.exports = {
                         const icon = await loadCachedImage(iconPath);
                         if (icon) {
                             ctx.shadowColor = lvlInfo.color;
-                            ctx.shadowBlur = 12;
+                            ctx.shadowBlur = 6;
                             ctx.drawImage(icon, iconX, iconY, iconSize, iconSize);
                             ctx.shadowBlur = 0;
                         }
