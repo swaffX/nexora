@@ -94,182 +94,405 @@ function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius, color) {
 
 module.exports = {
     async createMatchResultImage(match, eloChanges, playersData) {
-        // match: Match model object
-        // eloChanges: Array of { userId, change, newElo }
-        // playersData: Map or Object of { userId: { username, avatarURL } }
-
-        const width = 1200;
-        const height = 800;
+        // ═══════════════════════════════════════════════════
+        //  NEXORA MATCH RESULT v3.0
+        //  Level icons, wider layout, premium design
+        // ═══════════════════════════════════════════════════
+        const width = 1400;
+        const height = 920;
         const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
 
-        // 1. Arkaplan (Harita Resmi)
+        // ─── BACKGROUND (Map Image) ───
         let mapBg = null;
         try {
             const assetsPath = path.join(__dirname, '..', '..', 'assets', 'maps');
             const mapName = match.selectedMap || match.map || 'Unknown';
             let p = path.join(assetsPath, `${mapName}.png`);
             if (!fs.existsSync(p)) p = path.join(assetsPath, `${mapName.toLowerCase()}.png`);
-
             mapBg = await loadCachedImage(p);
-        } catch (e) { console.log('Map load error', e); }
+        } catch (e) { }
 
         if (mapBg) {
             const scale = Math.max(width / mapBg.width, height / mapBg.height);
             const w = mapBg.width * scale;
             const h = mapBg.height * scale;
             ctx.drawImage(mapBg, (width - w) / 2, (height - h) / 2, w, h);
-            ctx.fillStyle = 'rgba(9, 9, 11, 0.85)';
+            ctx.fillStyle = 'rgba(6, 6, 10, 0.88)';
             ctx.fillRect(0, 0, width, height);
         } else {
-            const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-            bgGradient.addColorStop(0, '#18181b');
-            bgGradient.addColorStop(1, '#09090b');
-            ctx.fillStyle = bgGradient;
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
+            bgGrad.addColorStop(0, '#0a0a0f');
+            bgGrad.addColorStop(1, '#06060a');
+            ctx.fillStyle = bgGrad;
             ctx.fillRect(0, 0, width, height);
         }
 
-        // 2. Header (Skor)
-        ctx.textAlign = 'center';
-        ctx.font = 'bold 30px Arial, sans-serif';
-        ctx.fillStyle = '#a1a1aa';
-        const mapName = (match.selectedMap || match.map || 'MAP').toUpperCase();
-        ctx.fillText(mapName, width / 2, 60);
+        // ─── TOP ACCENT LINE ───
+        const topLine = ctx.createLinearGradient(0, 0, width, 0);
+        topLine.addColorStop(0, '#3b82f6');
+        topLine.addColorStop(0.5, '#ffffff20');
+        topLine.addColorStop(1, '#ef4444');
+        ctx.fillStyle = topLine;
+        ctx.fillRect(0, 0, width, 3);
 
-        ctx.font = 'bold 120px Arial, sans-serif';
+        // ─── HEADER (Score) ───
         const scoreA = match.scoreA ?? match.score?.A ?? 0;
         const scoreB = match.scoreB ?? match.score?.B ?? 0;
-        const colorA = scoreA > scoreB ? '#3b82f6' : (scoreA < scoreB ? '#ef4444' : '#fff');
-        const colorB = scoreB > scoreA ? '#3b82f6' : (scoreB < scoreA ? '#ef4444' : '#fff');
+        const aWin = scoreA > scoreB;
+        const bWin = scoreB > scoreA;
+        const colorA = aWin ? '#3b82f6' : (bWin ? '#ef4444' : '#a1a1aa');
+        const colorB = bWin ? '#3b82f6' : (aWin ? '#ef4444' : '#a1a1aa');
 
-        ctx.fillStyle = '#fff';
-        ctx.shadowColor = '#fff'; ctx.shadowBlur = 15;
-        ctx.fillText('-', width / 2, 160);
-        ctx.shadowBlur = 0;
+        // Map name
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 28px Arial, sans-serif';
+        ctx.fillStyle = '#52525b';
+        const mapText = (match.selectedMap || match.map || 'MAP').toUpperCase();
+        ctx.fillText(mapText, width / 2, 50);
 
+        // Scores
+        ctx.font = 'bold 110px Arial, sans-serif';
+
+        // Score A (left)
         ctx.textAlign = 'right';
         ctx.fillStyle = colorA;
-        ctx.shadowColor = colorA; ctx.shadowBlur = 30;
+        ctx.shadowColor = colorA;
+        ctx.shadowBlur = 30;
         ctx.fillText(scoreA, width / 2 - 50, 160);
         ctx.shadowBlur = 0;
 
+        // Dash
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#3f3f46';
+        ctx.fillText(':', width / 2, 155);
+
+        // Score B (right)
         ctx.textAlign = 'left';
         ctx.fillStyle = colorB;
-        ctx.shadowColor = colorB; ctx.shadowBlur = 30;
+        ctx.shadowColor = colorB;
+        ctx.shadowBlur = 30;
         ctx.fillText(scoreB, width / 2 + 50, 160);
         ctx.shadowBlur = 0;
 
-        // 3. Team Lists
-        const startY = 250;
-        const colWidth = 500;
-        const teamAX = 80;
-        const teamBX = width - 80 - colWidth;
+        // Result label
+        if (aWin || bWin) {
+            ctx.font = 'bold 20px Arial, sans-serif';
+            ctx.fillStyle = '#3f3f46';
+            ctx.textAlign = 'center';
+            ctx.fillText('MATCH RESULT', width / 2, 185);
+        }
 
+        // ─── TEAM HEADERS ───
+        const startY = 230;
+        const colWidth = 580;
+        const teamAX = 50;
+        const teamBX = width - 50 - colWidth;
+
+        // Team A header
         ctx.textAlign = 'left';
-        ctx.font = 'bold 35px Arial, sans-serif';
-        ctx.fillStyle = '#3b82f6';
-        ctx.shadowColor = '#3b82f6'; ctx.shadowBlur = 10;
-        ctx.fillText('TEAM A', teamAX, startY - 20);
+        ctx.font = 'bold 28px Arial, sans-serif';
+        ctx.fillStyle = colorA;
+        ctx.shadowColor = colorA;
+        ctx.shadowBlur = 8;
+        ctx.fillText(aWin ? '🏆 TEAM A' : 'TEAM A', teamAX + 10, startY);
         ctx.shadowBlur = 0;
 
+        if (aWin) {
+            ctx.font = '16px Arial, sans-serif';
+            ctx.fillStyle = '#2ecc71';
+            ctx.fillText('WINNER', teamAX + (aWin ? 155 : 110), startY);
+        }
+
+        // Team B header
         ctx.textAlign = 'right';
-        ctx.fillStyle = '#ef4444';
-        ctx.shadowColor = '#ef4444'; ctx.shadowBlur = 10;
-        ctx.fillText('TEAM B', teamBX + colWidth, startY - 20);
+        ctx.font = 'bold 28px Arial, sans-serif';
+        ctx.fillStyle = colorB;
+        ctx.shadowColor = colorB;
+        ctx.shadowBlur = 8;
+        ctx.fillText(bWin ? 'TEAM B 🏆' : 'TEAM B', teamBX + colWidth - 10, startY);
         ctx.shadowBlur = 0;
 
-        // Ensure eloChanges is a valid array
+        if (bWin) {
+            ctx.font = '16px Arial, sans-serif';
+            ctx.fillStyle = '#2ecc71';
+            ctx.textAlign = 'right';
+            ctx.fillText('WINNER', teamBX + colWidth - 160, startY);
+        }
+
+        // Divider lines under headers
+        const divGradA = ctx.createLinearGradient(teamAX, 0, teamAX + colWidth, 0);
+        divGradA.addColorStop(0, colorA);
+        divGradA.addColorStop(1, 'transparent');
+        ctx.fillStyle = divGradA;
+        ctx.fillRect(teamAX, startY + 12, colWidth, 2);
+
+        const divGradB = ctx.createLinearGradient(teamBX, 0, teamBX + colWidth, 0);
+        divGradB.addColorStop(0, 'transparent');
+        divGradB.addColorStop(1, colorB);
+        ctx.fillStyle = divGradB;
+        ctx.fillRect(teamBX, startY + 12, colWidth, 2);
+
+        // ─── PLAYER ROWS ───
         const safeEloChanges = Array.isArray(eloChanges) ? eloChanges : [];
+        const rowH = 90;
+        const rowGap = 10;
 
         const drawPlayerRow = async (userId, x, y, isRightAlign, teamColor) => {
             const user = playersData[userId] || { username: 'Unknown' };
             const eloLog = safeEloChanges.find(l => l.userId === userId) || { change: 0, newElo: 100 };
-            const level = eloService.getLevelFromElo(eloLog.newElo);
+            const lvlInfo = getLevelInfo(eloLog.newElo);
             const mvpPlayer = match.mvpPlayerId || match.mvp;
             const mvpLoser = match.mvpLoserId || match.loserMvp;
             const isMvp = (mvpPlayer === userId) || (mvpLoser === userId);
 
-            const grad = ctx.createLinearGradient(x, y, x + colWidth, y);
+            // Row background
+            ctx.beginPath();
+            ctx.roundRect(x, y, colWidth, rowH, 10);
+            const rowGrad = ctx.createLinearGradient(x, y, x + colWidth, y);
             if (isRightAlign) {
-                grad.addColorStop(0, 'rgba(0,0,0,0)');
-                grad.addColorStop(1, `rgba(50, 50, 50, 0.15)`);
+                rowGrad.addColorStop(0, 'rgba(15, 15, 20, 0.3)');
+                rowGrad.addColorStop(1, 'rgba(15, 15, 20, 0.7)');
             } else {
-                grad.addColorStop(0, `rgba(50, 50, 50, 0.15)`);
-                grad.addColorStop(1, 'rgba(0,0,0,0)');
+                rowGrad.addColorStop(0, 'rgba(15, 15, 20, 0.7)');
+                rowGrad.addColorStop(1, 'rgba(15, 15, 20, 0.3)');
             }
-            ctx.fillStyle = grad;
-            ctx.fillRect(x, y, colWidth, 60);
+            ctx.fillStyle = rowGrad;
+            ctx.fill();
 
+            // MVP highlight
             if (isMvp) {
+                ctx.beginPath();
+                ctx.roundRect(x, y, colWidth, rowH, 10);
                 ctx.strokeStyle = '#fbbf24';
                 ctx.lineWidth = 2;
-                ctx.strokeRect(x, y, colWidth, 60);
-                const iconX = isRightAlign ? x + colWidth + 20 : x - 25;
-                drawStar(ctx, iconX, y + 30, 5, 12, 6, '#fbbf24');
+                ctx.globalAlpha = 0.6;
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+
+                // MVP glow
+                const mvpGlow = ctx.createRadialGradient(
+                    isRightAlign ? x + colWidth : x, y + rowH / 2, 0,
+                    isRightAlign ? x + colWidth : x, y + rowH / 2, 200
+                );
+                mvpGlow.addColorStop(0, 'rgba(251, 191, 36, 0.08)');
+                mvpGlow.addColorStop(1, 'transparent');
+                ctx.save();
+                ctx.beginPath();
+                ctx.roundRect(x, y, colWidth, rowH, 10);
+                ctx.clip();
+                ctx.fillStyle = mvpGlow;
+                ctx.fillRect(x, y, colWidth, rowH);
+                ctx.restore();
             }
 
-            const avatarSize = 46;
-            const avatarX = isRightAlign ? x + colWidth - 55 : x + 10;
-            const avatarY = y + 7;
-
-            if (user.avatarURL) {
+            // Layout positions based on alignment
+            if (!isRightAlign) {
+                // ─── LEFT SIDE (Team A) ───
+                // Level Icon
+                const iconSize = 55;
+                const iconX = x + 12;
+                const iconY = y + (rowH - iconSize) / 2;
                 try {
-                    const avatar = await loadImage(user.avatarURL);
-                    ctx.save();
-                    ctx.beginPath(); ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2); ctx.clip();
-                    ctx.drawImage(avatar, avatarX, avatarY, avatarSize, avatarSize);
-                    ctx.restore();
+                    const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
+                    if (fs.existsSync(iconPath)) {
+                        const icon = await loadCachedImage(iconPath);
+                        if (icon) {
+                            ctx.shadowColor = lvlInfo.color;
+                            ctx.shadowBlur = 12;
+                            ctx.drawImage(icon, iconX, iconY, iconSize, iconSize);
+                            ctx.shadowBlur = 0;
+                        }
+                    }
                 } catch (e) { }
+
+                // Avatar
+                const avSize = 52;
+                const avX = iconX + iconSize + 10;
+                const avY = y + (rowH - avSize) / 2;
+                ctx.beginPath();
+                ctx.arc(avX + avSize / 2, avY + avSize / 2, avSize / 2 + 3, 0, Math.PI * 2);
+                ctx.fillStyle = lvlInfo.color;
+                ctx.globalAlpha = 0.5;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+
+                if (user.avatarURL) {
+                    try {
+                        const av = await loadImage(user.avatarURL);
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.arc(avX + avSize / 2, avY + avSize / 2, avSize / 2, 0, Math.PI * 2);
+                        ctx.clip();
+                        ctx.drawImage(av, avX, avY, avSize, avSize);
+                        ctx.restore();
+                    } catch (e) { }
+                }
+
+                // Name
+                ctx.textAlign = 'left';
+                ctx.font = 'bold 24px Arial, sans-serif';
+                ctx.fillStyle = '#ffffff';
+                let name = (user.username || 'Unknown').toUpperCase();
+                if (name.length > 13) name = name.substring(0, 13) + '..';
+                const nameX = avX + avSize + 15;
+                ctx.fillText(name, nameX, y + rowH / 2 - 2);
+
+                // MVP Star next to name
+                if (isMvp) {
+                    const nameW = ctx.measureText(name).width;
+                    drawStar(ctx, nameX + nameW + 15, y + rowH / 2 - 6, 5, 10, 5, '#fbbf24');
+                    ctx.font = 'bold 14px Arial, sans-serif';
+                    ctx.fillStyle = '#fbbf24';
+                    ctx.fillText('MVP', nameX + nameW + 30, y + rowH / 2 - 1);
+                }
+
+                // ELO info (under name)
+                ctx.font = '15px Arial, sans-serif';
+                ctx.fillStyle = '#52525b';
+                ctx.fillText(`LVL ${lvlInfo.lv}  •  ${eloLog.newElo} ELO`, nameX, y + rowH / 2 + 18);
+
+                // ELO change (far right)
+                const changeText = eloLog.change > 0 ? `+${eloLog.change}` : `${eloLog.change}`;
+                const changeColor = eloLog.change >= 0 ? '#2ecc71' : '#ef4444';
+                ctx.textAlign = 'right';
+                ctx.font = 'bold 28px Arial, sans-serif';
+                ctx.fillStyle = changeColor;
+                ctx.shadowColor = changeColor;
+                ctx.shadowBlur = 8;
+                ctx.fillText(changeText, x + colWidth - 20, y + rowH / 2 + 8);
+                ctx.shadowBlur = 0;
+
+            } else {
+                // ─── RIGHT SIDE (Team B) — mirrored ───
+                // ELO change (far left)
+                const changeText = eloLog.change > 0 ? `+${eloLog.change}` : `${eloLog.change}`;
+                const changeColor = eloLog.change >= 0 ? '#2ecc71' : '#ef4444';
+                ctx.textAlign = 'left';
+                ctx.font = 'bold 28px Arial, sans-serif';
+                ctx.fillStyle = changeColor;
+                ctx.shadowColor = changeColor;
+                ctx.shadowBlur = 8;
+                ctx.fillText(changeText, x + 20, y + rowH / 2 + 8);
+                ctx.shadowBlur = 0;
+
+                // Level Icon (right side)
+                const iconSize = 55;
+                const iconX = x + colWidth - iconSize - 12;
+                const iconY = y + (rowH - iconSize) / 2;
+                try {
+                    const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
+                    if (fs.existsSync(iconPath)) {
+                        const icon = await loadCachedImage(iconPath);
+                        if (icon) {
+                            ctx.shadowColor = lvlInfo.color;
+                            ctx.shadowBlur = 12;
+                            ctx.drawImage(icon, iconX, iconY, iconSize, iconSize);
+                            ctx.shadowBlur = 0;
+                        }
+                    }
+                } catch (e) { }
+
+                // Avatar (before icon)
+                const avSize = 52;
+                const avX = iconX - avSize - 10;
+                const avY = y + (rowH - avSize) / 2;
+                ctx.beginPath();
+                ctx.arc(avX + avSize / 2, avY + avSize / 2, avSize / 2 + 3, 0, Math.PI * 2);
+                ctx.fillStyle = lvlInfo.color;
+                ctx.globalAlpha = 0.5;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+
+                if (user.avatarURL) {
+                    try {
+                        const av = await loadImage(user.avatarURL);
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.arc(avX + avSize / 2, avY + avSize / 2, avSize / 2, 0, Math.PI * 2);
+                        ctx.clip();
+                        ctx.drawImage(av, avX, avY, avSize, avSize);
+                        ctx.restore();
+                    } catch (e) { }
+                }
+
+                // Name (right aligned, before avatar)
+                ctx.textAlign = 'right';
+                ctx.font = 'bold 24px Arial, sans-serif';
+                ctx.fillStyle = '#ffffff';
+                let name = (user.username || 'Unknown').toUpperCase();
+                if (name.length > 13) name = name.substring(0, 13) + '..';
+                const nameX = avX - 15;
+                ctx.fillText(name, nameX, y + rowH / 2 - 2);
+
+                // MVP Star
+                if (isMvp) {
+                    const nameW = ctx.measureText(name).width;
+                    drawStar(ctx, nameX - nameW - 15, y + rowH / 2 - 6, 5, 10, 5, '#fbbf24');
+                    ctx.font = 'bold 14px Arial, sans-serif';
+                    ctx.fillStyle = '#fbbf24';
+                    ctx.textAlign = 'right';
+                    ctx.fillText('MVP', nameX - nameW - 28, y + rowH / 2 - 1);
+                }
+
+                // ELO info
+                ctx.textAlign = 'right';
+                ctx.font = '15px Arial, sans-serif';
+                ctx.fillStyle = '#52525b';
+                ctx.fillText(`LVL ${lvlInfo.lv}  •  ${eloLog.newElo} ELO`, nameX, y + rowH / 2 + 18);
             }
-
-            ctx.font = 'bold 22px Arial, sans-serif';
-            ctx.fillStyle = '#fff';
-            const nameX = isRightAlign ? avatarX - 15 : avatarX + avatarSize + 15;
-            ctx.textAlign = isRightAlign ? 'right' : 'left';
-            let name = (user.username || 'Unknown').toUpperCase();
-            if (name.length > 12) name = name.substring(0, 12) + '..';
-            ctx.fillText(name, nameX, y + 38);
-
-            const changeText = eloLog.change > 0 ? `+${eloLog.change}` : `${eloLog.change}`;
-            const changeColor = eloLog.change >= 0 ? '#2ecc71' : '#ef4444';
-            ctx.font = 'bold 22px Arial, sans-serif';
-            ctx.fillStyle = changeColor;
-
-
-            // Sağdaysa ismin soluna, soldaysa ismin sağına (veya en uca)
-            // En uca koyalım daha düzenli olur.
-            const eloX = isRightAlign ? x + 20 : x + colWidth - 20;
-            ctx.textAlign = isRightAlign ? 'left' : 'right';
-            ctx.fillText(changeText, eloX, y + 38);
         };
 
         // Draw Team A (Left)
-        let curY = startY;
+        let curY = startY + 30;
         const teamAVector = match.teamA || match.teams?.A || [];
         for (const userId of teamAVector) {
-            await drawPlayerRow(userId, teamAX, curY, false, '#3b82f6');
-            curY += 70;
+            await drawPlayerRow(userId, teamAX, curY, false, colorA);
+            curY += rowH + rowGap;
         }
 
         // Draw Team B (Right)
-        curY = startY;
+        curY = startY + 30;
         const teamBVector = match.teamB || match.teams?.B || [];
         for (const userId of teamBVector) {
-            await drawPlayerRow(userId, teamBX, curY, true, '#ef4444');
-            curY += 70;
+            await drawPlayerRow(userId, teamBX, curY, true, colorB);
+            curY += rowH + rowGap;
         }
 
-        // Footer Info
-        ctx.fillStyle = 'rgba(255,255,255,0.05)';
-        ctx.fillRect(0, height - 60, width, 60);
+        // Center divider line
+        const centerDivGrad = ctx.createLinearGradient(0, startY + 30, 0, height - 80);
+        centerDivGrad.addColorStop(0, 'transparent');
+        centerDivGrad.addColorStop(0.3, '#27272a');
+        centerDivGrad.addColorStop(0.7, '#27272a');
+        centerDivGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = centerDivGrad;
+        ctx.fillRect(width / 2 - 1, startY + 30, 2, height - startY - 110);
 
-        ctx.font = '18px Arial, sans-serif';
-        ctx.fillStyle = '#52525b';
+        // ─── FOOTER ───
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        ctx.fillRect(0, height - 55, width, 55);
+
+        // Footer divider
+        const footDiv = ctx.createLinearGradient(0, 0, width, 0);
+        footDiv.addColorStop(0, '#3b82f640');
+        footDiv.addColorStop(0.5, '#27272a');
+        footDiv.addColorStop(1, '#ef444440');
+        ctx.fillStyle = footDiv;
+        ctx.fillRect(0, height - 55, width, 1);
+
+        ctx.font = '16px Arial, sans-serif';
+        ctx.fillStyle = '#3f3f46';
         ctx.textAlign = 'left';
-        ctx.fillText(`MATCH ID: ${match.matchId || match.matchNumber}`, 30, height - 23);
+        ctx.fillText(`MATCH #${match.matchId || match.matchNumber || 'N/A'}`, 30, height - 22);
+
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#27272a';
+        ctx.fillText('NEXORA RANKED', width / 2, height - 22);
 
         ctx.textAlign = 'right';
-        ctx.fillText(new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }), width - 30, height - 23);
+        ctx.fillStyle = '#3f3f46';
+        ctx.fillText(new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }), width - 30, height - 22);
 
         return canvas.toBuffer('image/png');
     },
