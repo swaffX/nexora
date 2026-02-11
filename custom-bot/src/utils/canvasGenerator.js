@@ -6,11 +6,11 @@ const eloService = require('../services/eloService');
 
 // --- ASSET CACHE (LRU Implementation) ---
 const assetCache = new Map();
-const MAX_CACHE_SIZE = 50; // Maksimum 50 resim sakla (RAM KorumasÃ„Â±)
+const MAX_CACHE_SIZE = 50; // Maksimum 50 resim sakla (RAM KorumasÃƒâ€Ã‚Â±)
 
 async function loadCachedImage(imagePath) {
     if (assetCache.has(imagePath)) {
-        // LRU MantÃ„Â±Ã„Å¸Ã„Â±: EriÃ…Å¸ilen ÃƒÂ¶Ã„Å¸eyi silip sona ekle (En yeni yap)
+        // LRU MantÃƒâ€Ã‚Â±Ãƒâ€Ã…Â¸Ãƒâ€Ã‚Â±: EriÃƒâ€¦Ã…Â¸ilen ÃƒÆ’Ã‚Â¶Ãƒâ€Ã…Â¸eyi silip sona ekle (En yeni yap)
         const img = assetCache.get(imagePath);
         assetCache.delete(imagePath);
         assetCache.set(imagePath, img);
@@ -20,7 +20,7 @@ async function loadCachedImage(imagePath) {
         if (fs.existsSync(imagePath)) {
             const img = await loadImage(imagePath);
 
-            // Kapasite Dolduysa En Eskiyi Sil (Map'in baÃ…Å¸Ã„Â±ndaki eleman)
+            // Kapasite Dolduysa En Eskiyi Sil (Map'in baÃƒâ€¦Ã…Â¸Ãƒâ€Ã‚Â±ndaki eleman)
             if (assetCache.size >= MAX_CACHE_SIZE) {
                 const oldestKey = assetCache.keys().next().value;
                 assetCache.delete(oldestKey);
@@ -61,7 +61,7 @@ const getLevelInfo = (elo) => {
     return { lv: level, min, max, color: colors[level] || '#ffffff' };
 };
 
-// YÃ„Â±ldÃ„Â±z Ãƒâ€¡izim Fonksiyonu (MVP iÃƒÂ§in)
+// YÃƒâ€Ã‚Â±ldÃƒâ€Ã‚Â±z ÃƒÆ’Ã¢â‚¬Â¡izim Fonksiyonu (MVP iÃƒÆ’Ã‚Â§in)
 function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius, color) {
     let rot = Math.PI / 2 * 3;
     let x = cx;
@@ -94,17 +94,17 @@ function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius, color) {
 
 module.exports = {
     async createMatchResultImage(match, eloChanges, playersData) {
-        // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+        // ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
         //  NEXORA MATCH RESULT v3.0
         //  Level icons, wider layout, premium design
-        // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+        // ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
         const width = 1400;
         const height = 920;
         const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = true;
 
-        // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ BACKGROUND (Map Image) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+        // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ BACKGROUND (Map Image) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
         let mapBg = null;
         try {
             const assetsPath = path.join(__dirname, '..', '..', 'assets', 'maps');
@@ -129,7 +129,7 @@ module.exports = {
             ctx.fillRect(0, 0, width, height);
         }
 
-        // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ TOP ACCENT LINE Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+        // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ TOP ACCENT LINE ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
         const topLine = ctx.createLinearGradient(0, 0, width, 0);
         topLine.addColorStop(0, '#3b82f6');
         topLine.addColorStop(0.5, '#ffffff20');
@@ -137,7 +137,7 @@ module.exports = {
         ctx.fillStyle = topLine;
         ctx.fillRect(0, 0, width, 3);
 
-        // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ HEADER (Score) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+        // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ HEADER (Score) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
         const scoreA = match.scoreA ?? match.score?.A ?? 0;
         const scoreB = match.scoreB ?? match.score?.B ?? 0;
         const aWin = scoreA > scoreB;
@@ -197,7 +197,7 @@ module.exports = {
             ctx.fillText('WINNER', winnerX, pillY + 16);
         }
 
-        // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ TEAM HEADERS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+        // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ TEAM HEADERS ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
         const startY = 230;
         const colWidth = 580;
         const teamAX = 50;
@@ -228,7 +228,7 @@ module.exports = {
         ctx.fillStyle = divGradB;
         ctx.fillRect(teamBX, startY + 12, colWidth, 2);
 
-        // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ PLAYER ROWS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+        // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ PLAYER ROWS ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
         const safeEloChanges = Array.isArray(eloChanges) ? eloChanges : [];
         const rowH = 90;
         const rowGap = 10;
@@ -283,7 +283,7 @@ module.exports = {
 
             // Layout positions based on alignment
             if (!isRightAlign) {
-                // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ LEFT SIDE (Team A) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+                // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ LEFT SIDE (Team A) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
                 // Level Icon
                 const iconSize = 42;
                 const iconX = x + 14;
@@ -345,7 +345,7 @@ module.exports = {
                 // ELO info (under name)
                 ctx.font = '15px Arial, sans-serif';
                 ctx.fillStyle = '#52525b';
-                ctx.fillText(`LVL ${lvlInfo.lv}  Ã¢â‚¬Â¢  ${eloLog.newElo} ELO`, nameX, y + rowH / 2 + 18);
+                ctx.fillText(`LVL ${lvlInfo.lv}  ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢  ${eloLog.newElo} ELO`, nameX, y + rowH / 2 + 18);
 
                 // ELO change (far right)
                 const changeText = eloLog.change > 0 ? `+${eloLog.change}` : `${eloLog.change}`;
@@ -356,7 +356,7 @@ module.exports = {
                 ctx.fillText(changeText, x + colWidth - 20, y + rowH / 2 + 8);
 
             } else {
-                // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ RIGHT SIDE (Team B) Ã¢â‚¬â€ mirrored Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+                // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ RIGHT SIDE (Team B) ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â mirrored ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
                 // ELO change (far left)
                 const changeText = eloLog.change > 0 ? `+${eloLog.change}` : `${eloLog.change}`;
                 const changeColor = eloLog.change >= 0 ? '#2ecc71' : '#ef4444';
@@ -428,7 +428,7 @@ module.exports = {
                 ctx.textAlign = 'right';
                 ctx.font = '15px Arial, sans-serif';
                 ctx.fillStyle = '#52525b';
-                ctx.fillText(`LVL ${lvlInfo.lv}  Ã¢â‚¬Â¢  ${eloLog.newElo} ELO`, nameX, y + rowH / 2 + 18);
+                ctx.fillText(`LVL ${lvlInfo.lv}  ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢  ${eloLog.newElo} ELO`, nameX, y + rowH / 2 + 18);
             }
         };
 
@@ -457,7 +457,7 @@ module.exports = {
         ctx.fillStyle = centerDivGrad;
         ctx.fillRect(width / 2 - 1, startY + 30, 2, height - startY - 110);
 
-        // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ FOOTER Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+        // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ FOOTER ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
         ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
         ctx.fillRect(0, height - 55, width, 55);
 
@@ -535,10 +535,10 @@ module.exports = {
         ctx.fillStyle = rankColor;
         ctx.fillRect(0, 0, 10, height);
 
-        // ─── AVATAR ───
+        // â”€â”€â”€ AVATAR (CENTERED) â”€â”€â”€
         const avatarSize = 100;
-        const avatarX = 50;
-        const avatarY = 60;
+        const avatarX = 200;
+        const avatarY = 50;
         if (user.avatar) {
             try {
                 const av = await loadImage(user.avatar);
@@ -561,15 +561,14 @@ module.exports = {
             } catch (e) { }
         }
 
-        // ─── LEVEL ICON (overlapping avatar bottom-right) ───
-        const lvlIconSize = 50;
-        const lvlIconX = avatarX + avatarSize - lvlIconSize / 2 + 5;
-        const lvlIconY = avatarY + avatarSize - lvlIconSize / 2 + 5;
+        // â”€â”€â”€ LEVEL ICON (overlapping avatar bottom-right) â”€â”€â”€
+        const lvlIconSize = 44;
+        const lvlIconX = avatarX + avatarSize - lvlIconSize / 2 + 4;
+        const lvlIconY = avatarY + avatarSize - lvlIconSize / 2 + 4;
         try {
             const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${levelData.lv}.png`);
             if (fs.existsSync(iconPath)) {
                 const icon = await loadImage(iconPath);
-                // Dark circle behind icon
                 ctx.beginPath();
                 ctx.arc(lvlIconX + lvlIconSize / 2, lvlIconY + lvlIconSize / 2, lvlIconSize / 2 + 3, 0, Math.PI * 2);
                 ctx.fillStyle = '#18181b';
@@ -578,25 +577,49 @@ module.exports = {
             }
         } catch (e) { }
 
-        const textX = 200;
-        ctx.font = 'bold 70px Arial, sans-serif';
+        // â”€â”€â”€ NAME (lowercase, smooth font) â”€â”€â”€
+        const textX = 340;
+        ctx.font = '600 52px "Segoe UI", "Helvetica Neue", Arial, sans-serif';
         const nameX = textX;
-
         ctx.fillStyle = '#ffffff';
-        let name = user.username ? user.username.toUpperCase() : 'UNKNOWN';
+        let name = user.username || 'Unknown';
         if (name.length > 15) name = name.substring(0, 15) + '...';
-        ctx.fillText(name, nameX, 90);
+        ctx.fillText(name, nameX, 85);
 
-        // Title
+        // â”€â”€â”€ TITLE PILL BADGE â”€â”€â”€
         if (stats.activeTitle) {
-            ctx.font = 'bold 24px Arial, sans-serif';
-            ctx.fillStyle = eloService.getTitleColor(stats.activeTitle);
-            ctx.fillText(stats.activeTitle.toUpperCase(), nameX, 125);
+            const titleColor = eloService.getTitleColor(stats.activeTitle);
+            const titleText = stats.activeTitle.toUpperCase();
+            ctx.font = 'bold 14px "Segoe UI", Arial, sans-serif';
+            const titleW = ctx.measureText(titleText).width;
+            const pillW = titleW + 24;
+            const pillH = 26;
+            const pillX = nameX;
+            const pillY = 96;
+            // Parse title color for rgba
+            const tr = parseInt(titleColor.slice(1, 3), 16);
+            const tg = parseInt(titleColor.slice(3, 5), 16);
+            const tb = parseInt(titleColor.slice(5, 7), 16);
+            // Badge background
+            ctx.beginPath();
+            ctx.roundRect(pillX, pillY, pillW, pillH, 13);
+            ctx.fillStyle = `rgba(${tr}, ${tg}, ${tb}, 0.15)`;
+            ctx.fill();
+            // Badge border
+            ctx.beginPath();
+            ctx.roundRect(pillX, pillY, pillW, pillH, 13);
+            ctx.strokeStyle = `rgba(${tr}, ${tg}, ${tb}, 0.4)`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            // Badge text
+            ctx.fillStyle = titleColor;
+            ctx.fillText(titleText, pillX + 12, pillY + 18);
         }
 
-        const progressY = 160;
+        // â”€â”€â”€ PROGRESS BAR â”€â”€â”€
+        const progressY = 145;
         const barWidth = 750;
-        const barHeight = 15;
+        const barHeight = 12;
         let progress = 0;
         if (levelData.lv < 10) {
             const range = levelData.max - levelData.min;
@@ -605,47 +628,73 @@ module.exports = {
             progress = Math.min(1, Math.max(0, progress));
         } else { progress = 1; }
 
-        ctx.fillStyle = '#333';
-        ctx.fillRect(textX, progressY, barWidth, barHeight);
+        // Bar track (rounded)
+        ctx.beginPath();
+        ctx.roundRect(textX, progressY, barWidth, barHeight, 6);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+        ctx.fill();
+
+        // Bar fill
         if (progress > 0) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.roundRect(textX, progressY, barWidth, barHeight, 6);
+            ctx.clip();
             ctx.fillStyle = rankColor;
             ctx.shadowColor = rankColor;
-            ctx.shadowBlur = 15;
+            ctx.shadowBlur = 10;
             ctx.fillRect(textX, progressY, barWidth * progress, barHeight);
             ctx.shadowBlur = 0;
+            ctx.restore();
         }
 
-        ctx.font = 'bold 32px Arial, sans-serif';
+        // ELO text
+        ctx.font = '600 28px "Segoe UI", Arial, sans-serif';
         ctx.fillStyle = '#cccccc';
         const eloText = `${elo} ELO (#${rank || 'Unranked'})`;
-        ctx.fillText(eloText, textX, progressY + 55);
+        ctx.fillText(eloText, textX, progressY + 45);
 
         if (levelData.lv < 10) {
             ctx.textAlign = 'right';
-            ctx.fillStyle = '#666';
-            ctx.fillText(`NEXT: ${levelData.max}`, textX + barWidth, progressY + 55);
+            ctx.font = '24px "Segoe UI", Arial, sans-serif';
+            ctx.fillStyle = '#555';
+            ctx.fillText(`NEXT: ${levelData.max}`, textX + barWidth, progressY + 45);
             ctx.textAlign = 'left';
         } else {
             ctx.textAlign = 'right';
+            ctx.font = 'bold 24px "Segoe UI", Arial, sans-serif';
             ctx.fillStyle = rankColor;
-            ctx.fillText(`MAX LEVEL`, textX + barWidth, progressY + 55);
+            ctx.fillText('MAX LEVEL', textX + barWidth, progressY + 45);
             ctx.textAlign = 'left';
         }
 
-        const statsY = 280;
+        // â”€â”€â”€ STAT BOXES (centered, rounded) â”€â”€â”€
+        const statsY = 250;
         const boxWidth = 175;
         const boxHeight = 120;
-        const gap = 15;
+        const gap = 14;
+        const totalBoxesWidth = 4 * boxWidth + 3 * gap;
+        const boxStartX = textX;
         const drawStatBox = (idx, label, value, color = '#fff') => {
-            const x = textX + (idx * (boxWidth + gap));
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-            ctx.fillRect(x, statsY, boxWidth, boxHeight);
-            ctx.font = 'bold 45px Arial, sans-serif';
+            const x = boxStartX + (idx * (boxWidth + gap));
+            // Rounded box bg
+            ctx.beginPath();
+            ctx.roundRect(x, statsY, boxWidth, boxHeight, 12);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.roundRect(x, statsY, boxWidth, boxHeight, 12);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            // Value
+            ctx.font = 'bold 42px "Segoe UI", Arial, sans-serif';
             ctx.fillStyle = color;
             ctx.textAlign = 'center';
             ctx.fillText(String(value), x + boxWidth / 2, statsY + 60);
-            ctx.font = '20px Arial, sans-serif';
-            ctx.fillStyle = '#888';
+            // Label
+            ctx.font = '18px "Segoe UI", Arial, sans-serif';
+            ctx.fillStyle = '#666';
             ctx.fillText(label.toUpperCase(), x + boxWidth / 2, statsY + 95);
             ctx.textAlign = 'left';
         };
@@ -673,12 +722,12 @@ module.exports = {
         let bgImgPrimary = null;
         if (currentBg !== 'Default') {
             try {
-                // Config'den dosya yolunu al (ÃƒÂ¶rn: Vyse.jpg veya Raze.png)
+                // Config'den dosya yolunu al (ÃƒÆ’Ã‚Â¶rn: Vyse.jpg veya Raze.png)
                 const themeConfig = eloService.ELO_CONFIG.BACKGROUND_THEMES[currentBg];
                 const fileName = themeConfig ? themeConfig.path : `${currentBg}.png`;
 
                 const mapPath = path.join(__dirname, '..', '..', 'assets', 'maps', fileName);
-                if (fs.existsSync(mapPath)) bgImgPrimary = await loadCachedImage(mapPath); // loadCachedImage kullanalÃ„Â±m
+                if (fs.existsSync(mapPath)) bgImgPrimary = await loadCachedImage(mapPath); // loadCachedImage kullanalÃƒâ€Ã‚Â±m
             } catch (e) { }
         }
 
@@ -725,7 +774,7 @@ module.exports = {
                 if (fs.existsSync(p)) mapBg = await loadImage(p);
             } catch (e) { }
 
-            const boxW = 500; // Harita resmini biraz kÃƒÂ¼ÃƒÂ§ÃƒÂ¼ltÃƒÂ¼yoruz ki yanÃ„Â±na yazÃ„Â± sÃ„Â±Ã„Å¸sÃ„Â±n
+            const boxW = 500; // Harita resmini biraz kÃƒÆ’Ã‚Â¼ÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â¼ltÃƒÆ’Ã‚Â¼yoruz ki yanÃƒâ€Ã‚Â±na yazÃƒâ€Ã‚Â± sÃƒâ€Ã‚Â±Ãƒâ€Ã…Â¸sÃƒâ€Ã‚Â±n
             const boxH = 80;
             const boxX = 50;
 
@@ -776,7 +825,7 @@ module.exports = {
             ctx.font = 'bold 30px Arial, sans-serif';
             ctx.shadowColor = '#000'; ctx.shadowBlur = 5;
             ctx.textAlign = 'center';
-            ctx.fillText(detailText, 340, matchY + 50); // Skoru map ÃƒÂ¼zerinde merkeze ÃƒÂ§ektik
+            ctx.fillText(detailText, 340, matchY + 50); // Skoru map ÃƒÆ’Ã‚Â¼zerinde merkeze ÃƒÆ’Ã‚Â§ektik
             ctx.shadowBlur = 0;
 
             // ELO Change logic update: Check id as string to avoid type mismatch
@@ -799,7 +848,7 @@ module.exports = {
                 }
             }
 
-            // Tarih (ELO deÃ„Å¸iÃ…Å¸iminin altÃ„Â±)
+            // Tarih (ELO deÃƒâ€Ã…Â¸iÃƒâ€¦Ã…Â¸iminin altÃƒâ€Ã‚Â±)
             ctx.font = 'italic 18px Arial, sans-serif';
             ctx.fillStyle = '#888';
             ctx.textAlign = 'left';
@@ -865,7 +914,7 @@ module.exports = {
         // Ezeli Rakip (Nemesis)
         if (nemesisData) {
             ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(rightX, 660, 430, 120);
-            ctx.font = 'bold 20px Arial, sans-serif'; ctx.fillStyle = '#ef4444'; ctx.fillText('EZELÃ„Â° RAKÃ„Â°P', rightX + 20, 700);
+            ctx.font = 'bold 20px Arial, sans-serif'; ctx.fillStyle = '#ef4444'; ctx.fillText('EZELÃƒâ€Ã‚Â° RAKÃƒâ€Ã‚Â°P', rightX + 20, 700);
             if (nemesisData.avatarURL) {
                 try {
                     const av = await loadImage(nemesisData.avatarURL);
@@ -879,7 +928,7 @@ module.exports = {
             if (nName.length > 12) nName = nName.substring(0, 10) + '..';
             ctx.fillText(nName, rightX + 110, 750);
             ctx.font = 'bold 24px Arial, sans-serif'; ctx.fillStyle = '#ef4444'; ctx.textAlign = 'right';
-            ctx.fillText(`${nemesisData.count} KEZ YENDÃ„Â°`, rightX + 410, 750); ctx.textAlign = 'left';
+            ctx.fillText(`${nemesisData.count} KEZ YENDÃƒâ€Ã‚Â°`, rightX + 410, 750); ctx.textAlign = 'left';
         }
 
         // --- FOOTER (User Info & Rank) ---
@@ -916,9 +965,9 @@ module.exports = {
             ctx.fillText(stats.activeTitle.toUpperCase(), 140, footerMid + 25);
         }
 
-        // Ã¢ÂÂ³ Ã„Â°NAKTÃ„Â°F BADGE
+        // ÃƒÂ¢Ã‚ÂÃ‚Â³ Ãƒâ€Ã‚Â°NAKTÃƒâ€Ã‚Â°F BADGE
         if (stats.isInactive) {
-            const badgeText = 'Ã¢ÂÂ³ Ã„Â°NAKTÃ„Â°F';
+            const badgeText = 'ÃƒÂ¢Ã‚ÂÃ‚Â³ Ãƒâ€Ã‚Â°NAKTÃƒâ€Ã‚Â°F';
             ctx.font = 'bold 18px Arial, sans-serif';
             const badgeWidth = ctx.measureText(badgeText).width + 20;
             const badgeX = stats.activeTitle ? 140 + ctx.measureText(stats.activeTitle.toUpperCase()).width + 20 : 140;
@@ -1003,7 +1052,7 @@ module.exports = {
 
         ctx.font = '24px Arial, sans-serif';
         ctx.fillStyle = '#a1a1aa';
-        ctx.fillText('MaÃƒÂ§lardaki performansÃ„Â±na gÃƒÂ¶re nadir ÃƒÂ¼nvanlar kazan!', width / 2, 150);
+        ctx.fillText('MaÃƒÆ’Ã‚Â§lardaki performansÃƒâ€Ã‚Â±na gÃƒÆ’Ã‚Â¶re nadir ÃƒÆ’Ã‚Â¼nvanlar kazan!', width / 2, 150);
 
         // Accent Bar
         ctx.fillStyle = '#fbbf24';
@@ -1280,7 +1329,7 @@ module.exports = {
             const wr2 = stats2.totalMatches > 0 ? (stats2.totalWins / stats2.totalMatches) * 100 : 0;
 
             statRow('ELO', stats.elo, 0, stats.elo >= stats2.elo);
-            statRow('MaÃƒÂ§', stats.totalMatches, 1, stats.totalMatches >= stats2.totalMatches);
+            statRow('MaÃƒÆ’Ã‚Â§', stats.totalMatches, 1, stats.totalMatches >= stats2.totalMatches);
             statRow('WR', `%${Math.round(wr1)}`, 2, wr1 >= wr2);
             statRow('MVP', stats.totalMVPs || 0, 3, (stats.totalMVPs || 0) >= (stats2.totalMVPs || 0));
         };
@@ -1292,10 +1341,10 @@ module.exports = {
     },
 
     async createLeaderboardImage(users) {
-        // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+        // ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
         //  NEXORA PREMIUM LEADERBOARD v3.0
         //  Wider layout, prominent level icons, ELO progress bars
-        // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+        // ÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚ÂÃƒÂ¢Ã¢â‚¬Â¢Ã‚Â
         const width = 2800;
         const rowHeight = 220;
         const gap = 25;
@@ -1308,7 +1357,7 @@ module.exports = {
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = true;
 
-        // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ BACKGROUND Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+        // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ BACKGROUND ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
         const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
         bgGradient.addColorStop(0, '#06060a');
         bgGradient.addColorStop(0.3, '#0c0c12');
@@ -1330,7 +1379,7 @@ module.exports = {
         }
         ctx.restore();
 
-        // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ HEADER Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+        // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ HEADER ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
         // Top accent line
         const accentGrad = ctx.createLinearGradient(0, 0, width, 0);
         accentGrad.addColorStop(0, 'transparent');
@@ -1360,7 +1409,7 @@ module.exports = {
         // Subtitle
         ctx.font = '42px Arial, sans-serif';
         ctx.fillStyle = '#71717a';
-        ctx.fillText(`SEASON 1  Ã‚Â·  TOP ${users.length} PLAYERS`, width / 2, 235);
+        ctx.fillText(`SEASON 1  Ãƒâ€šÃ‚Â·  TOP ${users.length} PLAYERS`, width / 2, 235);
 
         // Accent bar
         const barGrad = ctx.createLinearGradient(width / 2 - 120, 0, width / 2 + 120, 0);
@@ -1389,7 +1438,7 @@ module.exports = {
         ctx.fillText('ELO POINTS', width - 100, 330);
         ctx.textAlign = 'left';
 
-        // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ ROWS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+        // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ ROWS ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
         let y = headerHeight;
 
         for (let i = 0; i < users.length; i++) {
@@ -1424,7 +1473,7 @@ module.exports = {
                 rankFontColor = '#d97706';
             }
 
-            // Ã¢â€â‚¬Ã¢â€â‚¬ Card Background Ã¢â€â‚¬Ã¢â€â‚¬
+            // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ Card Background ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
             ctx.beginPath();
             ctx.roundRect(cardX, y, cardW, rowHeight, 16);
 
@@ -1483,7 +1532,7 @@ module.exports = {
                 ctx.globalAlpha = 1;
             }
 
-            // Ã¢â€â‚¬Ã¢â€â‚¬ 1. Rank Number Ã¢â€â‚¬Ã¢â€â‚¬
+            // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 1. Rank Number ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
             ctx.textAlign = 'center';
             ctx.font = 'bold 80px Arial, sans-serif';
             ctx.fillStyle = rankFontColor;
@@ -1494,7 +1543,7 @@ module.exports = {
             ctx.fillText(`#${rank}`, cardX + 110, y + rowHeight / 2 + 28);
             ctx.shadowBlur = 0;
 
-            // Ã¢â€â‚¬Ã¢â€â‚¬ 2. Level Icon (PROMINENT) Ã¢â€â‚¬Ã¢â€â‚¬
+            // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 2. Level Icon (PROMINENT) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
             const lvlIconSize = 120;
             const lvlIconX = cardX + 200;
             const lvlIconY = y + (rowHeight - lvlIconSize) / 2;
@@ -1519,7 +1568,7 @@ module.exports = {
             ctx.textAlign = 'center';
             ctx.fillText(`LVL ${lvlInfo.lv}`, lvlIconX + lvlIconSize / 2, lvlIconY + lvlIconSize + 22);
 
-            // Ã¢â€â‚¬Ã¢â€â‚¬ 3. Avatar Ã¢â€â‚¬Ã¢â€â‚¬
+            // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 3. Avatar ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
             const avSize = 100;
             const avX = cardX + 370;
             const avY = y + (rowHeight - avSize) / 2 - 5;
@@ -1544,7 +1593,7 @@ module.exports = {
                 } catch (e) { }
             }
 
-            // Ã¢â€â‚¬Ã¢â€â‚¬ 4. Username Ã¢â€â‚¬Ã¢â€â‚¬
+            // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 4. Username ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
             const nameX = avX + avSize + 35;
             ctx.textAlign = 'left';
             ctx.font = 'bold 52px Arial, sans-serif';
@@ -1553,7 +1602,7 @@ module.exports = {
             if (name.length > 14) name = name.substring(0, 14) + '..';
             ctx.fillText(name, nameX, y + rowHeight / 2 + 5);
 
-            // Ã¢â€â‚¬Ã¢â€â‚¬ 5. ELO Progress Bar (under name) Ã¢â€â‚¬Ã¢â€â‚¬
+            // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 5. ELO Progress Bar (under name) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
             const barX = nameX;
             const barY = y + rowHeight / 2 + 22;
             const barW = 280;
@@ -1590,7 +1639,7 @@ module.exports = {
             ctx.fillStyle = '#52525b';
             ctx.fillText(`${stats.elo} / ${lvlInfo.lv < 10 ? lvlInfo.max : 'MAX'}`, barX + barW + 12, barY + 8);
 
-            // Ã¢â€â‚¬Ã¢â€â‚¬ 6. Stats Boxes Ã¢â€â‚¬Ã¢â€â‚¬
+            // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 6. Stats Boxes ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
             const w = stats.totalWins || 0;
             const l = stats.totalLosses || 0;
             const t = w + l;
@@ -1641,7 +1690,7 @@ module.exports = {
             ctx.fillStyle = `${wrColor}80`;
             ctx.fillText('WIN RATE', wrBoxX + (statBoxW + 20) / 2, statBoxY + 70);
 
-            // Ã¢â€â‚¬Ã¢â€â‚¬ 7. ELO (Far Right) Ã¢â€â‚¬Ã¢â€â‚¬
+            // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ 7. ELO (Far Right) ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
             const eloX = width - 110;
             ctx.textAlign = 'right';
             ctx.font = 'bold 72px Arial, sans-serif';
@@ -1660,7 +1709,7 @@ module.exports = {
             y += rowHeight + gap;
         }
 
-        // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ FOOTER Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+        // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ FOOTER ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
         // Divider line
         const footerDivGrad = ctx.createLinearGradient(0, y + 10, width, y + 10);
         footerDivGrad.addColorStop(0, 'transparent');
@@ -1673,7 +1722,7 @@ module.exports = {
         ctx.textAlign = 'center';
         ctx.font = '28px Arial, sans-serif';
         ctx.fillStyle = '#3f3f46';
-        ctx.fillText('NEXORA RANKED SYSTEM  Ã¢â‚¬Â¢  DEVELOPED BY SWAFF', width / 2, height - 30);
+        ctx.fillText('NEXORA RANKED SYSTEM  ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢  DEVELOPED BY SWAFF', width / 2, height - 30);
 
         return canvas.toBuffer('image/png');
     },
@@ -1748,7 +1797,7 @@ module.exports = {
                 const lvInfo = getLevelInfo(cap.elo || 200);
                 ctx.font = 'bold 24px Arial, sans-serif';
                 ctx.fillStyle = lvInfo.color;
-                ctx.fillText(`LV.${lvInfo.lv} Ã¢â‚¬Â¢ ${cap.elo} ELO`, x, y + 115);
+                ctx.fillText(`LV.${lvInfo.lv} ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ ${cap.elo} ELO`, x, y + 115);
             } else {
                 ctx.strokeStyle = '#27272a';
                 ctx.setLineDash([8, 6]);
@@ -2048,7 +2097,7 @@ module.exports = {
         // Subtext
         ctx.fillStyle = '#AAAAAA';
         ctx.font = '30px Arial, sans-serif';
-        ctx.fillText('SEÃƒâ€¡Ã„Â°M HAKKINI KAZANDI', width / 2, 330);
+        ctx.fillText('SEÃƒÆ’Ã¢â‚¬Â¡Ãƒâ€Ã‚Â°M HAKKINI KAZANDI', width / 2, 330);
 
         return canvas.toBuffer('image/png');
     },
@@ -2259,8 +2308,8 @@ module.exports = {
             ctx.globalAlpha = 1;
         };
 
-        drawModernCard('ATTACK', attackX, '#ef4444', '#dc2626', 'Ã¢Å¡â€');
-        drawModernCard('DEFEND', defendX, '#3b82f6', '#2563eb', 'ÄŸÅ¸â€ºÂ¡');
+        drawModernCard('ATTACK', attackX, '#ef4444', '#dc2626', 'ÃƒÂ¢Ã…Â¡Ã¢â‚¬Â');
+        drawModernCard('DEFEND', defendX, '#3b82f6', '#2563eb', 'Ã„Å¸Ã…Â¸Ã¢â‚¬ÂºÃ‚Â¡');
 
         // 6. Center "VS" Divider
         ctx.textAlign = 'center';
@@ -2420,7 +2469,7 @@ module.exports = {
                 const lvInfo = getLevelInfo(player.elo || 200);
                 ctx.font = 'bold 24px Arial, sans-serif';
                 ctx.fillStyle = lvInfo.color;
-                ctx.fillText(`LV.${lvInfo.lv} Ã¢â‚¬Â¢ ${player.elo} ELO`, textStartX, playerY + 80);
+                ctx.fillText(`LV.${lvInfo.lv} ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ ${player.elo} ELO`, textStartX, playerY + 80);
 
                 playerY += 120;
             }
@@ -2487,7 +2536,7 @@ module.exports = {
 
             ctx.font = '20px Arial, sans-serif';
             ctx.fillStyle = p.hasVoted ? '#2ecc71' : '#52525b';
-            ctx.fillText(p.hasVoted ? 'Ã¢â€”Â' : 'Ã¢â€”â€¹', sidebarX + 70, pY);
+            ctx.fillText(p.hasVoted ? 'ÃƒÂ¢Ã¢â‚¬â€Ã‚Â' : 'ÃƒÂ¢Ã¢â‚¬â€Ã¢â‚¬Â¹', sidebarX + 70, pY);
 
             ctx.fillStyle = p.hasVoted ? '#fff' : '#52525b';
             ctx.font = '18px Arial, sans-serif';
@@ -2747,7 +2796,7 @@ module.exports = {
         ctx.font = 'bold 20px Arial, sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.letterSpacing = '5px';
-        ctx.fillText('Ã¢â‚¬Â¢ STATS Ã¢â‚¬Â¢ RANK Ã¢â‚¬Â¢ TITLES Ã¢â‚¬Â¢ STYLE Ã¢â‚¬Â¢', width / 2, height - 40);
+        ctx.fillText('ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ STATS ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ RANK ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ TITLES ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ STYLE ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢', width / 2, height - 40);
         ctx.globalAlpha = 1;
 
         return canvas.toBuffer('image/png');
