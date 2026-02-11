@@ -28,6 +28,15 @@ module.exports = {
         // LEVEL SİSTEMİ KALDIRILDI
         // ESKİ XP/LEVEL/ACHIEVEMENT KODLARI BURADAYDI VE TEMİZLENDİ.
 
+        // Mesaj Sayacı (Leaderboard için)
+        try {
+            await User.findOneAndUpdate(
+                { odasi: message.author.id, odaId: message.guild.id },
+                { $inc: { totalMessages: 1 } },
+                { upsert: true }
+            );
+        } catch (e) { }
+
         // AFK kontrolü
         const userData = await User.findOne({ odasi: message.author.id, odaId: message.guild.id });
         if (userData && userData.afk && userData.afk.enabled) {

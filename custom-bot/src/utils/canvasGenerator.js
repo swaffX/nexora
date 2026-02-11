@@ -1276,50 +1276,108 @@ module.exports = {
         const drawUserSide = async (user, stats, x, isRight) => {
             const sideWidth = 450;
             const startX = isRight ? width - sideWidth - 50 : 50;
-            const avatarSize = 150;
+            const avatarSize = 130;
             const midX = startX + sideWidth / 2;
+            const lvlInfo = getLevelInfo(stats.elo !== undefined ? stats.elo : 100);
+            const rankColor = lvlInfo.color;
+            const rc = parseInt(rankColor.slice(1, 3), 16);
+            const gc = parseInt(rankColor.slice(3, 5), 16);
+            const bc = parseInt(rankColor.slice(5, 7), 16);
 
-            // Avatar
+            // Avatar with glow ring
             if (user.avatar) {
                 try {
                     const av = await loadImage(user.avatar);
-                    ctx.save(); ctx.beginPath(); ctx.arc(midX, 200, avatarSize / 2, 0, Math.PI * 2); ctx.clip();
-                    ctx.drawImage(av, midX - avatarSize / 2, 200 - avatarSize / 2, avatarSize, avatarSize); ctx.restore();
+                    // Glow ring
+                    ctx.beginPath();
+                    ctx.arc(midX, 190, avatarSize / 2 + 5, 0, Math.PI * 2);
+                    ctx.strokeStyle = rankColor;
+                    ctx.lineWidth = 3;
+                    ctx.shadowColor = rankColor;
+                    ctx.shadowBlur = 15;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                    // Circular clip
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(midX, 190, avatarSize / 2, 0, Math.PI * 2);
+                    ctx.clip();
+                    ctx.drawImage(av, midX - avatarSize / 2, 190 - avatarSize / 2, avatarSize, avatarSize);
+                    ctx.restore();
                 } catch (e) { }
             }
 
+            // Level icon (overlapping avatar bottom-right)
+            const lvlIconSize = 40;
+            const lvlIconX = midX + avatarSize / 2 - lvlIconSize / 2 - 5;
+            const lvlIconY = 190 + avatarSize / 2 - lvlIconSize / 2 - 5;
+            try {
+                const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
+                if (fs.existsSync(iconPath)) {
+                    const icon = await loadImage(iconPath);
+                    ctx.beginPath();
+                    ctx.arc(lvlIconX + lvlIconSize / 2, lvlIconY + lvlIconSize / 2, lvlIconSize / 2 + 3, 0, Math.PI * 2);
+                    ctx.fillStyle = '#18181b';
+                    ctx.fill();
+                    ctx.drawImage(icon, lvlIconX, lvlIconY, lvlIconSize, lvlIconSize);
+                }
+            } catch (e) { }
+
             // Name
-            ctx.font = 'bold 45px Arial, sans-serif';
+            ctx.font = '600 38px "Segoe UI", Arial, sans-serif';
             ctx.fillStyle = '#fff';
             ctx.textAlign = 'center';
-            ctx.fillText(user.username.toUpperCase(), midX, 320);
+            ctx.fillText(user.username.toUpperCase(), midX, 300);
 
-            // Title
+            // Title pill badge
             if (stats.activeTitle) {
-                ctx.font = 'bold 22px Arial, sans-serif';
-                ctx.fillStyle = eloService.getTitleColor(stats.activeTitle);
-                ctx.fillText(stats.activeTitle.toUpperCase(), midX, 350);
+                const titleColor = eloService.getTitleColor(stats.activeTitle);
+                const titleText = stats.activeTitle.toUpperCase();
+                ctx.font = 'bold 14px "Segoe UI", Arial, sans-serif';
+                const titleW = ctx.measureText(titleText).width;
+                const pillW = titleW + 24;
+                const pillH = 26;
+                const pillX = midX - pillW / 2;
+                const pillY = 310;
+                const tr = parseInt(titleColor.slice(1, 3), 16);
+                const tg = parseInt(titleColor.slice(3, 5), 16);
+                const tb = parseInt(titleColor.slice(5, 7), 16);
+                // Badge bg
+                ctx.beginPath();
+                ctx.roundRect(pillX, pillY, pillW, pillH, 13);
+                ctx.fillStyle = `rgba(${tr}, ${tg}, ${tb}, 0.15)`;
+                ctx.fill();
+                // Badge border
+                ctx.beginPath();
+                ctx.roundRect(pillX, pillY, pillW, pillH, 13);
+                ctx.strokeStyle = `rgba(${tr}, ${tg}, ${tb}, 0.4)`;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                // Badge text
+                ctx.textAlign = 'center';
+                ctx.fillStyle = titleColor;
+                ctx.fillText(titleText, midX, pillY + 18);
             }
 
-            const statsY = 420;
+            const statsY = 400;
             const statRow = (label, value, idx, isWinner) => {
                 const y = statsY + (idx * 60);
                 const rectW = 350;
                 const rectX = midX - rectW / 2;
 
                 ctx.fillStyle = isWinner ? 'rgba(46, 204, 113, 0.1)' : 'rgba(255,255,255,0.02)';
-                ctx.beginPath(); ctx.roundRect(rectX, y - 40, rectW, 50, 5); ctx.fill();
+                ctx.beginPath(); ctx.roundRect(rectX, y - 40, rectW, 50, 8); ctx.fill();
 
                 if (isWinner) {
                     ctx.strokeStyle = '#2ecc71'; ctx.lineWidth = 1; ctx.stroke();
                 }
 
-                ctx.font = 'bold 20px Arial, sans-serif';
+                ctx.font = 'bold 18px "Segoe UI", Arial, sans-serif';
                 ctx.fillStyle = '#666';
                 ctx.textAlign = isRight ? 'right' : 'left';
                 ctx.fillText(label.toUpperCase(), isRight ? rectX + rectW - 20 : rectX + 20, y - 7);
 
-                ctx.font = 'bold 28px Arial, sans-serif';
+                ctx.font = 'bold 26px "Segoe UI", Arial, sans-serif';
                 ctx.fillStyle = isWinner ? '#2ecc71' : '#fff';
                 ctx.textAlign = isRight ? 'left' : 'right';
                 ctx.fillText(String(value), isRight ? rectX + 20 : rectX + rectW - 20, y - 7);
@@ -1329,7 +1387,7 @@ module.exports = {
             const wr2 = stats2.totalMatches > 0 ? (stats2.totalWins / stats2.totalMatches) * 100 : 0;
 
             statRow('ELO', stats.elo, 0, stats.elo >= stats2.elo);
-            statRow('MaÃƒÆ’Ã‚Â§', stats.totalMatches, 1, stats.totalMatches >= stats2.totalMatches);
+            statRow('Ma\u00e7', stats.totalMatches, 1, stats.totalMatches >= stats2.totalMatches);
             statRow('WR', `%${Math.round(wr1)}`, 2, wr1 >= wr2);
             statRow('MVP', stats.totalMVPs || 0, 3, (stats.totalMVPs || 0) >= (stats2.totalMVPs || 0));
         };

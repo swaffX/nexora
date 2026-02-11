@@ -104,29 +104,176 @@ async function handleLeave(oldState) {
     }
 }
 
-// 🎛️ KONTROL PANELİ (Modern Design)
+// 🎛️ KONTROL PANELİ (Canvas Design)
 async function sendControlPanel(channel, owner) {
-    const embed = new EmbedBuilder()
-        .setColor('#5865F2') // Discord Blurple
-        .setAuthor({
-            name: '🎧 Voice Master',
-            iconURL: owner.user.displayAvatarURL({ dynamic: true })
-        })
-        .setTitle(`✨ ${owner.user.displayName || owner.user.username}'s Room`)
-        .setDescription(
-            `> Hoş geldin! Bu senin özel ses odan.\n` +
-            `> Aşağıdaki butonlarla odanı yönetebilirsin.\n\n` +
-            `**🔐 Güvenlik**\n` +
-            `\`Kilitle\` - Odayı herkese kapat\n` +
-            `\`Aç\` - Odayı herkese aç\n\n` +
-            `**⚙️ Ayarlar**\n` +
-            `\`İsim\` - Oda ismini değiştir\n` +
-            `\`Limit\` - Kişi sınırı belirle\n` +
-            `\`At\` - Birini odadan at`
-        )
-        .setThumbnail(owner.user.displayAvatarURL({ dynamic: true, size: 128 }))
-        .setFooter({ text: '🌟 Nexora Voice Master • Odandan çıkınca oda silinir' })
-        .setTimestamp();
+    const { createCanvas, loadImage } = require('@napi-rs/canvas');
+    const { AttachmentBuilder } = require('discord.js');
+
+    const width = 800;
+    const height = 400;
+    const canvas = createCanvas(width, height);
+    const ctx = canvas.getContext('2d');
+
+    // Background gradient
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
+    bgGrad.addColorStop(0, '#0c0c0e');
+    bgGrad.addColorStop(1, '#18181b');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, width, height);
+
+    // Subtle grid pattern
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < width; i += 30) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, height); ctx.stroke(); }
+    for (let i = 0; i < height; i += 30) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(width, i); ctx.stroke(); }
+
+    // Top accent line
+    const accentGrad = ctx.createLinearGradient(0, 0, width, 0);
+    accentGrad.addColorStop(0, 'transparent');
+    accentGrad.addColorStop(0.3, '#5865F2');
+    accentGrad.addColorStop(0.7, '#5865F2');
+    accentGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = accentGrad;
+    ctx.fillRect(0, 0, width, 3);
+
+    // Header glow
+    const headerGlow = ctx.createRadialGradient(width / 2, 0, 0, width / 2, 0, 400);
+    headerGlow.addColorStop(0, 'rgba(88, 101, 242, 0.08)');
+    headerGlow.addColorStop(1, 'transparent');
+    ctx.fillStyle = headerGlow;
+    ctx.fillRect(0, 0, width, 120);
+
+    // Avatar (left side)
+    const avatarSize = 80;
+    const avatarX = 40;
+    const avatarY = 30;
+    try {
+        const avatarUrl = owner.user.displayAvatarURL({ extension: 'png', forceStatic: true, size: 128 });
+        const av = await loadImage(avatarUrl);
+        // Glow ring
+        ctx.beginPath();
+        ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2 + 4, 0, Math.PI * 2);
+        ctx.strokeStyle = '#5865F2';
+        ctx.lineWidth = 3;
+        ctx.shadowColor = '#5865F2';
+        ctx.shadowBlur = 12;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        // Circular clip
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(av, avatarX, avatarY, avatarSize, avatarSize);
+        ctx.restore();
+    } catch (e) { }
+
+    // Header text
+    ctx.font = '600 14px "Segoe UI", sans-serif';
+    ctx.fillStyle = '#5865F2';
+    ctx.textAlign = 'left';
+    ctx.fillText('🎧  VOICE MASTER', avatarX + avatarSize + 20, avatarY + 25);
+
+    const displayName = owner.user.displayName || owner.user.username;
+    ctx.font = 'bold 28px "Segoe UI", sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(`${displayName}'s Room`, avatarX + avatarSize + 20, avatarY + 60);
+
+    ctx.font = '13px "Segoe UI", sans-serif';
+    ctx.fillStyle = '#71717a';
+    ctx.fillText('Hoş geldin! Bu senin özel ses odan.', avatarX + avatarSize + 20, avatarY + 82);
+
+    // Separator line
+    const sepY = 130;
+    const sepGrad = ctx.createLinearGradient(30, sepY, width - 30, sepY);
+    sepGrad.addColorStop(0, 'transparent');
+    sepGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.08)');
+    sepGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = sepGrad;
+    ctx.fillRect(30, sepY, width - 60, 1);
+
+    // Section 1: Güvenlik
+    const secY1 = 155;
+    ctx.font = 'bold 16px "Segoe UI", sans-serif';
+    ctx.fillStyle = '#e4e4e7';
+    ctx.fillText('🔐  Güvenlik', 40, secY1);
+
+    const secItems1 = [
+        { label: 'Kilitle', desc: 'Odayı herkese kapat' },
+        { label: 'Aç', desc: 'Odayı herkese aç' }
+    ];
+    let itemY1 = secY1 + 20;
+    for (const item of secItems1) {
+        // Label pill
+        ctx.font = 'bold 12px "Segoe UI", sans-serif';
+        const lw = ctx.measureText(item.label).width;
+        const pillW = lw + 16;
+        const pillH = 22;
+        ctx.beginPath();
+        ctx.roundRect(55, itemY1, pillW, pillH, 6);
+        ctx.fillStyle = 'rgba(88, 101, 242, 0.12)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(88, 101, 242, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillStyle = '#a5b4fc';
+        ctx.fillText(item.label, 63, itemY1 + 15);
+        // Desc
+        ctx.font = '13px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#71717a';
+        ctx.fillText(`- ${item.desc}`, 55 + pillW + 10, itemY1 + 15);
+        itemY1 += 30;
+    }
+
+    // Section 2: Ayarlar
+    const secY2 = secY1 + 90;
+    ctx.font = 'bold 16px "Segoe UI", sans-serif';
+    ctx.fillStyle = '#e4e4e7';
+    ctx.fillText('⚙️  Ayarlar', 40, secY2);
+
+    const secItems2 = [
+        { label: 'İsim', desc: 'Oda ismini değiştir' },
+        { label: 'Limit', desc: 'Kişi sınırı belirle' },
+        { label: 'At', desc: 'Birini odadan at' }
+    ];
+    let itemY2 = secY2 + 20;
+    for (const item of secItems2) {
+        ctx.font = 'bold 12px "Segoe UI", sans-serif';
+        const lw = ctx.measureText(item.label).width;
+        const pillW = lw + 16;
+        const pillH = 22;
+        ctx.beginPath();
+        ctx.roundRect(55, itemY2, pillW, pillH, 6);
+        ctx.fillStyle = 'rgba(88, 101, 242, 0.12)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(88, 101, 242, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillStyle = '#a5b4fc';
+        ctx.fillText(item.label, 63, itemY2 + 15);
+        ctx.font = '13px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#71717a';
+        ctx.fillText(`- ${item.desc}`, 55 + pillW + 10, itemY2 + 15);
+        itemY2 += 30;
+    }
+
+    // Footer
+    const footerY = height - 30;
+    const footGrad = ctx.createLinearGradient(30, footerY - 5, width - 30, footerY - 5);
+    footGrad.addColorStop(0, 'transparent');
+    footGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.05)');
+    footGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = footGrad;
+    ctx.fillRect(30, footerY - 10, width - 60, 1);
+
+    ctx.font = '12px "Segoe UI", sans-serif';
+    ctx.fillStyle = '#52525b';
+    ctx.textAlign = 'center';
+    ctx.fillText('🌟 Nexora Voice Master • Odandan çıkınca oda silinir', width / 2, footerY);
+    ctx.textAlign = 'left';
+
+    const buffer = canvas.toBuffer('image/png');
+    const attachment = new AttachmentBuilder(buffer, { name: 'voicemaster.png' });
 
     // Row 1: Güvenlik Butonları
     const row1 = new ActionRowBuilder()
@@ -163,10 +310,7 @@ async function sendControlPanel(channel, owner) {
                 .setStyle(ButtonStyle.Danger)
         );
 
-    const msg = await channel.send({ embeds: [embed], components: [row1, row2] });
-
-    // Pin at ki mesaj kaybolmasın (Opsiyonel)
-    // await msg.pin().catch(() => {});
+    await channel.send({ files: [attachment], components: [row1, row2] });
 }
 
 // 🖱️ BUTON ETKİLEŞİMLERİ
