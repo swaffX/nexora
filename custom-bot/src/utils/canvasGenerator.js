@@ -159,7 +159,7 @@ module.exports = {
         ctx.textAlign = 'right';
         ctx.fillStyle = colorA;
         ctx.shadowColor = colorA;
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = 6;
         ctx.fillText(scoreA, width / 2 - 50, 160);
         ctx.shadowBlur = 0;
 
@@ -172,7 +172,7 @@ module.exports = {
         ctx.textAlign = 'left';
         ctx.fillStyle = colorB;
         ctx.shadowColor = colorB;
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = 6;
         ctx.fillText(scoreB, width / 2 + 50, 160);
         ctx.shadowBlur = 0;
 
