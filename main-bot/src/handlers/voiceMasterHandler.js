@@ -172,7 +172,7 @@ async function sendControlPanel(channel, owner) {
     ctx.font = '600 14px "Segoe UI", sans-serif';
     ctx.fillStyle = '#5865F2';
     ctx.textAlign = 'left';
-    ctx.fillText('🎧  VOICE MASTER', avatarX + avatarSize + 20, avatarY + 25);
+    ctx.fillText('VOICE MASTER', avatarX + avatarSize + 20, avatarY + 25);
 
     const displayName = owner.user.displayName || owner.user.username;
     ctx.font = 'bold 28px "Segoe UI", sans-serif';
@@ -196,7 +196,7 @@ async function sendControlPanel(channel, owner) {
     const secY1 = 155;
     ctx.font = 'bold 16px "Segoe UI", sans-serif';
     ctx.fillStyle = '#e4e4e7';
-    ctx.fillText('🔐  Güvenlik', 40, secY1);
+    ctx.fillText('Güvenlik', 40, secY1);
 
     const secItems1 = [
         { label: 'Kilitle', desc: 'Odayı herkese kapat' },
@@ -229,7 +229,7 @@ async function sendControlPanel(channel, owner) {
     const secY2 = secY1 + 90;
     ctx.font = 'bold 16px "Segoe UI", sans-serif';
     ctx.fillStyle = '#e4e4e7';
-    ctx.fillText('⚙️  Ayarlar', 40, secY2);
+    ctx.fillText('Ayarlar', 40, secY2);
 
     const secItems2 = [
         { label: 'İsim', desc: 'Oda ismini değiştir' },

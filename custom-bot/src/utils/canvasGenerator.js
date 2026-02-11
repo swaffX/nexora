@@ -948,15 +948,15 @@ module.exports = {
                 ctx.drawImage(avatar, 40, footerMid - 40, 80, 80); ctx.restore();
             } catch (e) { }
         }
-        ctx.font = 'bold 50px Arial, sans-serif';
+        ctx.font = '600 52px "Segoe UI", "Helvetica Neue", Arial, sans-serif';
         let nameX = 140;
         if (rank) {
             ctx.fillStyle = '#666'; ctx.fillText(`#${rank}`, nameX, footerMid - (stats.activeTitle ? 15 : 0));
             const rankWidth = ctx.measureText(`#${rank}`).width; nameX += rankWidth + 15;
         }
         ctx.fillStyle = '#fff';
-        let mainName = user.username.toUpperCase();
-        if (mainName.length > 15) mainName = mainName.substring(0, 15);
+        let mainName = user.username ? user.username.toLowerCase() : 'unknown';
+        if (mainName.length > 15) mainName = mainName.substring(0, 15) + '...';
         ctx.fillText(mainName, nameX, footerMid - (stats.activeTitle ? 15 : 0));
 
         if (stats.activeTitle) {
@@ -1324,10 +1324,12 @@ module.exports = {
             } catch (e) { }
 
             // Name
-            ctx.font = '600 38px "Segoe UI", Arial, sans-serif';
+            ctx.font = '600 52px "Segoe UI", "Helvetica Neue", Arial, sans-serif';
             ctx.fillStyle = '#fff';
             ctx.textAlign = 'center';
-            ctx.fillText(user.username.toUpperCase(), midX, 300);
+            let name = user.username ? user.username.toLowerCase() : 'unknown';
+            if (name.length > 15) name = name.substring(0, 15) + '...';
+            ctx.fillText(name, midX, 300);
 
             // Title pill badge
             if (stats.activeTitle) {
