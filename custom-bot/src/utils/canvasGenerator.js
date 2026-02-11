@@ -6,11 +6,11 @@ const eloService = require('../services/eloService');
 
 // --- ASSET CACHE (LRU Implementation) ---
 const assetCache = new Map();
-const MAX_CACHE_SIZE = 50; // Maksimum 50 resim sakla (RAM KorumasÄ±)
+const MAX_CACHE_SIZE = 50; // Maksimum 50 resim sakla (RAM KorumasÃ„Â±)
 
 async function loadCachedImage(imagePath) {
     if (assetCache.has(imagePath)) {
-        // LRU MantÄ±ÄŸÄ±: EriÅŸilen Ã¶ÄŸeyi silip sona ekle (En yeni yap)
+        // LRU MantÃ„Â±Ã„Å¸Ã„Â±: EriÃ…Å¸ilen ÃƒÂ¶Ã„Å¸eyi silip sona ekle (En yeni yap)
         const img = assetCache.get(imagePath);
         assetCache.delete(imagePath);
         assetCache.set(imagePath, img);
@@ -20,7 +20,7 @@ async function loadCachedImage(imagePath) {
         if (fs.existsSync(imagePath)) {
             const img = await loadImage(imagePath);
 
-            // Kapasite Dolduysa En Eskiyi Sil (Map'in baÅŸÄ±ndaki eleman)
+            // Kapasite Dolduysa En Eskiyi Sil (Map'in baÃ…Å¸Ã„Â±ndaki eleman)
             if (assetCache.size >= MAX_CACHE_SIZE) {
                 const oldestKey = assetCache.keys().next().value;
                 assetCache.delete(oldestKey);
@@ -61,7 +61,7 @@ const getLevelInfo = (elo) => {
     return { lv: level, min, max, color: colors[level] || '#ffffff' };
 };
 
-// YÄ±ldÄ±z Ã‡izim Fonksiyonu (MVP iÃ§in)
+// YÃ„Â±ldÃ„Â±z Ãƒâ€¡izim Fonksiyonu (MVP iÃƒÂ§in)
 function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius, color) {
     let rot = Math.PI / 2 * 3;
     let x = cx;
@@ -94,17 +94,17 @@ function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius, color) {
 
 module.exports = {
     async createMatchResultImage(match, eloChanges, playersData) {
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
         //  NEXORA MATCH RESULT v3.0
         //  Level icons, wider layout, premium design
-        // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+        // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
         const width = 1400;
         const height = 920;
         const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = true;
 
-        // â”€â”€â”€ BACKGROUND (Map Image) â”€â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ BACKGROUND (Map Image) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         let mapBg = null;
         try {
             const assetsPath = path.join(__dirname, '..', '..', 'assets', 'maps');
@@ -129,7 +129,7 @@ module.exports = {
             ctx.fillRect(0, 0, width, height);
         }
 
-        // â”€â”€â”€ TOP ACCENT LINE â”€â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ TOP ACCENT LINE Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         const topLine = ctx.createLinearGradient(0, 0, width, 0);
         topLine.addColorStop(0, '#3b82f6');
         topLine.addColorStop(0.5, '#ffffff20');
@@ -137,7 +137,7 @@ module.exports = {
         ctx.fillStyle = topLine;
         ctx.fillRect(0, 0, width, 3);
 
-        // â”€â”€â”€ HEADER (Score) â”€â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ HEADER (Score) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         const scoreA = match.scoreA ?? match.score?.A ?? 0;
         const scoreB = match.scoreB ?? match.score?.B ?? 0;
         const aWin = scoreA > scoreB;
@@ -197,7 +197,7 @@ module.exports = {
             ctx.fillText('WINNER', winnerX, pillY + 16);
         }
 
-        // â”€â”€â”€ TEAM HEADERS â”€â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ TEAM HEADERS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         const startY = 230;
         const colWidth = 580;
         const teamAX = 50;
@@ -228,7 +228,7 @@ module.exports = {
         ctx.fillStyle = divGradB;
         ctx.fillRect(teamBX, startY + 12, colWidth, 2);
 
-        // â”€â”€â”€ PLAYER ROWS â”€â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ PLAYER ROWS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         const safeEloChanges = Array.isArray(eloChanges) ? eloChanges : [];
         const rowH = 90;
         const rowGap = 10;
@@ -283,7 +283,7 @@ module.exports = {
 
             // Layout positions based on alignment
             if (!isRightAlign) {
-                // â”€â”€â”€ LEFT SIDE (Team A) â”€â”€â”€
+                // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ LEFT SIDE (Team A) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
                 // Level Icon
                 const iconSize = 42;
                 const iconX = x + 14;
@@ -345,7 +345,7 @@ module.exports = {
                 // ELO info (under name)
                 ctx.font = '15px Arial, sans-serif';
                 ctx.fillStyle = '#52525b';
-                ctx.fillText(`LVL ${lvlInfo.lv}  â€¢  ${eloLog.newElo} ELO`, nameX, y + rowH / 2 + 18);
+                ctx.fillText(`LVL ${lvlInfo.lv}  Ã¢â‚¬Â¢  ${eloLog.newElo} ELO`, nameX, y + rowH / 2 + 18);
 
                 // ELO change (far right)
                 const changeText = eloLog.change > 0 ? `+${eloLog.change}` : `${eloLog.change}`;
@@ -356,7 +356,7 @@ module.exports = {
                 ctx.fillText(changeText, x + colWidth - 20, y + rowH / 2 + 8);
 
             } else {
-                // â”€â”€â”€ RIGHT SIDE (Team B) â€” mirrored â”€â”€â”€
+                // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ RIGHT SIDE (Team B) Ã¢â‚¬â€ mirrored Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
                 // ELO change (far left)
                 const changeText = eloLog.change > 0 ? `+${eloLog.change}` : `${eloLog.change}`;
                 const changeColor = eloLog.change >= 0 ? '#2ecc71' : '#ef4444';
@@ -428,7 +428,7 @@ module.exports = {
                 ctx.textAlign = 'right';
                 ctx.font = '15px Arial, sans-serif';
                 ctx.fillStyle = '#52525b';
-                ctx.fillText(`LVL ${lvlInfo.lv}  â€¢  ${eloLog.newElo} ELO`, nameX, y + rowH / 2 + 18);
+                ctx.fillText(`LVL ${lvlInfo.lv}  Ã¢â‚¬Â¢  ${eloLog.newElo} ELO`, nameX, y + rowH / 2 + 18);
             }
         };
 
@@ -457,7 +457,7 @@ module.exports = {
         ctx.fillStyle = centerDivGrad;
         ctx.fillRect(width / 2 - 1, startY + 30, 2, height - startY - 110);
 
-        // â”€â”€â”€ FOOTER â”€â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ FOOTER Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
         ctx.fillRect(0, height - 55, width, 55);
 
@@ -641,12 +641,12 @@ module.exports = {
         let bgImgPrimary = null;
         if (currentBg !== 'Default') {
             try {
-                // Config'den dosya yolunu al (Ã¶rn: Vyse.jpg veya Raze.png)
+                // Config'den dosya yolunu al (ÃƒÂ¶rn: Vyse.jpg veya Raze.png)
                 const themeConfig = eloService.ELO_CONFIG.BACKGROUND_THEMES[currentBg];
                 const fileName = themeConfig ? themeConfig.path : `${currentBg}.png`;
 
                 const mapPath = path.join(__dirname, '..', '..', 'assets', 'maps', fileName);
-                if (fs.existsSync(mapPath)) bgImgPrimary = await loadCachedImage(mapPath); // loadCachedImage kullanalÄ±m
+                if (fs.existsSync(mapPath)) bgImgPrimary = await loadCachedImage(mapPath); // loadCachedImage kullanalÃ„Â±m
             } catch (e) { }
         }
 
@@ -693,7 +693,7 @@ module.exports = {
                 if (fs.existsSync(p)) mapBg = await loadImage(p);
             } catch (e) { }
 
-            const boxW = 500; // Harita resmini biraz kÃ¼Ã§Ã¼ltÃ¼yoruz ki yanÄ±na yazÄ± sÄ±ÄŸsÄ±n
+            const boxW = 500; // Harita resmini biraz kÃƒÂ¼ÃƒÂ§ÃƒÂ¼ltÃƒÂ¼yoruz ki yanÃ„Â±na yazÃ„Â± sÃ„Â±Ã„Å¸sÃ„Â±n
             const boxH = 80;
             const boxX = 50;
 
@@ -744,7 +744,7 @@ module.exports = {
             ctx.font = 'bold 30px Arial, sans-serif';
             ctx.shadowColor = '#000'; ctx.shadowBlur = 5;
             ctx.textAlign = 'center';
-            ctx.fillText(detailText, 340, matchY + 50); // Skoru map Ã¼zerinde merkeze Ã§ektik
+            ctx.fillText(detailText, 340, matchY + 50); // Skoru map ÃƒÂ¼zerinde merkeze ÃƒÂ§ektik
             ctx.shadowBlur = 0;
 
             // ELO Change logic update: Check id as string to avoid type mismatch
@@ -767,7 +767,7 @@ module.exports = {
                 }
             }
 
-            // Tarih (ELO deÄŸiÅŸiminin altÄ±)
+            // Tarih (ELO deÃ„Å¸iÃ…Å¸iminin altÃ„Â±)
             ctx.font = 'italic 18px Arial, sans-serif';
             ctx.fillStyle = '#888';
             ctx.textAlign = 'left';
@@ -833,7 +833,7 @@ module.exports = {
         // Ezeli Rakip (Nemesis)
         if (nemesisData) {
             ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(rightX, 660, 430, 120);
-            ctx.font = 'bold 20px Arial, sans-serif'; ctx.fillStyle = '#ef4444'; ctx.fillText('EZELÄ° RAKÄ°P', rightX + 20, 700);
+            ctx.font = 'bold 20px Arial, sans-serif'; ctx.fillStyle = '#ef4444'; ctx.fillText('EZELÃ„Â° RAKÃ„Â°P', rightX + 20, 700);
             if (nemesisData.avatarURL) {
                 try {
                     const av = await loadImage(nemesisData.avatarURL);
@@ -847,7 +847,7 @@ module.exports = {
             if (nName.length > 12) nName = nName.substring(0, 10) + '..';
             ctx.fillText(nName, rightX + 110, 750);
             ctx.font = 'bold 24px Arial, sans-serif'; ctx.fillStyle = '#ef4444'; ctx.textAlign = 'right';
-            ctx.fillText(`${nemesisData.count} KEZ YENDÄ°`, rightX + 410, 750); ctx.textAlign = 'left';
+            ctx.fillText(`${nemesisData.count} KEZ YENDÃ„Â°`, rightX + 410, 750); ctx.textAlign = 'left';
         }
 
         // --- FOOTER (User Info & Rank) ---
@@ -884,9 +884,9 @@ module.exports = {
             ctx.fillText(stats.activeTitle.toUpperCase(), 140, footerMid + 25);
         }
 
-        // â³ Ä°NAKTÄ°F BADGE
+        // Ã¢ÂÂ³ Ã„Â°NAKTÃ„Â°F BADGE
         if (stats.isInactive) {
-            const badgeText = 'â³ Ä°NAKTÄ°F';
+            const badgeText = 'Ã¢ÂÂ³ Ã„Â°NAKTÃ„Â°F';
             ctx.font = 'bold 18px Arial, sans-serif';
             const badgeWidth = ctx.measureText(badgeText).width + 20;
             const badgeX = stats.activeTitle ? 140 + ctx.measureText(stats.activeTitle.toUpperCase()).width + 20 : 140;
@@ -935,772 +935,6 @@ module.exports = {
         return canvas.toBuffer('image/png');
     },
 
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    //  NEXORA ELO CARD v5.0 â€” FACEIT-INSPIRED DESIGN
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    async createEloCardV2(user, stats, rank) {
-        const width = 950;
-        const height = 400;
-        const canvas = createCanvas(width, height);
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = true;
-
-        const elo = stats.elo !== undefined ? stats.elo : 100;
-        const levelData = getLevelInfo(elo);
-        const rankColor = levelData.color;
-        const rc = parseInt(rankColor.slice(1, 3), 16);
-        const gc = parseInt(rankColor.slice(3, 5), 16);
-        const bc = parseInt(rankColor.slice(5, 7), 16);
-
-        // â”€â”€â”€ BACKGROUND â”€â”€â”€
-        const currentBg = user.backgroundImage || 'Default';
-        let bgImg = null;
-        if (currentBg !== 'Default') {
-            try {
-                const themeConfig = eloService.ELO_CONFIG.BACKGROUND_THEMES[currentBg];
-                const fileName = themeConfig ? themeConfig.path : `${currentBg}.png`;
-                const mapPath = path.join(__dirname, '..', '..', 'assets', 'maps', fileName);
-                if (fs.existsSync(mapPath)) bgImg = await loadCachedImage(mapPath);
-            } catch (e) { }
-        }
-
-        if (bgImg) {
-            const scale = Math.max(width / bgImg.width, height / bgImg.height);
-            const w = bgImg.width * scale;
-            const h = bgImg.height * scale;
-            ctx.drawImage(bgImg, (width - w) / 2, (height - h) / 2, w, h);
-            ctx.fillStyle = 'rgba(9, 9, 11, 0.85)';
-            ctx.fillRect(0, 0, width, height);
-        } else {
-            const bgGrad = ctx.createLinearGradient(0, 0, width, height);
-            bgGrad.addColorStop(0, '#0f0f12');
-            bgGrad.addColorStop(1, '#1a1a1f');
-            ctx.fillStyle = bgGrad;
-            ctx.fillRect(0, 0, width, height);
-        }
-
-        // Corner glow (rank color) - top right
-        const topGlow = ctx.createRadialGradient(width, 0, 0, width, 0, 500);
-        topGlow.addColorStop(0, `rgba(${rc}, ${gc}, ${bc}, 0.12)`);
-        topGlow.addColorStop(1, 'transparent');
-        ctx.fillStyle = topGlow;
-        ctx.fillRect(0, 0, width, height);
-
-        // Bottom-left subtle glow
-        const btmGlow = ctx.createRadialGradient(0, height, 0, 0, height, 400);
-        btmGlow.addColorStop(0, `rgba(${rc}, ${gc}, ${bc}, 0.06)`);
-        btmGlow.addColorStop(1, 'transparent');
-        ctx.fillStyle = btmGlow;
-        ctx.fillRect(0, 0, width, height);
-
-        // Top accent line
-        const topLine = ctx.createLinearGradient(0, 0, width, 0);
-        topLine.addColorStop(0, rankColor);
-        topLine.addColorStop(0.5, hexToRgba(rankColor, 0.3));
-        topLine.addColorStop(1, 'transparent');
-        ctx.fillStyle = topLine;
-        ctx.fillRect(0, 0, width, 3);
-
-        // â•â•â• LEFT SECTION: Avatar + Level â•â•â•
-        const avatarSize = 100;
-        const avatarX = 40;
-        const avatarY = 35;
-
-        // Avatar glow ring
-        ctx.beginPath();
-        ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2 + 6, 0, Math.PI * 2);
-        ctx.strokeStyle = rankColor;
-        ctx.lineWidth = 3;
-        ctx.shadowColor = rankColor;
-        ctx.shadowBlur = 15;
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-
-        // Avatar
-        if (user.avatar) {
-            try {
-                const av = await loadImage(user.avatar);
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(avatarX + avatarSize / 2, avatarY + avatarSize / 2, avatarSize / 2, 0, Math.PI * 2);
-                ctx.clip();
-                ctx.drawImage(av, avatarX, avatarY, avatarSize, avatarSize);
-                ctx.restore();
-            } catch (e) { }
-        }
-
-        // Level icon (overlapping bottom-right of avatar)
-        const lvlIconSize = 48;
-        const lvlIconX = avatarX + avatarSize - lvlIconSize / 2 + 5;
-        const lvlIconY = avatarY + avatarSize - lvlIconSize / 2 + 5;
-        try {
-            const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${levelData.lv}.png`);
-            if (fs.existsSync(iconPath)) {
-                const icon = await loadImage(iconPath);
-                // Dark circle bg behind icon
-                ctx.beginPath();
-                ctx.arc(lvlIconX + lvlIconSize / 2, lvlIconY + lvlIconSize / 2, lvlIconSize / 2 + 3, 0, Math.PI * 2);
-                ctx.fillStyle = '#0f0f12';
-                ctx.fill();
-                ctx.drawImage(icon, lvlIconX, lvlIconY, lvlIconSize, lvlIconSize);
-            }
-        } catch (e) { }
-
-        // â•â•â• PLAYER INFO (right of avatar) â•â•â•
-        const infoX = avatarX + avatarSize + 30;
-
-        // Name
-        ctx.font = 'bold 36px Arial, sans-serif';
-        ctx.fillStyle = '#ffffff';
-        let name = user.username ? user.username.toUpperCase() : 'UNKNOWN';
-        if (name.length > 14) name = name.substring(0, 14) + '..';
-        ctx.fillText(name, infoX, avatarY + 35);
-
-        // Title pill (if exists)
-        let titleEndX = infoX;
-        if (stats.activeTitle) {
-            const titleColor = eloService.getTitleColor(stats.activeTitle);
-            const titleText = stats.activeTitle.toUpperCase();
-            ctx.font = 'bold 14px Arial, sans-serif';
-            const tw = ctx.measureText(titleText).width;
-            ctx.beginPath();
-            ctx.roundRect(infoX, avatarY + 45, tw + 16, 24, 12);
-            ctx.fillStyle = hexToRgba(titleColor, 0.15);
-            ctx.fill();
-            ctx.strokeStyle = hexToRgba(titleColor, 0.35);
-            ctx.lineWidth = 1;
-            ctx.stroke();
-            ctx.fillStyle = titleColor;
-            ctx.fillText(titleText, infoX + 8, avatarY + 62);
-            titleEndX = infoX + tw + 28;
-        }
-
-        // Rank badge
-        if (rank) {
-            const rx = titleEndX + 8;
-            const rankText = `#${rank}`;
-            ctx.font = 'bold 14px Arial, sans-serif';
-            const rw = ctx.measureText(rankText).width;
-            ctx.beginPath();
-            ctx.roundRect(rx, avatarY + 45, rw + 16, 24, 12);
-            ctx.fillStyle = 'rgba(255,255,255,0.06)';
-            ctx.fill();
-            ctx.fillStyle = '#71717a';
-            ctx.fillText(rankText, rx + 8, avatarY + 62);
-        }
-
-        // â•â•â• ELO DISPLAY (top right) â•â•â•
-        ctx.textAlign = 'right';
-        ctx.font = 'bold 56px Arial, sans-serif';
-        ctx.fillStyle = '#ffffff';
-        ctx.shadowColor = rankColor;
-        ctx.shadowBlur = 20;
-        ctx.fillText(String(elo), width - 40, avatarY + 50);
-        ctx.shadowBlur = 0;
-
-        ctx.font = '20px Arial, sans-serif';
-        ctx.fillStyle = '#52525b';
-        ctx.fillText('ELO', width - 40, avatarY + 75);
-        ctx.textAlign = 'left';
-
-        // â•â•â• PROGRESS BAR â•â•â•
-        const barY = 160;
-        const barX = 40;
-        const barW = width - 80;
-        const barH = 10;
-        let progress = 0;
-        if (levelData.lv < 10) {
-            const range = levelData.max - levelData.min;
-            progress = range > 0 ? (elo - levelData.min) / range : 0;
-            progress = Math.min(1, Math.max(0, progress));
-        } else { progress = 1; }
-
-        // Bar track
-        ctx.beginPath();
-        ctx.roundRect(barX, barY, barW, barH, 5);
-        ctx.fillStyle = 'rgba(255,255,255,0.06)';
-        ctx.fill();
-
-        // Bar fill with gradient
-        if (progress > 0) {
-            ctx.save();
-            ctx.beginPath();
-            ctx.roundRect(barX, barY, barW, barH, 5);
-            ctx.clip();
-            const barGrad = ctx.createLinearGradient(barX, 0, barX + barW * progress, 0);
-            barGrad.addColorStop(0, hexToRgba(rankColor, 0.4));
-            barGrad.addColorStop(0.7, rankColor);
-            barGrad.addColorStop(1, rankColor);
-            ctx.fillStyle = barGrad;
-            ctx.shadowColor = rankColor;
-            ctx.shadowBlur = 8;
-            ctx.fillRect(barX, barY, barW * progress, barH);
-            ctx.shadowBlur = 0;
-            ctx.restore();
-        }
-
-        // Level labels under bar
-        ctx.font = 'bold 13px Arial, sans-serif';
-        ctx.fillStyle = rankColor;
-        ctx.fillText(`LVL ${levelData.lv}`, barX, barY + 28);
-
-        ctx.textAlign = 'right';
-        if (levelData.lv < 10) {
-            ctx.fillStyle = '#3f3f46';
-            ctx.font = '13px Arial, sans-serif';
-            ctx.fillText(`${levelData.max} ELO â†’ LVL ${levelData.lv + 1}`, barX + barW, barY + 28);
-        } else {
-            ctx.fillStyle = rankColor;
-            ctx.font = 'bold 13px Arial, sans-serif';
-            ctx.fillText('MAX LEVEL', barX + barW, barY + 28);
-        }
-        ctx.textAlign = 'left';
-
-        // â•â•â• STAT BOXES â•â•â•
-        const total = stats.totalMatches || 0;
-        const wins = stats.totalWins || 0;
-        const losses = stats.totalLosses || 0;
-        const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
-        const streak = Number(stats.winStreak) || 0;
-
-        const boxCount = 4;
-        const boxGap = 14;
-        const boxY = 210;
-        const boxH = 100;
-        const boxW = (width - 80 - (boxCount - 1) * boxGap) / boxCount;
-        const boxStartX = 40;
-
-        const statItems = [
-            { label: 'MATCHES', value: String(total), color: '#ffffff' },
-            { label: 'WINS', value: String(wins), color: '#2ecc71' },
-            { label: 'WIN RATE', value: `${winRate}%`, color: winRate >= 50 ? '#2ecc71' : '#ef4444' },
-            { label: 'STREAK', value: `${streak >= 0 ? '+' : ''}${streak}`, color: streak >= 0 ? '#2ecc71' : '#ef4444' }
-        ];
-
-        statItems.forEach((item, idx) => {
-            const bx = boxStartX + idx * (boxW + boxGap);
-
-            // Box bg
-            ctx.beginPath();
-            ctx.roundRect(bx, boxY, boxW, boxH, 12);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
-            ctx.fill();
-            ctx.beginPath();
-            ctx.roundRect(bx, boxY, boxW, boxH, 12);
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-            ctx.lineWidth = 1;
-            ctx.stroke();
-
-            // Label (top)
-            ctx.textAlign = 'center';
-            ctx.font = 'bold 12px Arial, sans-serif';
-            ctx.fillStyle = '#52525b';
-            ctx.fillText(item.label, bx + boxW / 2, boxY + 25);
-
-            // Value
-            ctx.font = 'bold 36px Arial, sans-serif';
-            ctx.fillStyle = item.color;
-            ctx.shadowColor = item.color;
-            ctx.shadowBlur = item.color !== '#ffffff' ? 10 : 0;
-            ctx.fillText(item.value, bx + boxW / 2, boxY + 70);
-            ctx.shadowBlur = 0;
-        });
-        ctx.textAlign = 'left';
-
-        // â•â•â• FOOTER â•â•â•
-        const footGrad = ctx.createLinearGradient(40, 0, width - 40, 0);
-        footGrad.addColorStop(0, 'transparent');
-        footGrad.addColorStop(0.3, 'rgba(255,255,255,0.04)');
-        footGrad.addColorStop(0.7, 'rgba(255,255,255,0.04)');
-        footGrad.addColorStop(1, 'transparent');
-        ctx.fillStyle = footGrad;
-        ctx.fillRect(40, height - 55, width - 80, 1);
-
-        // Level icon in footer
-        try {
-            const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${levelData.lv}.png`);
-            if (fs.existsSync(iconPath)) {
-                const icon = await loadImage(iconPath);
-                ctx.drawImage(icon, 40, height - 45, 30, 30);
-            }
-        } catch (e) { }
-
-        ctx.font = '13px Arial, sans-serif';
-        ctx.fillStyle = '#3f3f46';
-        ctx.fillText('NEXORA RANKED', 80, height - 25);
-
-        ctx.textAlign = 'right';
-        ctx.fillStyle = '#3f3f46';
-        const now = new Date();
-        ctx.fillText(`${now.getDate()} ${now.toLocaleString('tr-TR', { month: 'short' })} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`, width - 40, height - 25);
-        ctx.textAlign = 'left';
-
-        return canvas.toBuffer('image/png');
-    },
-
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    //  NEXORA DETAILED STATS v5.0 â€” FACEIT-INSPIRED
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    async createDetailedStatsImageV2(user, stats, matchHistory, bestMap, favoriteTeammate, rank, nemesisData) {
-        const width = 1000;
-        const matchCount = Math.min(matchHistory.length, 5);
-        const hasNemesis = !!nemesisData;
-        const height = 880 + (hasNemesis ? 0 : -110);
-        const canvas = createCanvas(width, height);
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = true;
-
-        const lvlInfo = getLevelInfo(stats.elo !== undefined ? stats.elo : 100);
-        const rankColor = lvlInfo.color;
-        const rc = parseInt(rankColor.slice(1, 3), 16);
-        const gc = parseInt(rankColor.slice(3, 5), 16);
-        const bc = parseInt(rankColor.slice(5, 7), 16);
-
-        // â”€â”€â”€ BACKGROUND â”€â”€â”€
-        const currentBg = user.backgroundImage || 'Default';
-        let bgImgPrimary = null;
-        if (currentBg !== 'Default') {
-            try {
-                const themeConfig = eloService.ELO_CONFIG.BACKGROUND_THEMES[currentBg];
-                const fileName = themeConfig ? themeConfig.path : `${currentBg}.png`;
-                const mapPath = path.join(__dirname, '..', '..', 'assets', 'maps', fileName);
-                if (fs.existsSync(mapPath)) bgImgPrimary = await loadCachedImage(mapPath);
-            } catch (e) { }
-        }
-
-        if (bgImgPrimary) {
-            const scale = Math.max(width / bgImgPrimary.width, height / bgImgPrimary.height);
-            const w = bgImgPrimary.width * scale;
-            const h = bgImgPrimary.height * scale;
-            ctx.drawImage(bgImgPrimary, (width - w) / 2, (height - h) / 2, w, h);
-            ctx.fillStyle = 'rgba(9, 9, 11, 0.88)';
-            ctx.fillRect(0, 0, width, height);
-        } else {
-            const bgGrad = ctx.createLinearGradient(0, 0, width, height);
-            bgGrad.addColorStop(0, '#0f0f12');
-            bgGrad.addColorStop(1, '#1a1a1f');
-            ctx.fillStyle = bgGrad;
-            ctx.fillRect(0, 0, width, height);
-        }
-
-        // Glow effects
-        const topGlow = ctx.createRadialGradient(width * 0.8, 0, 0, width * 0.8, 0, 500);
-        topGlow.addColorStop(0, `rgba(${rc}, ${gc}, ${bc}, 0.1)`);
-        topGlow.addColorStop(1, 'transparent');
-        ctx.fillStyle = topGlow;
-        ctx.fillRect(0, 0, width, height);
-
-        // Top accent line
-        const topLine = ctx.createLinearGradient(0, 0, width, 0);
-        topLine.addColorStop(0, rankColor);
-        topLine.addColorStop(0.4, hexToRgba(rankColor, 0.3));
-        topLine.addColorStop(1, 'transparent');
-        ctx.fillStyle = topLine;
-        ctx.fillRect(0, 0, width, 3);
-
-        // â•â•â• HEADER: Player Info â•â•â•
-        const headerY = 25;
-
-        // Avatar
-        const avSize = 60;
-        const avX = 35;
-        if (user.avatar) {
-            try {
-                const avatar = await loadImage(user.avatar);
-                // Level ring
-                ctx.beginPath();
-                ctx.arc(avX + avSize / 2, headerY + avSize / 2, avSize / 2 + 4, 0, Math.PI * 2);
-                ctx.strokeStyle = rankColor;
-                ctx.lineWidth = 2.5;
-                ctx.shadowColor = rankColor;
-                ctx.shadowBlur = 10;
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(avX + avSize / 2, headerY + avSize / 2, avSize / 2, 0, Math.PI * 2);
-                ctx.clip();
-                ctx.drawImage(avatar, avX, headerY, avSize, avSize);
-                ctx.restore();
-            } catch (e) { }
-        }
-
-        // Name + Rank
-        const nameX = avX + avSize + 18;
-        ctx.font = 'bold 28px Arial, sans-serif';
-        ctx.fillStyle = '#ffffff';
-        let mainName = user.username ? user.username.toUpperCase() : 'UNKNOWN';
-        if (mainName.length > 14) mainName = mainName.substring(0, 14) + '..';
-        ctx.fillText(mainName, nameX, headerY + 28);
-
-        // Title + Rank row
-        let tagX = nameX;
-        if (stats.activeTitle) {
-            const titleColor = eloService.getTitleColor(stats.activeTitle);
-            ctx.font = 'bold 13px Arial, sans-serif';
-            const titleText = stats.activeTitle.toUpperCase();
-            const tw = ctx.measureText(titleText).width;
-            ctx.beginPath();
-            ctx.roundRect(tagX, headerY + 38, tw + 14, 22, 11);
-            ctx.fillStyle = hexToRgba(titleColor, 0.15);
-            ctx.fill();
-            ctx.strokeStyle = hexToRgba(titleColor, 0.3);
-            ctx.lineWidth = 1;
-            ctx.stroke();
-            ctx.fillStyle = titleColor;
-            ctx.fillText(titleText, tagX + 7, headerY + 54);
-            tagX += tw + 22;
-        }
-
-        if (rank) {
-            ctx.font = 'bold 13px Arial, sans-serif';
-            const rankText = `#${rank}`;
-            const rw = ctx.measureText(rankText).width;
-            ctx.beginPath();
-            ctx.roundRect(tagX, headerY + 38, rw + 14, 22, 11);
-            ctx.fillStyle = 'rgba(255,255,255,0.06)';
-            ctx.fill();
-            ctx.fillStyle = '#71717a';
-            ctx.fillText(rankText, tagX + 7, headerY + 54);
-        }
-
-        // Inactive badge
-        if (stats.isInactive) {
-            const badgeText = 'â³ Ä°NAKTÄ°F';
-            ctx.font = 'bold 12px Arial, sans-serif';
-            const bw = ctx.measureText(badgeText).width + 14;
-            ctx.beginPath();
-            ctx.roundRect(tagX + 50, headerY + 38, bw, 22, 11);
-            ctx.fillStyle = 'rgba(255, 107, 53, 0.15)';
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(255, 107, 53, 0.35)';
-            ctx.lineWidth = 1;
-            ctx.stroke();
-            ctx.fillStyle = '#FF6B35';
-            ctx.fillText(badgeText, tagX + 57, headerY + 54);
-        }
-
-        // ELO + Level (right side of header)
-        ctx.textAlign = 'right';
-        ctx.font = 'bold 42px Arial, sans-serif';
-        ctx.fillStyle = '#ffffff';
-        ctx.shadowColor = rankColor;
-        ctx.shadowBlur = 15;
-        ctx.fillText(String(stats.elo !== undefined ? stats.elo : 100), width - 40, headerY + 38);
-        ctx.shadowBlur = 0;
-
-        ctx.font = '16px Arial, sans-serif';
-        ctx.fillStyle = '#52525b';
-        ctx.fillText('ELO', width - 40, headerY + 58);
-
-        // Level icon
-        try {
-            const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
-            if (fs.existsSync(iconPath)) {
-                const icon = await loadImage(iconPath);
-                const eloW = ctx.measureText(String(stats.elo !== undefined ? stats.elo : 100)).width;
-                ctx.font = 'bold 42px Arial, sans-serif';
-                const actualEloW = ctx.measureText(String(stats.elo !== undefined ? stats.elo : 100)).width;
-                ctx.drawImage(icon, width - 40 - actualEloW - 48, headerY + 5, 40, 40);
-            }
-        } catch (e) { }
-        ctx.textAlign = 'left';
-
-        // â•â•â• DIVIDER â•â•â•
-        const divY = headerY + avSize + 18;
-        const divLine = ctx.createLinearGradient(35, 0, width - 35, 0);
-        divLine.addColorStop(0, rankColor);
-        divLine.addColorStop(0.3, hexToRgba(rankColor, 0.2));
-        divLine.addColorStop(1, 'transparent');
-        ctx.fillStyle = divLine;
-        ctx.fillRect(35, divY, width - 70, 1);
-
-        // â•â•â• TWO COLUMNS â•â•â•
-        const colStartY = divY + 20;
-        const leftX = 35;
-        const leftW = 530;
-        const rightX = leftX + leftW + 20;
-        const rightW = width - rightX - 35;
-
-        // â”€â”€â”€ LEFT: LAST MATCHES â”€â”€â”€
-        ctx.font = 'bold 14px Arial, sans-serif';
-        ctx.fillStyle = '#52525b';
-        ctx.fillText('SON MAÃ‡LAR', leftX + 5, colStartY + 12);
-
-        let matchY = colStartY + 28;
-        const rowH = 68;
-        const rowGap = 6;
-
-        for (const match of matchHistory) {
-            const isWin = match.result === 'WIN';
-            const accent = isWin ? '#2ecc71' : '#ef4444';
-
-            // Row bg
-            ctx.beginPath();
-            ctx.roundRect(leftX, matchY, leftW, rowH, 10);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
-            ctx.fill();
-
-            // Accent bar
-            ctx.beginPath();
-            ctx.roundRect(leftX + 2, matchY + 10, 3, rowH - 20, 2);
-            ctx.fillStyle = accent;
-            ctx.fill();
-
-            // Map bg (subtle)
-            let mapBg = null;
-            try {
-                const assetsPath = path.join(__dirname, '..', '..', 'assets', 'maps');
-                let p = path.join(assetsPath, `${match.map}.png`);
-                if (!fs.existsSync(p)) p = path.join(assetsPath, `${match.map.toLowerCase()}.png`);
-                if (fs.existsSync(p)) mapBg = await loadImage(p);
-            } catch (e) { }
-
-            if (mapBg) {
-                ctx.save();
-                ctx.beginPath();
-                ctx.roundRect(leftX, matchY, leftW, rowH, 10);
-                ctx.clip();
-                const imgScale = Math.max(leftW / mapBg.width, rowH / mapBg.height);
-                ctx.globalAlpha = 0.08;
-                ctx.drawImage(mapBg, leftX, matchY + (rowH - mapBg.height * imgScale) / 2, mapBg.width * imgScale, mapBg.height * imgScale);
-                ctx.globalAlpha = 1;
-                const fade = ctx.createLinearGradient(leftX, matchY, leftX + leftW * 0.5, matchY);
-                fade.addColorStop(0, 'rgba(15, 15, 18, 0.95)');
-                fade.addColorStop(1, 'rgba(15, 15, 18, 0.2)');
-                ctx.fillStyle = fade;
-                ctx.fillRect(leftX, matchY, leftW, rowH);
-                ctx.restore();
-            }
-
-            // W/L
-            ctx.font = 'bold 18px Arial, sans-serif';
-            ctx.fillStyle = accent;
-            ctx.fillText(isWin ? 'W' : 'L', leftX + 18, matchY + rowH / 2 + 1);
-
-            // Map name + score
-            ctx.font = 'bold 18px Arial, sans-serif';
-            ctx.fillStyle = '#ffffff';
-            const mapName = match.map.toUpperCase();
-            ctx.fillText(mapName, leftX + 48, matchY + rowH / 2 - 6);
-
-            ctx.font = '14px Arial, sans-serif';
-            ctx.fillStyle = '#71717a';
-            ctx.fillText(`${match.score}  â€¢  ${match.date}`, leftX + 48, matchY + rowH / 2 + 14);
-
-            // ELO change (right)
-            if (match.eloChange !== null && match.eloChange !== undefined) {
-                const sign = match.eloChange > 0 ? '+' : '';
-                const changeText = `${sign}${match.eloChange}`;
-                ctx.textAlign = 'right';
-
-                // MVP badge before elo
-                if (match.isMvp) {
-                    ctx.font = 'bold 11px Arial, sans-serif';
-                    ctx.fillStyle = '#fbbf24';
-                    ctx.fillText('MVP â˜…', leftX + leftW - 70, matchY + rowH / 2 - 2);
-                }
-
-                ctx.font = 'bold 22px Arial, sans-serif';
-                ctx.fillStyle = match.eloChange >= 0 ? '#2ecc71' : '#ef4444';
-                ctx.shadowColor = ctx.fillStyle;
-                ctx.shadowBlur = 8;
-                ctx.fillText(changeText, leftX + leftW - 15, matchY + rowH / 2 + 6);
-                ctx.shadowBlur = 0;
-                ctx.textAlign = 'left';
-            }
-
-            matchY += rowH + rowGap;
-        }
-
-        // â”€â”€â”€ RIGHT: Info Panels â”€â”€â”€
-        let panelY = colStartY + 28;
-        const panelH = 95;
-        const panelGap = 8;
-
-        const drawPanel = (y, h) => {
-            const pH = h || panelH;
-            ctx.beginPath();
-            ctx.roundRect(rightX, y, rightW, pH, 12);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.025)';
-            ctx.fill();
-            ctx.beginPath();
-            ctx.roundRect(rightX, y, rightW, pH, 12);
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
-            ctx.lineWidth = 1;
-            ctx.stroke();
-            return pH;
-        };
-
-        // Panel 1: BEST MAP
-        drawPanel(panelY);
-        ctx.font = 'bold 11px Arial, sans-serif';
-        ctx.fillStyle = '#52525b';
-        ctx.fillText('EN Ä°YÄ° HARÄ°TA', rightX + 16, panelY + 22);
-        if (bestMap) {
-            ctx.font = 'bold 28px Arial, sans-serif';
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText(bestMap.name.toUpperCase(), rightX + 16, panelY + 58);
-            ctx.textAlign = 'right';
-            ctx.font = 'bold 20px Arial, sans-serif';
-            ctx.fillStyle = '#2ecc71';
-            ctx.shadowColor = '#2ecc71';
-            ctx.shadowBlur = 8;
-            ctx.fillText(`${bestMap.wr}%`, rightX + rightW - 16, panelY + 55);
-            ctx.shadowBlur = 0;
-            ctx.font = '12px Arial, sans-serif';
-            ctx.fillStyle = '#52525b';
-            ctx.fillText('WIN RATE', rightX + rightW - 16, panelY + 72);
-            ctx.textAlign = 'left';
-        } else {
-            ctx.font = '22px Arial, sans-serif';
-            ctx.fillStyle = '#3f3f46';
-            ctx.fillText('â€”', rightX + 16, panelY + 58);
-        }
-        panelY += panelH + panelGap;
-
-        // Panel 2: DUO PARTNER
-        drawPanel(panelY);
-        ctx.font = 'bold 11px Arial, sans-serif';
-        ctx.fillStyle = '#52525b';
-        ctx.fillText('DUO PARTNER', rightX + 16, panelY + 22);
-        if (favoriteTeammate) {
-            if (favoriteTeammate.avatarURL) {
-                try {
-                    const av = await loadImage(favoriteTeammate.avatarURL);
-                    const as = 40;
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.arc(rightX + 16 + as / 2, panelY + 55, as / 2, 0, Math.PI * 2);
-                    ctx.clip();
-                    ctx.drawImage(av, rightX + 16, panelY + 35, as, as);
-                    ctx.restore();
-                } catch (e) { }
-            }
-            ctx.font = 'bold 20px Arial, sans-serif';
-            ctx.fillStyle = '#ffffff';
-            let duoN = favoriteTeammate.username.toUpperCase();
-            if (duoN.length > 12) duoN = duoN.substring(0, 11) + '..';
-            ctx.fillText(duoN, rightX + 65, panelY + 60);
-        } else {
-            ctx.font = '22px Arial, sans-serif';
-            ctx.fillStyle = '#3f3f46';
-            ctx.fillText('â€”', rightX + 16, panelY + 58);
-        }
-        panelY += panelH + panelGap;
-
-        // Panel 3: WIN RATE
-        drawPanel(panelY);
-        ctx.font = 'bold 11px Arial, sans-serif';
-        ctx.fillStyle = '#52525b';
-        ctx.fillText('KAZANMA ORANI', rightX + 16, panelY + 22);
-
-        const w = stats.totalWins || 0;
-        const l = stats.totalLosses || 0;
-        const mtotal = w + l;
-        const wr_val = mtotal > 0 ? Math.round((w / mtotal) * 100) : 0;
-
-        ctx.font = 'bold 38px Arial, sans-serif';
-        ctx.fillStyle = wr_val >= 50 ? '#2ecc71' : '#ef4444';
-        ctx.shadowColor = ctx.fillStyle;
-        ctx.shadowBlur = 10;
-        ctx.fillText(`${wr_val}%`, rightX + 16, panelY + 68);
-        ctx.shadowBlur = 0;
-
-        ctx.textAlign = 'right';
-        ctx.font = '16px Arial, sans-serif';
-        ctx.fillStyle = '#52525b';
-        ctx.fillText(`${w}W / ${l}L`, rightX + rightW - 16, panelY + 65);
-        ctx.textAlign = 'left';
-        panelY += panelH + panelGap;
-
-        // Panel 4: TOTAL MVPs
-        drawPanel(panelY);
-        ctx.font = 'bold 11px Arial, sans-serif';
-        ctx.fillStyle = '#52525b';
-        ctx.fillText('TOTAL MVPs', rightX + 16, panelY + 22);
-        ctx.font = 'bold 38px Arial, sans-serif';
-        ctx.fillStyle = '#fbbf24';
-        ctx.shadowColor = '#fbbf24';
-        ctx.shadowBlur = 10;
-        ctx.fillText(String(stats.totalMVPs || 0), rightX + 16, panelY + 68);
-        ctx.shadowBlur = 0;
-        drawStar(ctx, rightX + rightW - 30, panelY + 50, 5, 16, 8, '#fbbf24');
-        panelY += panelH + panelGap;
-
-        // Panel 5: NEMESIS (optional)
-        if (nemesisData) {
-            drawPanel(panelY);
-            // Red accent
-            ctx.beginPath();
-            ctx.roundRect(rightX + 2, panelY + 10, 3, panelH - 20, 2);
-            ctx.fillStyle = '#ef4444';
-            ctx.fill();
-
-            ctx.font = 'bold 11px Arial, sans-serif';
-            ctx.fillStyle = '#ef4444';
-            ctx.fillText('EZELÄ° RAKÄ°P', rightX + 16, panelY + 22);
-
-            if (nemesisData.avatarURL) {
-                try {
-                    const av = await loadImage(nemesisData.avatarURL);
-                    const as = 40;
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.arc(rightX + 16 + as / 2, panelY + 55, as / 2, 0, Math.PI * 2);
-                    ctx.clip();
-                    ctx.drawImage(av, rightX + 16, panelY + 35, as, as);
-                    ctx.restore();
-                } catch (e) { }
-            }
-
-            ctx.font = 'bold 20px Arial, sans-serif';
-            ctx.fillStyle = '#ffffff';
-            let nName = nemesisData.username.toUpperCase();
-            if (nName.length > 10) nName = nName.substring(0, 9) + '..';
-            ctx.fillText(nName, rightX + 65, panelY + 60);
-
-            ctx.textAlign = 'right';
-            ctx.font = 'bold 15px Arial, sans-serif';
-            ctx.fillStyle = '#ef4444';
-            ctx.fillText(`${nemesisData.count}x`, rightX + rightW - 16, panelY + 55);
-            ctx.font = '11px Arial, sans-serif';
-            ctx.fillStyle = '#71717a';
-            ctx.fillText('YENDÄ°', rightX + rightW - 16, panelY + 70);
-            ctx.textAlign = 'left';
-        }
-
-        // â•â•â• FOOTER â•â•â•
-        const footY = height - 40;
-        const fLine = ctx.createLinearGradient(35, 0, width - 35, 0);
-        fLine.addColorStop(0, 'transparent');
-        fLine.addColorStop(0.3, 'rgba(255,255,255,0.04)');
-        fLine.addColorStop(0.7, 'rgba(255,255,255,0.04)');
-        fLine.addColorStop(1, 'transparent');
-        ctx.fillStyle = fLine;
-        ctx.fillRect(35, footY - 10, width - 70, 1);
-
-        // Level icon
-        try {
-            const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
-            if (fs.existsSync(iconPath)) {
-                const icon = await loadImage(iconPath);
-                ctx.drawImage(icon, 35, footY, 25, 25);
-            }
-        } catch (e) { }
-
-        ctx.font = '12px Arial, sans-serif';
-        ctx.fillStyle = '#3f3f46';
-        ctx.fillText('NEXORA RANKED', 68, footY + 17);
-
-        ctx.textAlign = 'right';
-        const now = new Date();
-        ctx.fillText(`${now.getDate()} ${now.toLocaleString('tr-TR', { month: 'short' })} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`, width - 35, footY + 17);
-        ctx.textAlign = 'left';
-
-        return canvas.toBuffer('image/png');
-    },
     async createTitlesGuideImage() {
     // --- PREMIUM TITLES GUIDE v2 (Modern & Turkish) ---
     const width = 1100;
@@ -1737,7 +971,7 @@ module.exports = {
 
     ctx.font = '24px Arial, sans-serif';
     ctx.fillStyle = '#a1a1aa';
-    ctx.fillText('MaÃ§lardaki performansÄ±na gÃ¶re nadir Ã¼nvanlar kazan!', width / 2, 150);
+    ctx.fillText('MaÃƒÂ§lardaki performansÃ„Â±na gÃƒÂ¶re nadir ÃƒÂ¼nvanlar kazan!', width / 2, 150);
 
     // Accent Bar
     ctx.fillStyle = '#fbbf24';
@@ -2014,7 +1248,7 @@ module.exports = {
         const wr2 = stats2.totalMatches > 0 ? (stats2.totalWins / stats2.totalMatches) * 100 : 0;
 
         statRow('ELO', stats.elo, 0, stats.elo >= stats2.elo);
-        statRow('MaÃ§', stats.totalMatches, 1, stats.totalMatches >= stats2.totalMatches);
+        statRow('MaÃƒÂ§', stats.totalMatches, 1, stats.totalMatches >= stats2.totalMatches);
         statRow('WR', `%${Math.round(wr1)}`, 2, wr1 >= wr2);
         statRow('MVP', stats.totalMVPs || 0, 3, (stats.totalMVPs || 0) >= (stats2.totalMVPs || 0));
     };
@@ -2026,10 +1260,10 @@ module.exports = {
 },
 
     async createLeaderboardImage(users) {
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
     //  NEXORA PREMIUM LEADERBOARD v3.0
     //  Wider layout, prominent level icons, ELO progress bars
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
     const width = 2800;
     const rowHeight = 220;
     const gap = 25;
@@ -2042,7 +1276,7 @@ module.exports = {
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = true;
 
-    // â”€â”€â”€ BACKGROUND â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ BACKGROUND Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
     bgGradient.addColorStop(0, '#06060a');
     bgGradient.addColorStop(0.3, '#0c0c12');
@@ -2064,7 +1298,7 @@ module.exports = {
     }
     ctx.restore();
 
-    // â”€â”€â”€ HEADER â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ HEADER Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     // Top accent line
     const accentGrad = ctx.createLinearGradient(0, 0, width, 0);
     accentGrad.addColorStop(0, 'transparent');
@@ -2094,7 +1328,7 @@ module.exports = {
     // Subtitle
     ctx.font = '42px Arial, sans-serif';
     ctx.fillStyle = '#71717a';
-    ctx.fillText(`SEASON 1  Â·  TOP ${users.length} PLAYERS`, width / 2, 235);
+    ctx.fillText(`SEASON 1  Ã‚Â·  TOP ${users.length} PLAYERS`, width / 2, 235);
 
     // Accent bar
     const barGrad = ctx.createLinearGradient(width / 2 - 120, 0, width / 2 + 120, 0);
@@ -2123,7 +1357,7 @@ module.exports = {
     ctx.fillText('ELO POINTS', width - 100, 330);
     ctx.textAlign = 'left';
 
-    // â”€â”€â”€ ROWS â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ ROWS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     let y = headerHeight;
 
     for (let i = 0; i < users.length; i++) {
@@ -2158,7 +1392,7 @@ module.exports = {
             rankFontColor = '#d97706';
         }
 
-        // â”€â”€ Card Background â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬ Card Background Ã¢â€â‚¬Ã¢â€â‚¬
         ctx.beginPath();
         ctx.roundRect(cardX, y, cardW, rowHeight, 16);
 
@@ -2217,7 +1451,7 @@ module.exports = {
             ctx.globalAlpha = 1;
         }
 
-        // â”€â”€ 1. Rank Number â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬ 1. Rank Number Ã¢â€â‚¬Ã¢â€â‚¬
         ctx.textAlign = 'center';
         ctx.font = 'bold 80px Arial, sans-serif';
         ctx.fillStyle = rankFontColor;
@@ -2228,7 +1462,7 @@ module.exports = {
         ctx.fillText(`#${rank}`, cardX + 110, y + rowHeight / 2 + 28);
         ctx.shadowBlur = 0;
 
-        // â”€â”€ 2. Level Icon (PROMINENT) â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬ 2. Level Icon (PROMINENT) Ã¢â€â‚¬Ã¢â€â‚¬
         const lvlIconSize = 120;
         const lvlIconX = cardX + 200;
         const lvlIconY = y + (rowHeight - lvlIconSize) / 2;
@@ -2253,7 +1487,7 @@ module.exports = {
         ctx.textAlign = 'center';
         ctx.fillText(`LVL ${lvlInfo.lv}`, lvlIconX + lvlIconSize / 2, lvlIconY + lvlIconSize + 22);
 
-        // â”€â”€ 3. Avatar â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬ 3. Avatar Ã¢â€â‚¬Ã¢â€â‚¬
         const avSize = 100;
         const avX = cardX + 370;
         const avY = y + (rowHeight - avSize) / 2 - 5;
@@ -2278,7 +1512,7 @@ module.exports = {
             } catch (e) { }
         }
 
-        // â”€â”€ 4. Username â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬ 4. Username Ã¢â€â‚¬Ã¢â€â‚¬
         const nameX = avX + avSize + 35;
         ctx.textAlign = 'left';
         ctx.font = 'bold 52px Arial, sans-serif';
@@ -2287,7 +1521,7 @@ module.exports = {
         if (name.length > 14) name = name.substring(0, 14) + '..';
         ctx.fillText(name, nameX, y + rowHeight / 2 + 5);
 
-        // â”€â”€ 5. ELO Progress Bar (under name) â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬ 5. ELO Progress Bar (under name) Ã¢â€â‚¬Ã¢â€â‚¬
         const barX = nameX;
         const barY = y + rowHeight / 2 + 22;
         const barW = 280;
@@ -2324,7 +1558,7 @@ module.exports = {
         ctx.fillStyle = '#52525b';
         ctx.fillText(`${stats.elo} / ${lvlInfo.lv < 10 ? lvlInfo.max : 'MAX'}`, barX + barW + 12, barY + 8);
 
-        // â”€â”€ 6. Stats Boxes â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬ 6. Stats Boxes Ã¢â€â‚¬Ã¢â€â‚¬
         const w = stats.totalWins || 0;
         const l = stats.totalLosses || 0;
         const t = w + l;
@@ -2375,7 +1609,7 @@ module.exports = {
         ctx.fillStyle = `${wrColor}80`;
         ctx.fillText('WIN RATE', wrBoxX + (statBoxW + 20) / 2, statBoxY + 70);
 
-        // â”€â”€ 7. ELO (Far Right) â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬ 7. ELO (Far Right) Ã¢â€â‚¬Ã¢â€â‚¬
         const eloX = width - 110;
         ctx.textAlign = 'right';
         ctx.font = 'bold 72px Arial, sans-serif';
@@ -2394,7 +1628,7 @@ module.exports = {
         y += rowHeight + gap;
     }
 
-    // â”€â”€â”€ FOOTER â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ FOOTER Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
     // Divider line
     const footerDivGrad = ctx.createLinearGradient(0, y + 10, width, y + 10);
     footerDivGrad.addColorStop(0, 'transparent');
@@ -2407,7 +1641,7 @@ module.exports = {
     ctx.textAlign = 'center';
     ctx.font = '28px Arial, sans-serif';
     ctx.fillStyle = '#3f3f46';
-    ctx.fillText('NEXORA RANKED SYSTEM  â€¢  DEVELOPED BY SWAFF', width / 2, height - 30);
+    ctx.fillText('NEXORA RANKED SYSTEM  Ã¢â‚¬Â¢  DEVELOPED BY SWAFF', width / 2, height - 30);
 
     return canvas.toBuffer('image/png');
 },
@@ -2482,7 +1716,7 @@ module.exports = {
             const lvInfo = getLevelInfo(cap.elo || 200);
             ctx.font = 'bold 24px Arial, sans-serif';
             ctx.fillStyle = lvInfo.color;
-            ctx.fillText(`LV.${lvInfo.lv} â€¢ ${cap.elo} ELO`, x, y + 115);
+            ctx.fillText(`LV.${lvInfo.lv} Ã¢â‚¬Â¢ ${cap.elo} ELO`, x, y + 115);
         } else {
             ctx.strokeStyle = '#27272a';
             ctx.setLineDash([8, 6]);
@@ -2782,7 +2016,7 @@ module.exports = {
     // Subtext
     ctx.fillStyle = '#AAAAAA';
     ctx.font = '30px Arial, sans-serif';
-    ctx.fillText('SEÃ‡Ä°M HAKKINI KAZANDI', width / 2, 330);
+    ctx.fillText('SEÃƒâ€¡Ã„Â°M HAKKINI KAZANDI', width / 2, 330);
 
     return canvas.toBuffer('image/png');
 },
@@ -2993,8 +2227,8 @@ module.exports = {
         ctx.globalAlpha = 1;
     };
 
-    drawModernCard('ATTACK', attackX, '#ef4444', '#dc2626', 'âš”');
-    drawModernCard('DEFEND', defendX, '#3b82f6', '#2563eb', 'ğŸ›¡');
+    drawModernCard('ATTACK', attackX, '#ef4444', '#dc2626', 'Ã¢Å¡â€');
+    drawModernCard('DEFEND', defendX, '#3b82f6', '#2563eb', 'ÄŸÅ¸â€ºÂ¡');
 
     // 6. Center "VS" Divider
     ctx.textAlign = 'center';
@@ -3154,7 +2388,7 @@ module.exports = {
             const lvInfo = getLevelInfo(player.elo || 200);
             ctx.font = 'bold 24px Arial, sans-serif';
             ctx.fillStyle = lvInfo.color;
-            ctx.fillText(`LV.${lvInfo.lv} â€¢ ${player.elo} ELO`, textStartX, playerY + 80);
+            ctx.fillText(`LV.${lvInfo.lv} Ã¢â‚¬Â¢ ${player.elo} ELO`, textStartX, playerY + 80);
 
             playerY += 120;
         }
@@ -3221,7 +2455,7 @@ module.exports = {
 
         ctx.font = '20px Arial, sans-serif';
         ctx.fillStyle = p.hasVoted ? '#2ecc71' : '#52525b';
-        ctx.fillText(p.hasVoted ? 'â—' : 'â—‹', sidebarX + 70, pY);
+        ctx.fillText(p.hasVoted ? 'Ã¢â€”Â' : 'Ã¢â€”â€¹', sidebarX + 70, pY);
 
         ctx.fillStyle = p.hasVoted ? '#fff' : '#52525b';
         ctx.font = '18px Arial, sans-serif';
@@ -3481,7 +2715,7 @@ module.exports = {
     ctx.font = 'bold 20px Arial, sans-serif';
     ctx.fillStyle = '#ffffff';
     ctx.letterSpacing = '5px';
-    ctx.fillText('â€¢ STATS â€¢ RANK â€¢ TITLES â€¢ STYLE â€¢', width / 2, height - 40);
+    ctx.fillText('Ã¢â‚¬Â¢ STATS Ã¢â‚¬Â¢ RANK Ã¢â‚¬Â¢ TITLES Ã¢â‚¬Â¢ STYLE Ã¢â‚¬Â¢', width / 2, height - 40);
     ctx.globalAlpha = 1;
 
     return canvas.toBuffer('image/png');

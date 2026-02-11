@@ -1,47 +1,60 @@
-const { SlashCommandBuilder, PermissionFlagsBits, AttachmentBuilder } = require('discord.js');
+const { SlashCommandBuilder, AttachmentBuilder, PermissionFlagsBits } = require('discord.js');
+const path = require('path');
+const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const canvasGenerator = require('../../utils/canvasGenerator');
+const eloService = require('../../services/eloService');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('elotest')
-        .setDescription('Test ELO Card V2 Canvas (Admin Only)')
-        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+        .setDescription('ELO kartını test eder (Admin)')
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+        .addUserOption(option =>
+            option.setName('user')
+                .setDescription('Kartını görmek istediğiniz kullanıcı (Opsiyonel)')),
+
     async execute(interaction) {
         await interaction.deferReply();
 
         try {
+            const targetUser = interaction.options.getUser('user') || interaction.user;
+            const guildId = interaction.guild.id;
+
+            // User Doc Çek
+            const userDoc = await User.findOne({ odasi: targetUser.id, odaId: guildId });
+
+            // Stats Hazırla
+            let stats = eloService.createDefaultStats();
+            if (userDoc) {
+                eloService.ensureValidStats(userDoc);
+                stats = userDoc.matchStats;
+                if (userDoc.isModified('matchStats')) await userDoc.save();
+            }
+
+            // Rank Hesaplama
+            const userRank = await User.countDocuments({
+                odaId: guildId,
+                'matchStats.totalMatches': { $gt: 0 },
+                'matchStats.elo': { $gt: stats.elo }
+            }) + 1;
+
+            // Görsel Oluştur
             const userForCard = {
-                username: interaction.user.username,
-                avatar: interaction.user.displayAvatarURL({ extension: 'png', size: 128, forceStatic: true }),
-                backgroundImage: 'Default',
-                favoriteAgent: null,
-                favoriteMap: null
+                username: targetUser.username,
+                avatar: targetUser.displayAvatarURL({ extension: 'png' }),
+                backgroundImage: userDoc?.backgroundImage,
+                favoriteAgent: userDoc?.favoriteAgent,
+                favoriteMap: userDoc?.favoriteMap
             };
 
-            const fakeStats = {
-                elo: 1850,
-                totalMatches: 47,
-                totalWins: 28,
-                totalLosses: 19,
-                winStreak: 4,
-                totalMVPs: 12,
-                activeTitle: 'SATCHEL ENJOYER',
-                isInactive: false
-            };
+            const buffer = await canvasGenerator.createEloCard(userForCard, stats, userRank);
+            const attachment = new AttachmentBuilder(buffer, { name: 'elo-card.png' });
 
-            const fakeRank = 3;
-
-            const buffer = await canvasGenerator.createEloCardV2(userForCard, fakeStats, fakeRank);
-            const attachment = new AttachmentBuilder(buffer, { name: 'elo-card-v2.png' });
-
-            await interaction.editReply({
-                content: '✅ **ELO Card V2 Test** — Yeni modern ELO kartı:',
-                files: [attachment]
-            });
+            await interaction.editReply({ files: [attachment] });
 
         } catch (error) {
-            console.error(error);
-            await interaction.editReply('❌ Hata: ' + error.message);
+            console.error('ELO Test Hatası:', error);
+            await interaction.editReply({ content: '❌ Hata: ' + error.message });
         }
     }
 };
