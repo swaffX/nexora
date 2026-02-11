@@ -935,6 +935,709 @@ module.exports = {
         return canvas.toBuffer('image/png');
     },
 
+    // ═══════════════════════════════════════════════════
+    //  NEXORA ELO CARD v4.0 — PREMIUM MODERN REDESIGN
+    // ═══════════════════════════════════════════════════
+    async createEloCardV2(user, stats, rank) {
+        const width = 1400;
+        const height = 500;
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+
+        const elo = stats.elo !== undefined ? stats.elo : 100;
+        const levelData = getLevelInfo(elo);
+        const rankColor = levelData.color;
+
+        const rc = parseInt(rankColor.slice(1, 3), 16);
+        const gc = parseInt(rankColor.slice(3, 5), 16);
+        const bc = parseInt(rankColor.slice(5, 7), 16);
+
+        // ─── BACKGROUND ───
+        const currentBg = user.backgroundImage || 'Default';
+        let bgImg = null;
+        if (currentBg !== 'Default') {
+            try {
+                const themeConfig = eloService.ELO_CONFIG.BACKGROUND_THEMES[currentBg];
+                const fileName = themeConfig ? themeConfig.path : `${currentBg}.png`;
+                const mapPath = path.join(__dirname, '..', '..', 'assets', 'maps', fileName);
+                if (fs.existsSync(mapPath)) bgImg = await loadCachedImage(mapPath);
+            } catch (e) { }
+        }
+
+        // Rounded card clip
+        ctx.beginPath();
+        ctx.roundRect(0, 0, width, height, 24);
+        ctx.clip();
+
+        if (bgImg) {
+            const scale = Math.max(width / bgImg.width, height / bgImg.height);
+            const w = bgImg.width * scale;
+            const h = bgImg.height * scale;
+            ctx.drawImage(bgImg, (width - w) / 2, (height - h) / 2, w, h);
+            ctx.fillStyle = 'rgba(9, 9, 11, 0.82)';
+            ctx.fillRect(0, 0, width, height);
+        } else {
+            const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+            bgGrad.addColorStop(0, '#111113');
+            bgGrad.addColorStop(0.5, '#18181b');
+            bgGrad.addColorStop(1, '#0d0d0f');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, width, height);
+        }
+
+        // Subtle rank glow (top-right)
+        const glow = ctx.createRadialGradient(width * 0.85, height * 0.2, 0, width * 0.85, height * 0.2, 400);
+        glow.addColorStop(0, `rgba(${rc}, ${gc}, ${bc}, 0.08)`);
+        glow.addColorStop(1, 'transparent');
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, width, height);
+
+        // ─── LEFT ACCENT BAR ───
+        const accentGrad = ctx.createLinearGradient(0, 0, 0, height);
+        accentGrad.addColorStop(0, 'transparent');
+        accentGrad.addColorStop(0.2, rankColor);
+        accentGrad.addColorStop(0.8, rankColor);
+        accentGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = accentGrad;
+        ctx.fillRect(0, 0, 5, height);
+
+        // ─── LEVEL ICON (left side) ───
+        const iconSize = 180;
+        const iconX = 50;
+        const iconY = (height - iconSize) / 2 - 10;
+        try {
+            const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${levelData.lv}.png`);
+            if (fs.existsSync(iconPath)) {
+                const icon = await loadImage(iconPath);
+                ctx.drawImage(icon, iconX, iconY, iconSize, iconSize);
+            }
+        } catch (e) { }
+
+        // Level number under icon
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 18px Arial, sans-serif';
+        ctx.fillStyle = rankColor;
+        ctx.fillText(`LEVEL ${levelData.lv}`, iconX + iconSize / 2, iconY + iconSize + 22);
+        ctx.textAlign = 'left';
+
+        // ─── PLAYER NAME ───
+        const textX = iconX + iconSize + 55;
+        ctx.font = 'bold 60px Arial, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        let name = user.username ? user.username.toUpperCase() : 'UNKNOWN';
+        if (name.length > 14) name = name.substring(0, 14) + '..';
+        ctx.fillText(name, textX, 80);
+
+        // Title badge (pill)
+        if (stats.activeTitle) {
+            const titleColor = eloService.getTitleColor(stats.activeTitle);
+            const titleText = stats.activeTitle.toUpperCase();
+            ctx.font = 'bold 18px Arial, sans-serif';
+            const tw = ctx.measureText(titleText).width;
+            const pillX = textX;
+            const pillY = 95;
+            ctx.beginPath();
+            ctx.roundRect(pillX, pillY, tw + 20, 28, 14);
+            ctx.fillStyle = hexToRgba(titleColor, 0.15);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.roundRect(pillX, pillY, tw + 20, 28, 14);
+            ctx.strokeStyle = hexToRgba(titleColor, 0.4);
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.fillStyle = titleColor;
+            ctx.fillText(titleText, pillX + 10, pillY + 20);
+        }
+
+        // ─── ELO PROGRESS BAR ───
+        const barY = 150;
+        const barW = width - textX - 80;
+        const barH = 14;
+        let progress = 0;
+        if (levelData.lv < 10) {
+            const range = levelData.max - levelData.min;
+            const current = elo - levelData.min;
+            progress = range > 0 ? current / range : 0;
+            progress = Math.min(1, Math.max(0, progress));
+        } else { progress = 1; }
+
+        // Bar bg (rounded)
+        ctx.beginPath();
+        ctx.roundRect(textX, barY, barW, barH, 7);
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        ctx.fill();
+
+        // Bar fill (gradient + rounded)
+        if (progress > 0) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.roundRect(textX, barY, barW, barH, 7);
+            ctx.clip();
+            const barGrad = ctx.createLinearGradient(textX, 0, textX + barW * progress, 0);
+            barGrad.addColorStop(0, hexToRgba(rankColor, 0.6));
+            barGrad.addColorStop(1, rankColor);
+            ctx.fillStyle = barGrad;
+            ctx.fillRect(textX, barY, barW * progress, barH);
+            ctx.restore();
+        }
+
+        // Progress dot at the end of bar
+        if (progress > 0 && progress < 1) {
+            ctx.beginPath();
+            ctx.arc(textX + barW * progress, barY + barH / 2, 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+        }
+
+        // ─── ELO / RANK / NEXT info row ───
+        const infoY = barY + 40;
+        ctx.font = 'bold 34px Arial, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'left';
+        ctx.fillText(`${elo}`, textX, infoY);
+
+        const eloW = ctx.measureText(`${elo}`).width;
+        ctx.font = '22px Arial, sans-serif';
+        ctx.fillStyle = '#52525b';
+        ctx.fillText(' ELO', textX + eloW, infoY);
+
+        // Rank pill
+        if (rank) {
+            const rankStr = `#${rank}`;
+            ctx.font = 'bold 18px Arial, sans-serif';
+            const rw = ctx.measureText(rankStr).width;
+            const rpX = textX + eloW + 60;
+            ctx.beginPath();
+            ctx.roundRect(rpX, infoY - 22, rw + 16, 28, 14);
+            ctx.fillStyle = 'rgba(255,255,255,0.06)';
+            ctx.fill();
+            ctx.fillStyle = '#a1a1aa';
+            ctx.fillText(rankStr, rpX + 8, infoY - 1);
+        }
+
+        // Next level
+        ctx.textAlign = 'right';
+        if (levelData.lv < 10) {
+            ctx.font = '18px Arial, sans-serif';
+            ctx.fillStyle = '#52525b';
+            ctx.fillText(`NEXT`, textX + barW - 2, infoY - 16);
+            ctx.font = 'bold 22px Arial, sans-serif';
+            ctx.fillStyle = '#71717a';
+            ctx.fillText(`${levelData.max}`, textX + barW - 2, infoY + 6);
+        } else {
+            ctx.font = 'bold 20px Arial, sans-serif';
+            ctx.fillStyle = rankColor;
+            ctx.fillText('MAX LEVEL', textX + barW - 2, infoY);
+        }
+        ctx.textAlign = 'left';
+
+        // ─── STAT BOXES (glassmorphism) ───
+        const total = stats.totalMatches || 0;
+        const wins = stats.totalWins || 0;
+        const losses = stats.totalLosses || 0;
+        const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
+        const streak = Number(stats.winStreak) || 0;
+
+        const boxW = 185;
+        const boxH = 130;
+        const boxGap = 18;
+        const boxY = 260;
+        const totalBoxesW = 4 * boxW + 3 * boxGap;
+        const boxStartX = textX + (barW - totalBoxesW) / 2;
+
+        const statItems = [
+            { label: 'MATCHES', value: String(total), color: '#ffffff', icon: '⚔' },
+            { label: 'WINS', value: String(wins), color: '#2ecc71', icon: '✓' },
+            { label: 'WIN RATE', value: `${winRate}%`, color: winRate >= 50 ? '#2ecc71' : '#ef4444', icon: '◎' },
+            { label: 'STREAK', value: String(Math.abs(streak)), color: streak >= 0 ? '#2ecc71' : '#ef4444', icon: streak >= 0 ? '🔥' : '💀' }
+        ];
+
+        statItems.forEach((item, idx) => {
+            const bx = boxStartX + idx * (boxW + boxGap);
+
+            // Glass background
+            ctx.beginPath();
+            ctx.roundRect(bx, boxY, boxW, boxH, 16);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+            ctx.fill();
+
+            // Subtle border
+            ctx.beginPath();
+            ctx.roundRect(bx, boxY, boxW, boxH, 16);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Mini icon
+            ctx.font = '18px Arial, sans-serif';
+            ctx.fillStyle = '#3f3f46';
+            ctx.textAlign = 'right';
+            ctx.fillText(item.icon, bx + boxW - 14, boxY + 24);
+
+            // Value
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 44px Arial, sans-serif';
+            ctx.fillStyle = item.color;
+            ctx.fillText(item.value, bx + boxW / 2, boxY + 72);
+
+            // Label
+            ctx.font = '14px Arial, sans-serif';
+            ctx.fillStyle = '#52525b';
+            ctx.fillText(item.label, bx + boxW / 2, boxY + 105);
+        });
+        ctx.textAlign = 'left';
+
+        // ─── FOOTER LINE ───
+        const footerGrad = ctx.createLinearGradient(40, 0, width - 40, 0);
+        footerGrad.addColorStop(0, 'transparent');
+        footerGrad.addColorStop(0.2, 'rgba(255,255,255,0.06)');
+        footerGrad.addColorStop(0.8, 'rgba(255,255,255,0.06)');
+        footerGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = footerGrad;
+        ctx.fillRect(40, height - 40, width - 80, 1);
+
+        ctx.font = '14px Arial, sans-serif';
+        ctx.fillStyle = '#3f3f46';
+        ctx.textAlign = 'center';
+        ctx.fillText('NEXORA RANKED', width / 2, height - 16);
+        ctx.textAlign = 'left';
+
+        return canvas.toBuffer('image/png');
+    },
+
+    // ═══════════════════════════════════════════════════
+    //  NEXORA DETAILED STATS v4.0 — PREMIUM REDESIGN
+    // ═══════════════════════════════════════════════════
+    async createDetailedStatsImageV2(user, stats, matchHistory, bestMap, favoriteTeammate, rank, nemesisData) {
+        const width = 1300;
+        const height = 1050;
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+
+        const lvlInfo = getLevelInfo(stats.elo !== undefined ? stats.elo : 100);
+        const rankColor = lvlInfo.color;
+        const rc = parseInt(rankColor.slice(1, 3), 16);
+        const gc = parseInt(rankColor.slice(3, 5), 16);
+        const bc = parseInt(rankColor.slice(5, 7), 16);
+
+        // ─── BACKGROUND ───
+        const currentBg = user.backgroundImage || 'Default';
+        let bgImgPrimary = null;
+        if (currentBg !== 'Default') {
+            try {
+                const themeConfig = eloService.ELO_CONFIG.BACKGROUND_THEMES[currentBg];
+                const fileName = themeConfig ? themeConfig.path : `${currentBg}.png`;
+                const mapPath = path.join(__dirname, '..', '..', 'assets', 'maps', fileName);
+                if (fs.existsSync(mapPath)) bgImgPrimary = await loadCachedImage(mapPath);
+            } catch (e) { }
+        }
+
+        // Rounded card clip
+        ctx.beginPath();
+        ctx.roundRect(0, 0, width, height, 24);
+        ctx.clip();
+
+        if (bgImgPrimary) {
+            const scale = Math.max(width / bgImgPrimary.width, height / bgImgPrimary.height);
+            const w = bgImgPrimary.width * scale;
+            const h = bgImgPrimary.height * scale;
+            ctx.drawImage(bgImgPrimary, (width - w) / 2, (height - h) / 2, w, h);
+            ctx.fillStyle = 'rgba(9, 9, 11, 0.88)';
+            ctx.fillRect(0, 0, width, height);
+        } else {
+            const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+            bgGrad.addColorStop(0, '#111113');
+            bgGrad.addColorStop(0.5, '#18181b');
+            bgGrad.addColorStop(1, '#0d0d0f');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, width, height);
+        }
+
+        // Subtle glow
+        const glow = ctx.createRadialGradient(width, 0, 0, width, 0, 800);
+        glow.addColorStop(0, `rgba(${rc}, ${gc}, ${bc}, 0.07)`);
+        glow.addColorStop(1, 'transparent');
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, width, height);
+
+        // ─── SECTION HEADER: LAST MATCHES ───
+        const leftCol = 45;
+        const leftColW = 560;
+
+        ctx.font = 'bold 16px Arial, sans-serif';
+        ctx.fillStyle = '#52525b';
+        ctx.letterSpacing = '2px';
+        ctx.fillText('LAST MATCHES', leftCol + 5, 45);
+        ctx.letterSpacing = '0px';
+
+        // Match count pill
+        const mcText = `${matchHistory.length}`;
+        ctx.font = 'bold 13px Arial, sans-serif';
+        const mcW = ctx.measureText(mcText).width;
+        ctx.beginPath();
+        ctx.roundRect(leftCol + 130, 30, mcW + 14, 20, 10);
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        ctx.fill();
+        ctx.fillStyle = '#71717a';
+        ctx.textAlign = 'center';
+        ctx.fillText(mcText, leftCol + 130 + (mcW + 14) / 2, 44);
+        ctx.textAlign = 'left';
+
+        // ─── MATCH ROWS ───
+        let matchY = 65;
+        const rowH = 80;
+        const rowGap = 8;
+
+        for (const match of matchHistory) {
+            const isWin = match.result === 'WIN';
+            const accentColor = isWin ? '#2ecc71' : '#ef4444';
+
+            // Row background (rounded)
+            ctx.beginPath();
+            ctx.roundRect(leftCol, matchY, leftColW, rowH, 12);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
+            ctx.fill();
+
+            // Left accent bar (rounded)
+            ctx.beginPath();
+            ctx.roundRect(leftCol, matchY + 8, 4, rowH - 16, 2);
+            ctx.fillStyle = accentColor;
+            ctx.fill();
+
+            // Map background image
+            let mapBg = null;
+            try {
+                const assetsPath = path.join(__dirname, '..', '..', 'assets', 'maps');
+                let p = path.join(assetsPath, `${match.map}.png`);
+                if (!fs.existsSync(p)) p = path.join(assetsPath, `${match.map.toLowerCase()}.png`);
+                if (!fs.existsSync(p)) p = path.join(assetsPath, `${match.map.trim()}.png`);
+                if (fs.existsSync(p)) mapBg = await loadImage(p);
+            } catch (e) { }
+
+            if (mapBg) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.roundRect(leftCol, matchY, leftColW, rowH, 12);
+                ctx.clip();
+                const imgScale = Math.max(leftColW / mapBg.width, rowH / mapBg.height);
+                const mw = mapBg.width * imgScale;
+                const mh = mapBg.height * imgScale;
+                ctx.globalAlpha = 0.15;
+                ctx.drawImage(mapBg, leftCol + (leftColW - mw) / 2, matchY + (rowH - mh) / 2, mw, mh);
+                ctx.globalAlpha = 1;
+                // Fade from left
+                const fade = ctx.createLinearGradient(leftCol, matchY, leftCol + leftColW * 0.6, matchY);
+                fade.addColorStop(0, 'rgba(17, 17, 19, 0.95)');
+                fade.addColorStop(1, 'rgba(17, 17, 19, 0.3)');
+                ctx.fillStyle = fade;
+                ctx.fillRect(leftCol, matchY, leftColW, rowH);
+                ctx.restore();
+            }
+
+            // W/L badge
+            const symbol = isWin ? 'W' : 'L';
+            ctx.font = 'bold 22px Arial, sans-serif';
+            ctx.fillStyle = accentColor;
+            ctx.fillText(symbol, leftCol + 20, matchY + rowH / 2 + 7);
+
+            // Map name
+            ctx.font = 'bold 22px Arial, sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(match.map.toUpperCase(), leftCol + 55, matchY + rowH / 2 - 2);
+
+            // Score
+            ctx.font = 'bold 22px Arial, sans-serif';
+            ctx.fillStyle = '#a1a1aa';
+            ctx.fillText(match.score, leftCol + 55 + ctx.measureText(match.map.toUpperCase()).width + 18, matchY + rowH / 2 - 2);
+
+            // ELO change (right side)
+            if (match.eloChange !== null && match.eloChange !== undefined) {
+                const sign = match.eloChange > 0 ? '+' : '';
+                const changeText = `${sign}${match.eloChange}`;
+                ctx.font = 'bold 26px Arial, sans-serif';
+                ctx.fillStyle = match.eloChange >= 0 ? '#2ecc71' : '#ef4444';
+                ctx.textAlign = 'right';
+                ctx.fillText(changeText, leftCol + leftColW - 20, matchY + rowH / 2 + 2);
+
+                // MVP badge
+                if (match.isMvp) {
+                    const cw = ctx.measureText(changeText).width;
+                    ctx.font = 'bold 13px Arial, sans-serif';
+                    ctx.fillStyle = '#fbbf24';
+                    ctx.fillText('MVP ★', leftCol + leftColW - 20 - cw - 10, matchY + rowH / 2 + 1);
+                }
+                ctx.textAlign = 'left';
+            }
+
+            // Date (under map name)
+            ctx.font = '13px Arial, sans-serif';
+            ctx.fillStyle = '#52525b';
+            ctx.fillText(match.date, leftCol + 55, matchY + rowH / 2 + 18);
+
+            matchY += rowH + rowGap;
+        }
+
+        // ═══ RIGHT COLUMN ═══
+        const rightX = leftCol + leftColW + 35;
+        const rightW = width - rightX - 45;
+        let rightY = 65;
+        const panelH = 110;
+        const panelGap = 10;
+
+        const drawGlassPanel = (y, h) => {
+            ctx.beginPath();
+            ctx.roundRect(rightX, y, rightW, h || panelH, 14);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.roundRect(rightX, y, rightW, h || panelH, 14);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        };
+
+        // ─── BEST MAP ───
+        drawGlassPanel(rightY);
+        ctx.font = 'bold 13px Arial, sans-serif';
+        ctx.fillStyle = '#52525b';
+        ctx.fillText('BEST MAP', rightX + 20, rightY + 28);
+        if (bestMap) {
+            ctx.font = 'bold 36px Arial, sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(bestMap.name.toUpperCase(), rightX + 20, rightY + 72);
+            ctx.textAlign = 'right';
+            ctx.font = 'bold 24px Arial, sans-serif';
+            ctx.fillStyle = '#2ecc71';
+            ctx.fillText(`${bestMap.wr}% WR`, rightX + rightW - 20, rightY + 72);
+            ctx.textAlign = 'left';
+        } else {
+            ctx.font = 'bold 28px Arial, sans-serif';
+            ctx.fillStyle = '#3f3f46';
+            ctx.fillText('NO DATA', rightX + 20, rightY + 72);
+        }
+
+        rightY += panelH + panelGap;
+
+        // ─── FAVORITE TEAMMATE ───
+        drawGlassPanel(rightY);
+        ctx.font = 'bold 13px Arial, sans-serif';
+        ctx.fillStyle = '#52525b';
+        ctx.fillText('DUO PARTNER', rightX + 20, rightY + 28);
+        if (favoriteTeammate) {
+            // Avatar
+            if (favoriteTeammate.avatarURL) {
+                try {
+                    const av = await loadImage(favoriteTeammate.avatarURL);
+                    const avSize = 50;
+                    const avX = rightX + 20;
+                    const avY = rightY + 42;
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(avX + avSize / 2, avY + avSize / 2, avSize / 2, 0, Math.PI * 2);
+                    ctx.clip();
+                    ctx.drawImage(av, avX, avY, avSize, avSize);
+                    ctx.restore();
+                } catch (e) { }
+            }
+            ctx.font = 'bold 26px Arial, sans-serif';
+            ctx.fillStyle = '#ffffff';
+            let duoName = favoriteTeammate.username.toUpperCase();
+            if (duoName.length > 12) duoName = duoName.substring(0, 12) + '..';
+            ctx.fillText(duoName, rightX + 82, rightY + 75);
+        } else {
+            ctx.font = 'bold 28px Arial, sans-serif';
+            ctx.fillStyle = '#3f3f46';
+            ctx.fillText('NO DATA', rightX + 20, rightY + 72);
+        }
+
+        rightY += panelH + panelGap;
+
+        // ─── WIN RATE ───
+        drawGlassPanel(rightY);
+        const w = stats.totalWins || 0;
+        const l = stats.totalLosses || 0;
+        const mtotal = w + l;
+        const wr_val = mtotal > 0 ? Math.round((w / mtotal) * 100) : 0;
+
+        ctx.font = 'bold 13px Arial, sans-serif';
+        ctx.fillStyle = '#52525b';
+        ctx.fillText('WIN RATE', rightX + 20, rightY + 28);
+
+        ctx.font = 'bold 46px Arial, sans-serif';
+        ctx.fillStyle = wr_val >= 50 ? '#2ecc71' : '#ef4444';
+        ctx.fillText(`${wr_val}%`, rightX + 20, rightY + 78);
+
+        ctx.textAlign = 'right';
+        ctx.font = '20px Arial, sans-serif';
+        ctx.fillStyle = '#71717a';
+        ctx.fillText(`${w}W / ${l}L`, rightX + rightW - 20, rightY + 75);
+        ctx.textAlign = 'left';
+
+        rightY += panelH + panelGap;
+
+        // ─── TOTAL MVPs ───
+        drawGlassPanel(rightY);
+        ctx.font = 'bold 13px Arial, sans-serif';
+        ctx.fillStyle = '#52525b';
+        ctx.fillText('TOTAL MVPs', rightX + 20, rightY + 28);
+
+        ctx.font = 'bold 46px Arial, sans-serif';
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillText(String(stats.totalMVPs || 0), rightX + 20, rightY + 78);
+
+        // Star icon
+        drawStar(ctx, rightX + rightW - 40, rightY + 55, 5, 18, 9, '#fbbf24');
+
+        rightY += panelH + panelGap;
+
+        // ─── NEMESIS ───
+        if (nemesisData) {
+            drawGlassPanel(rightY);
+            // Red accent on nemesis panel
+            ctx.beginPath();
+            ctx.roundRect(rightX, rightY, 4, panelH, 2);
+            ctx.fillStyle = '#ef4444';
+            ctx.fill();
+
+            ctx.font = 'bold 13px Arial, sans-serif';
+            ctx.fillStyle = '#ef4444';
+            ctx.fillText('EZELİ RAKİP', rightX + 20, rightY + 28);
+
+            if (nemesisData.avatarURL) {
+                try {
+                    const av = await loadImage(nemesisData.avatarURL);
+                    const avSize = 50;
+                    const avX = rightX + 20;
+                    const avY = rightY + 42;
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(avX + avSize / 2, avY + avSize / 2, avSize / 2, 0, Math.PI * 2);
+                    ctx.clip();
+                    ctx.drawImage(av, avX, avY, avSize, avSize);
+                    ctx.restore();
+                } catch (e) { }
+            }
+
+            ctx.font = 'bold 24px Arial, sans-serif';
+            ctx.fillStyle = '#ffffff';
+            let nName = nemesisData.username.toUpperCase();
+            if (nName.length > 12) nName = nName.substring(0, 10) + '..';
+            ctx.fillText(nName, rightX + 82, rightY + 75);
+
+            ctx.textAlign = 'right';
+            ctx.font = 'bold 18px Arial, sans-serif';
+            ctx.fillStyle = '#ef4444';
+            ctx.fillText(`${nemesisData.count} KEZ YENDİ`, rightX + rightW - 20, rightY + 75);
+            ctx.textAlign = 'left';
+        }
+
+        // ═══ FOOTER ═══
+        const footerY = height - 110;
+
+        // Divider
+        const divGrad = ctx.createLinearGradient(40, 0, width - 40, 0);
+        divGrad.addColorStop(0, 'transparent');
+        divGrad.addColorStop(0.15, 'rgba(255,255,255,0.06)');
+        divGrad.addColorStop(0.85, 'rgba(255,255,255,0.06)');
+        divGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = divGrad;
+        ctx.fillRect(40, footerY, width - 80, 1);
+
+        const footerMid = footerY + 55;
+
+        // Avatar
+        if (user.avatar) {
+            try {
+                const avatar = await loadImage(user.avatar);
+                const avSize = 65;
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(leftCol + 20 + avSize / 2, footerMid, avSize / 2, 0, Math.PI * 2);
+                ctx.clip();
+                ctx.drawImage(avatar, leftCol + 20, footerMid - avSize / 2, avSize, avSize);
+                ctx.restore();
+
+                // Level ring
+                ctx.beginPath();
+                ctx.arc(leftCol + 20 + avSize / 2, footerMid, avSize / 2 + 3, 0, Math.PI * 2);
+                ctx.strokeStyle = rankColor;
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = 0.4;
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            } catch (e) { }
+        }
+
+        // Rank + Name
+        let nameX = leftCol + 100;
+        ctx.textBaseline = 'middle';
+
+        if (rank) {
+            ctx.font = 'bold 22px Arial, sans-serif';
+            ctx.fillStyle = '#52525b';
+            ctx.fillText(`#${rank}`, nameX, footerMid - (stats.activeTitle ? 10 : 0));
+            nameX += ctx.measureText(`#${rank}`).width + 12;
+        }
+
+        ctx.font = 'bold 32px Arial, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        let mainName = user.username.toUpperCase();
+        if (mainName.length > 14) mainName = mainName.substring(0, 14) + '..';
+        ctx.fillText(mainName, nameX, footerMid - (stats.activeTitle ? 10 : 0));
+
+        // Title in footer
+        if (stats.activeTitle) {
+            ctx.font = 'bold 16px Arial, sans-serif';
+            ctx.fillStyle = eloService.getTitleColor(stats.activeTitle);
+            ctx.fillText(stats.activeTitle.toUpperCase(), leftCol + 100, footerMid + 18);
+        }
+
+        // Inactive badge
+        if (stats.isInactive) {
+            const badgeText = '⏳ İNAKTİF';
+            ctx.font = 'bold 14px Arial, sans-serif';
+            const bw = ctx.measureText(badgeText).width + 16;
+            const bx = leftCol + 100 + (stats.activeTitle ? ctx.measureText(stats.activeTitle.toUpperCase()).width + 15 : 0);
+            const by = footerMid + 7;
+            ctx.beginPath();
+            ctx.roundRect(bx, by, bw, 22, 11);
+            ctx.fillStyle = 'rgba(255, 107, 53, 0.15)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255, 107, 53, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.roundRect(bx, by, bw, 22, 11);
+            ctx.stroke();
+            ctx.fillStyle = '#FF6B35';
+            ctx.fillText(badgeText, bx + 8, by + 16);
+        }
+
+        ctx.textBaseline = 'alphabetic';
+
+        // ELO + Level on the right
+        ctx.textAlign = 'right';
+        ctx.font = 'bold 40px Arial, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        const eloText = `${stats.elo !== undefined ? stats.elo : 100} ELO`;
+        ctx.fillText(eloText, width - 50, footerMid + 5);
+
+        // Level icon next to ELO
+        const eloTW = ctx.measureText(eloText).width;
+        try {
+            const iconPath = path.join(__dirname, '..', '..', 'faceitsekli', `${lvlInfo.lv}.png`);
+            if (fs.existsSync(iconPath)) {
+                const icon = await loadImage(iconPath);
+                ctx.drawImage(icon, width - 50 - eloTW - 60, footerMid - 25, 50, 50);
+            }
+        } catch (e) { }
+
+        ctx.textAlign = 'left';
+
+        return canvas.toBuffer('image/png');
+    },
+
     async createTitlesGuideImage() {
         // --- PREMIUM TITLES GUIDE v2 (Modern & Turkish) ---
         const width = 1100;
