@@ -673,6 +673,35 @@ module.exports = {
             ctx.fillText(stats.activeTitle.toUpperCase(), 140, footerMid + 25);
         }
 
+        // ⏳ İNAKTİF BADGE
+        if (stats.isInactive) {
+            const badgeText = '⏳ İNAKTİF';
+            ctx.font = 'bold 18px Arial, sans-serif';
+            const badgeWidth = ctx.measureText(badgeText).width + 20;
+            const badgeX = stats.activeTitle ? 140 + ctx.measureText(stats.activeTitle.toUpperCase()).width + 20 : 140;
+            const badgeY = footerMid + 12;
+
+            // Badge background (pill shape)
+            ctx.fillStyle = 'rgba(255, 107, 53, 0.2)';
+            ctx.beginPath();
+            ctx.roundRect(badgeX, badgeY, badgeWidth, 26, 13);
+            ctx.fill();
+
+            // Badge border
+            ctx.strokeStyle = '#FF6B35';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.roundRect(badgeX, badgeY, badgeWidth, 26, 13);
+            ctx.stroke();
+
+            // Badge text
+            ctx.fillStyle = '#FF6B35';
+            ctx.shadowColor = '#FF6B35';
+            ctx.shadowBlur = 8;
+            ctx.fillText(badgeText, badgeX + 10, badgeY + 19);
+            ctx.shadowBlur = 0;
+        }
+
         ctx.textAlign = 'right';
         ctx.font = 'bold 50px Arial, sans-serif';
         const eloText = `${stats.elo !== undefined ? stats.elo : 100} ELO`;

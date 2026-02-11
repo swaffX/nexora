@@ -645,8 +645,11 @@ module.exports = {
 
                 // Eski ELO'yu al
                 const oldElo = user.matchStats.elo;
+                const wasInactive = user.matchStats.isInactive || false;
 
                 user.matchStats.totalMatches++;
+                user.matchStats.lastMatchDate = new Date(); // İnaktiflik takibi
+                user.matchStats.isInactive = false; // Maça girince inaktif flag'i kaldır
 
                 const isTeamA = match.teamA.includes(pid);
                 const myTeamAvg = isTeamA ? avgEloA : avgEloB;
@@ -705,6 +708,15 @@ module.exports = {
                     // ELO'yu uygula (Audit log ile)
                     const reason = isWin ? `Win (${changeReason})` : `Loss (${changeReason})`;
                     await eloService.applyEloChange(user, eloChange, `Match #${match.matchNumber} | ${reason}`);
+
+                    // COMEBACK BONUS: İnaktif oyuncu maça dönüp kazanırsa +%25 bonus
+                    if (wasInactive && isWin) {
+                        const comebackBonus = eloService.calculateComebackBonus(eloChange);
+                        if (comebackBonus > 0) {
+                            await eloService.applyEloChange(user, comebackBonus, `Comeback Bonus (+${comebackBonus})`);
+                            console.log(`[COMEBACK] ${pid} → +${comebackBonus} ELO Geri Dönüş Bonusu!`);
+                        }
+                    }
 
                     // Rank Rolü Senkronizasyonu
                     const member = await interaction.guild.members.fetch(pid).catch(() => null);

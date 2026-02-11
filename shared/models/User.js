@@ -136,7 +136,9 @@ const userSchema = new mongoose.Schema({
         },
         totalMVPs: { type: Number, default: 0 },
         titles: [{ type: String }],
-        activeTitle: { type: String, default: null }
+        activeTitle: { type: String, default: null },
+        lastMatchDate: { type: Date, default: null },
+        isInactive: { type: Boolean, default: false }
     }
 
 }, { timestamps: true });

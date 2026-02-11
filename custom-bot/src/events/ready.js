@@ -132,6 +132,36 @@ module.exports = {
                 } catch (migErr) { logger.error('Migration Error:', migErr); }
 
                 logger.success('✅ ELO Rol senkronizasyonu tamamlandı.');
+
+                // --- MIGRATION: lastMatchDate ---
+                // Henüz lastMatchDate'i olmayan ama maç oynayan oyuncuların
+                // son maç tarihini Match geçmişinden hesapla
+                try {
+                    const { Match } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
+                    const usersWithoutDate = await User.find({
+                        odaId: GUILD_ID,
+                        'matchStats.totalMatches': { $gt: 0 },
+                        'matchStats.lastMatchDate': null
+                    });
+
+                    let migratedCount = 0;
+                    for (const u of usersWithoutDate) {
+                        const lastMatch = await Match.findOne({
+                            status: 'FINISHED',
+                            $or: [{ teamA: u.odasi }, { teamB: u.odasi }]
+                        }).sort({ createdAt: -1 }).select('createdAt');
+
+                        if (lastMatch && lastMatch.createdAt) {
+                            u.matchStats.lastMatchDate = lastMatch.createdAt;
+                            await u.save();
+                            migratedCount++;
+                        }
+                    }
+
+                    if (migratedCount > 0) {
+                        logger.success(`⏳ MIGRATION: ${migratedCount} oyuncunun lastMatchDate alanı Match geçmişinden dolduruldu.`);
+                    }
+                } catch (migErr) { logger.error('lastMatchDate Migration Error:', migErr); }
             } catch (e) {
                 logger.error('Rol Sync Hatası:', e);
             }

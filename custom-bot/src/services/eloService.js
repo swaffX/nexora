@@ -64,6 +64,17 @@ const ELO_CONFIG = {
         'Jett 2': { path: 'Jett 2.png', name: 'Jett 2' },
         'Yoru': { path: 'Yoru.png', name: 'Yoru' },
     },
+    // --- İNAKTİFLİK SİSTEMİ ---
+    INACTIVITY: {
+        GRACE_PERIOD_DAYS: 7,        // 7 gün grace period (ceza yok)
+        DECAY_TIERS: [
+            { minDays: 8, maxDays: 14, dailyDecay: 3 },   // 8-14 gün: -3/gün
+            { minDays: 15, maxDays: 30, dailyDecay: 5 },   // 15-30 gün: -5/gün
+            { minDays: 31, maxDays: Infinity, dailyDecay: 8 } // 31+ gün: -8/gün
+        ],
+        DECAY_FLOOR: 100,            // Minimum ELO (bu altına düşmez)
+        COMEBACK_BONUS: 0.25,        // %25 geri dönüş bonusu (ilk maçta)
+    }
 };
 
 /**
@@ -488,6 +499,75 @@ async function recalculateStatsFromHistory(user) {
     return user;
 }
 
+/**
+ * İnaktiflik ELO Decay hesapla ve uygula
+ * @param {Object} user Mongoose User document
+ * @param {Object} client Discord.js Client (Rol güncelleme için)
+ * @returns {Promise<Object|null>} Decay uygulanan user veya null (decay gerekmiyorsa)
+ */
+async function applyInactivityDecay(user, client = null) {
+    ensureValidStats(user);
+
+    const lastMatch = user.matchStats.lastMatchDate;
+    if (!lastMatch) return null; // Hiç maç oynamamış, decay yok
+
+    const now = new Date();
+    const daysSinceLastMatch = Math.floor((now - new Date(lastMatch)) / (1000 * 60 * 60 * 24));
+
+    // Grace period içindeyse decay yok
+    if (daysSinceLastMatch <= ELO_CONFIG.INACTIVITY.GRACE_PERIOD_DAYS) {
+        // İnaktif flag'ini kaldır (aktif oyuncu)
+        if (user.matchStats.isInactive) {
+            user.matchStats.isInactive = false;
+            await user.save();
+        }
+        return null;
+    }
+
+    // Decay floor kontrolü — zaten minimum ELO'daysa decay yapma
+    if (user.matchStats.elo <= ELO_CONFIG.INACTIVITY.DECAY_FLOOR) {
+        user.matchStats.isInactive = true;
+        await user.save();
+        return null;
+    }
+
+    // Kademeli decay miktarını hesapla
+    let dailyDecay = 0;
+    for (const tier of ELO_CONFIG.INACTIVITY.DECAY_TIERS) {
+        if (daysSinceLastMatch >= tier.minDays && daysSinceLastMatch <= tier.maxDays) {
+            dailyDecay = tier.dailyDecay;
+            break;
+        }
+    }
+
+    if (dailyDecay === 0) return null;
+
+    // Decay uygula (floor'un altına düşmesini engelle)
+    const currentElo = user.matchStats.elo;
+    const newElo = Math.max(ELO_CONFIG.INACTIVITY.DECAY_FLOOR, currentElo - dailyDecay);
+    const actualDecay = currentElo - newElo;
+
+    if (actualDecay <= 0) return null;
+
+    // İnaktif olarak işaretle
+    user.matchStats.isInactive = true;
+
+    // applyEloChange kullanarak audit log ile kaydet
+    await applyEloChange(user, -actualDecay, `Inactivity Decay (${daysSinceLastMatch} gün, -${dailyDecay}/gün)`, client);
+
+    return { user, decay: actualDecay, daysSinceLastMatch, dailyDecay };
+}
+
+/**
+ * Geri dönüş bonusu hesapla (İnaktif oyuncu maça dönünce)
+ * @param {number} baseChange Normal ELO değişikliği
+ * @returns {number} Bonus miktarı
+ */
+function calculateComebackBonus(baseChange) {
+    if (baseChange <= 0) return 0; // Sadece kazanırsa bonus
+    return Math.round(baseChange * ELO_CONFIG.INACTIVITY.COMEBACK_BONUS);
+}
+
 module.exports = {
     ELO_CONFIG,
     LEVEL_EMOJIS,
@@ -501,5 +581,7 @@ module.exports = {
     balanceTeams,
     recalculateStatsFromHistory,
     getTitleColor,
-    calculateNemesis
+    calculateNemesis,
+    applyInactivityDecay,
+    calculateComebackBonus
 };
