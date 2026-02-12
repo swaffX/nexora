@@ -593,10 +593,10 @@ module.exports = {
         const scoreB = match.scoreB;
         const roundDiff = Math.abs(scoreA - scoreB);
 
-        let winnerTeam = 'DRAW';
-        if (scoreA > scoreB) winnerTeam = 'A';
-        if (scoreB > scoreA) winnerTeam = 'B';
+        // Beraberlik Kontrolü (Güvenlik Önlemi)
+        if (scoreA === scoreB) return console.error(`[CRITICAL] Match #${match.matchId} tried to finish with a draw score: ${scoreA}-${scoreB}`);
 
+        const winnerTeam = scoreA > scoreB ? 'A' : 'B';
         match.winner = winnerTeam;
         match.status = 'FINISHED';
 
