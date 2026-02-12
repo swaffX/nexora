@@ -10,7 +10,7 @@ const MAX_CACHE_SIZE = 50; // Maksimum 50 resim sakla (RAM KorumasÃƒâ€Ã�
 
 async function loadCachedImage(imagePath) {
     if (assetCache.has(imagePath)) {
-        // LRU MantÃƒâ€Ã‚Â±Ãƒâ€Ã…Â¸Ãƒâ€Ã‚Â±: EriÃƒâ€¦Ã…Â¸ilen ÃƒÆ’Ã‚Â¶Ãƒâ€Ã…Â¸eyi silip sona ekle (En yeni yap)
+        // LRU MantÃƒâ€Ã‚Â±Ãƒâ€Ã…Â¸Ãƒâ€Ã‚Â±: Erişilen öÃƒâ€Ã…Â¸eyi silip sona ekle (En yeni yap)
         const img = assetCache.get(imagePath);
         assetCache.delete(imagePath);
         assetCache.set(imagePath, img);
@@ -20,7 +20,7 @@ async function loadCachedImage(imagePath) {
         if (fs.existsSync(imagePath)) {
             const img = await loadImage(imagePath);
 
-            // Kapasite Dolduysa En Eskiyi Sil (Map'in baÃƒâ€¦Ã…Â¸Ãƒâ€Ã‚Â±ndaki eleman)
+            // Kapasite Dolduysa En Eskiyi Sil (Map'in başÃƒâ€Ã‚Â±ndaki eleman)
             if (assetCache.size >= MAX_CACHE_SIZE) {
                 const oldestKey = assetCache.keys().next().value;
                 assetCache.delete(oldestKey);
@@ -61,7 +61,7 @@ const getLevelInfo = (elo) => {
     return { lv: level, min, max, color: colors[level] || '#ffffff' };
 };
 
-// YÃƒâ€Ã‚Â±ldÃƒâ€Ã‚Â±z ÃƒÆ’Ã¢â‚¬Â¡izim Fonksiyonu (MVP iÃƒÆ’Ã‚Â§in)
+// YÃƒâ€Ã‚Â±ldÃƒâ€Ã‚Â±z Çizim Fonksiyonu (MVP için)
 function drawStar(ctx, cx, cy, spikes, outerRadius, innerRadius, color) {
     let rot = Math.PI / 2 * 3;
     let x = cx;
@@ -345,7 +345,7 @@ module.exports = {
                 // ELO info (under name)
                 ctx.font = '15px Arial, sans-serif';
                 ctx.fillStyle = '#52525b';
-                ctx.fillText(`LVL ${lvlInfo.lv}  ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢  ${eloLog.newElo} ELO`, nameX, y + rowH / 2 + 18);
+                ctx.fillText(`LVL ${lvlInfo.lv}  •  ${eloLog.newElo} ELO`, nameX, y + rowH / 2 + 18);
 
                 // ELO change (far right)
                 const changeText = eloLog.change > 0 ? `+${eloLog.change}` : `${eloLog.change}`;
@@ -428,7 +428,7 @@ module.exports = {
                 ctx.textAlign = 'right';
                 ctx.font = '15px Arial, sans-serif';
                 ctx.fillStyle = '#52525b';
-                ctx.fillText(`LVL ${lvlInfo.lv}  ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢  ${eloLog.newElo} ELO`, nameX, y + rowH / 2 + 18);
+                ctx.fillText(`LVL ${lvlInfo.lv}  •  ${eloLog.newElo} ELO`, nameX, y + rowH / 2 + 18);
             }
         };
 
@@ -722,7 +722,7 @@ module.exports = {
         let bgImgPrimary = null;
         if (currentBg !== 'Default') {
             try {
-                // Config'den dosya yolunu al (ÃƒÆ’Ã‚Â¶rn: Vyse.jpg veya Raze.png)
+                // Config'den dosya yolunu al (örn: Vyse.jpg veya Raze.png)
                 const themeConfig = eloService.ELO_CONFIG.BACKGROUND_THEMES[currentBg];
                 const fileName = themeConfig ? themeConfig.path : `${currentBg}.png`;
 
@@ -774,7 +774,7 @@ module.exports = {
                 if (fs.existsSync(p)) mapBg = await loadImage(p);
             } catch (e) { }
 
-            const boxW = 500; // Harita resmini biraz kÃƒÆ’Ã‚Â¼ÃƒÆ’Ã‚Â§ÃƒÆ’Ã‚Â¼ltÃƒÆ’Ã‚Â¼yoruz ki yanÃƒâ€Ã‚Â±na yazÃƒâ€Ã‚Â± sÃƒâ€Ã‚Â±Ãƒâ€Ã…Â¸sÃƒâ€Ã‚Â±n
+            const boxW = 500; // Harita resmini biraz küçültüyoruz ki yanÃƒâ€Ã‚Â±na yazÃƒâ€Ã‚Â± sÃƒâ€Ã‚Â±Ãƒâ€Ã…Â¸sÃƒâ€Ã‚Â±n
             const boxH = 80;
             const boxX = 50;
 
@@ -825,7 +825,7 @@ module.exports = {
             ctx.font = 'bold 30px Arial, sans-serif';
             ctx.shadowColor = '#000'; ctx.shadowBlur = 5;
             ctx.textAlign = 'center';
-            ctx.fillText(detailText, 340, matchY + 50); // Skoru map ÃƒÆ’Ã‚Â¼zerinde merkeze ÃƒÆ’Ã‚Â§ektik
+            ctx.fillText(detailText, 340, matchY + 50); // Skoru map üzerinde merkeze çektik
             ctx.shadowBlur = 0;
 
             // ELO Change logic update: Check id as string to avoid type mismatch
@@ -848,7 +848,7 @@ module.exports = {
                 }
             }
 
-            // Tarih (ELO deÃƒâ€Ã…Â¸iÃƒâ€¦Ã…Â¸iminin altÃƒâ€Ã‚Â±)
+            // Tarih (ELO deÃƒâ€Ã…Â¸işiminin altÃƒâ€Ã‚Â±)
             ctx.font = 'italic 18px Arial, sans-serif';
             ctx.fillStyle = '#888';
             ctx.textAlign = 'left';
@@ -914,7 +914,7 @@ module.exports = {
         // Ezeli Rakip (Nemesis)
         if (nemesisData) {
             ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(rightX, 660, 430, 120);
-            ctx.font = 'bold 20px Arial, sans-serif'; ctx.fillStyle = '#ef4444'; ctx.fillText('EZELÃƒâ€Ã‚Â° RAKÃƒâ€Ã‚Â°P', rightX + 20, 700);
+            ctx.font = 'bold 20px Arial, sans-serif'; ctx.fillStyle = '#ef4444'; ctx.fillText('EZELİ RAKİP', rightX + 20, 700);
             if (nemesisData.avatarURL) {
                 try {
                     const av = await loadImage(nemesisData.avatarURL);
@@ -928,7 +928,7 @@ module.exports = {
             if (nName.length > 12) nName = nName.substring(0, 10) + '..';
             ctx.fillText(nName, rightX + 110, 750);
             ctx.font = 'bold 24px Arial, sans-serif'; ctx.fillStyle = '#ef4444'; ctx.textAlign = 'right';
-            ctx.fillText(`${nemesisData.count} KEZ YENDÃƒâ€Ã‚Â°`, rightX + 410, 750); ctx.textAlign = 'left';
+            ctx.fillText(`${nemesisData.count} KEZ YENDİ`, rightX + 410, 750); ctx.textAlign = 'left';
         }
 
         // --- FOOTER (User Info & Rank) ---
@@ -967,7 +967,7 @@ module.exports = {
 
         // ÃƒÂ¢Ã‚ÂÃ‚Â³ Ãƒâ€Ã‚Â°NAKTÃƒâ€Ã‚Â°F BADGE
         if (stats.isInactive) {
-            const badgeText = 'ÃƒÂ¢Ã‚ÂÃ‚Â³ Ãƒâ€Ã‚Â°NAKTÃƒâ€Ã‚Â°F';
+            const badgeText = '⏳ İNAKTİF';
             ctx.font = 'bold 18px Arial, sans-serif';
             const badgeWidth = ctx.measureText(badgeText).width + 20;
             const badgeX = stats.activeTitle ? 140 + ctx.measureText(stats.activeTitle.toUpperCase()).width + 20 : 140;
@@ -1052,7 +1052,7 @@ module.exports = {
 
         ctx.font = '24px Arial, sans-serif';
         ctx.fillStyle = '#a1a1aa';
-        ctx.fillText('MaÃƒÆ’Ã‚Â§lardaki performansÃƒâ€Ã‚Â±na gÃƒÆ’Ã‚Â¶re nadir ÃƒÆ’Ã‚Â¼nvanlar kazan!', width / 2, 150);
+        ctx.fillText('Maçlardaki performansına göre nadir ünvanlar kazan!', width / 2, 150);
 
         // Accent Bar
         ctx.fillStyle = '#fbbf24';
@@ -1469,7 +1469,7 @@ module.exports = {
         // Subtitle
         ctx.font = '42px Arial, sans-serif';
         ctx.fillStyle = '#71717a';
-        ctx.fillText(`SEASON 1  Ãƒâ€šÃ‚Â·  TOP ${users.length} PLAYERS`, width / 2, 235);
+        ctx.fillText(`SEASON 1  ·  TOP ${users.length} PLAYERS`, width / 2, 235);
 
         // Accent bar
         const barGrad = ctx.createLinearGradient(width / 2 - 120, 0, width / 2 + 120, 0);
@@ -1782,7 +1782,7 @@ module.exports = {
         ctx.textAlign = 'center';
         ctx.font = '28px Arial, sans-serif';
         ctx.fillStyle = '#3f3f46';
-        ctx.fillText('NEXORA RANKED SYSTEM  ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢  DEVELOPED BY SWAFF', width / 2, height - 30);
+        ctx.fillText('NEXORA RANKED SYSTEM  •  DEVELOPED BY SWAFF', width / 2, height - 30);
 
         return canvas.toBuffer('image/png');
     },
@@ -1857,7 +1857,7 @@ module.exports = {
                 const lvInfo = getLevelInfo(cap.elo || 200);
                 ctx.font = 'bold 24px Arial, sans-serif';
                 ctx.fillStyle = lvInfo.color;
-                ctx.fillText(`LV.${lvInfo.lv} ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ ${cap.elo} ELO`, x, y + 115);
+                ctx.fillText(`LV.${lvInfo.lv} • ${cap.elo} ELO`, x, y + 115);
             } else {
                 ctx.strokeStyle = '#27272a';
                 ctx.setLineDash([8, 6]);
@@ -2157,7 +2157,7 @@ module.exports = {
         // Subtext
         ctx.fillStyle = '#AAAAAA';
         ctx.font = '30px Arial, sans-serif';
-        ctx.fillText('SEÃƒÆ’Ã¢â‚¬Â¡Ãƒâ€Ã‚Â°M HAKKINI KAZANDI', width / 2, 330);
+        ctx.fillText('SEÇİM HAKKINI KAZANDI', width / 2, 330);
 
         return canvas.toBuffer('image/png');
     },
@@ -2368,8 +2368,8 @@ module.exports = {
             ctx.globalAlpha = 1;
         };
 
-        drawModernCard('ATTACK', attackX, '#ef4444', '#dc2626', 'ÃƒÂ¢Ã…Â¡Ã¢â‚¬Â');
-        drawModernCard('DEFEND', defendX, '#3b82f6', '#2563eb', 'Ã„Å¸Ã…Â¸Ã¢â‚¬ÂºÃ‚Â¡');
+        drawModernCard('ATTACK', attackX, '#ef4444', '#dc2626', 'ATK');
+        drawModernCard('DEFEND', defendX, '#3b82f6', '#2563eb', 'DEF');
 
         // 6. Center "VS" Divider
         ctx.textAlign = 'center';
@@ -2529,7 +2529,7 @@ module.exports = {
                 const lvInfo = getLevelInfo(player.elo || 200);
                 ctx.font = 'bold 24px Arial, sans-serif';
                 ctx.fillStyle = lvInfo.color;
-                ctx.fillText(`LV.${lvInfo.lv} ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ ${player.elo} ELO`, textStartX, playerY + 80);
+                ctx.fillText(`LV.${lvInfo.lv} • ${player.elo} ELO`, textStartX, playerY + 80);
 
                 playerY += 120;
             }
@@ -2596,7 +2596,7 @@ module.exports = {
 
             ctx.font = '20px Arial, sans-serif';
             ctx.fillStyle = p.hasVoted ? '#2ecc71' : '#52525b';
-            ctx.fillText(p.hasVoted ? 'ÃƒÂ¢Ã¢â‚¬â€Ã‚Â' : 'ÃƒÂ¢Ã¢â‚¬â€Ã¢â‚¬Â¹', sidebarX + 70, pY);
+            ctx.fillText(p.hasVoted ? '✓' : '-', sidebarX + 70, pY);
 
             ctx.fillStyle = p.hasVoted ? '#fff' : '#52525b';
             ctx.font = '18px Arial, sans-serif';
@@ -2856,7 +2856,7 @@ module.exports = {
         ctx.font = 'bold 20px Arial, sans-serif';
         ctx.fillStyle = '#ffffff';
         ctx.letterSpacing = '5px';
-        ctx.fillText('ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ STATS ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ RANK ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ TITLES ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ STYLE ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢', width / 2, height - 40);
+        ctx.fillText('• STATS • RANK • TITLES • STYLE •', width / 2, height - 40);
         ctx.globalAlpha = 1;
 
         return canvas.toBuffer('image/png');
