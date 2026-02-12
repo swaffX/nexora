@@ -1,9 +1,10 @@
 const { Events } = require('discord.js');
 const path = require('path');
 const { User } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
+const config = require('../config');
 const eloService = require('../services/eloService');
 
-const REQUIRED_ROLE_ID = '1466189076347486268';
+const REQUIRED_ROLE_ID = config.ROLES.VALORANT;
 
 module.exports = {
     name: Events.GuildMemberUpdate,

@@ -1,11 +1,11 @@
-const { AttachmentBuilder } = require('discord.js');
-const path = require('path');
-const { User } = require(path.join(__dirname, '..', '..', '..', 'shared', 'models'));
+const { AttachmentBuilder, EmbedBuilder } = require('discord.js');
+const { User } = require('../../../shared/models');
+const config = require('../config');
 const canvasGenerator = require('../utils/canvasGenerator');
 const eloService = require('../services/eloService');
 
 const LEADERBOARD_CHANNEL_ID = '1468414391300132894';
-const REQUIRED_ROLE_ID = '1466189076347486268';
+const REQUIRED_ROLE_ID = config.ROLES.VALORANT;
 
 module.exports = {
     async updateLeaderboard(client) {
@@ -94,7 +94,7 @@ module.exports = {
             // Kullanıcı Adlarını Çek veya DB'den al
             const usersWithNames = [];
             for (const doc of finalTopUsers) {
-                let username = `Player ${doc.odasi.substring(0, 4)}`;
+                let username = `Player ${doc.odasi.substring(0, 4)} `;
                 let avatarURL = null;
                 try {
                     const user = await client.users.fetch(doc.odasi).catch(() => null);

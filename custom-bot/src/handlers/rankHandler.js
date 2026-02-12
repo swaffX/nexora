@@ -1,5 +1,7 @@
 const { PermissionsBitField } = require('discord.js');
+const { User } = require('../../../shared/models');
 const path = require('path');
+const config = require('../config');
 const RankConfig = require('../../../shared/models/RankConfig');
 const logger = require(path.join(__dirname, '..', '..', '..', 'shared', 'logger'));
 
@@ -115,7 +117,7 @@ module.exports = {
             return;
         }
 
-        const REQUIRED_VALORANT_ROLE = '1466189076347486268'; // Bu rol ID'si sabit (Giriş rolü)
+        const REQUIRED_VALORANT_ROLE = config.ROLES.VALORANT;
         const ALL_LEVEL_ROLE_IDS = Object.values(rolesMap);
         const targetRoleId = rolesMap[newLevel];
 

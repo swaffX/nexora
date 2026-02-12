@@ -2,6 +2,7 @@ const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('disc
 const path = require('path');
 const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
 const rankHandler = require('../../handlers/rankHandler');
+const config = require('../../config');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -33,7 +34,7 @@ module.exports = {
                     const member = await interaction.guild.members.fetch(userDoc.odasi).catch(() => null);
 
                     // ZORUNLU VALORANT ROLESİ KONTROLÜ
-                    const REQUIRED_VALORANT_ROLE = '1466189076347486268';
+                    const REQUIRED_VALORANT_ROLE = config.ROLES.VALORANT;
 
                     if (member) {
                         if (member.roles.cache.has(REQUIRED_VALORANT_ROLE)) {

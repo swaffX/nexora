@@ -1,6 +1,7 @@
-const { Events } = require('discord.js');
-const path = require('path');
-const logger = require(path.join(__dirname, '..', '..', '..', 'shared', 'logger'));
+const { Events, ActivityType } = require('discord.js');
+const { User } = require('../../../shared/models');
+const logger = require('../../../shared/logger');
+const config = require('../config');
 const { joinVoiceChannel } = require('@discordjs/voice');
 const rankHandler = require('../handlers/rankHandler');
 
@@ -80,7 +81,7 @@ module.exports = {
 
         // --- ROL SENKRONİZASYONU ---
         // Bot kapalıyken rol alan/verenleri senkronize et
-        const REQUIRED_ROLE_ID = '1466189076347486268';
+        const REQUIRED_ROLE_ID = config.ROLES.VALORANT;
         const GUILD_ID = process.env.GUILD_ID;
 
         (async () => {

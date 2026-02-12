@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
-const path = require('path');
-const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
+const { User, Match } = require('../../../../shared/models');
 const eloService = require('../../services/eloService');
+const config = require('../../config');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -15,7 +15,7 @@ module.exports = {
 
     async execute(interaction) {
         // YETKİ KONTROLÜ
-        const REQUIRED_ROLE_ID = '1466189076347486268';
+        const REQUIRED_ROLE_ID = config.ROLES.VALORANT;
         if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator) && !interaction.member.roles.cache.has(REQUIRED_ROLE_ID)) {
             return interaction.reply({ content: '❌ Yetkiniz yok.', flags: 64 });
         }

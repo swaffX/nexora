@@ -1,7 +1,7 @@
-const { SlashCommandBuilder, AttachmentBuilder, MessageFlags } = require('discord.js');
-const path = require('path');
-const { User } = require(path.join(__dirname, '..', '..', '..', '..', 'shared', 'models'));
+const { SlashCommandBuilder, AttachmentBuilder, EmbedBuilder } = require('discord.js');
+const { User, Match } = require('../../../../shared/models');
 const canvasGenerator = require('../../utils/canvasGenerator');
+const config = require('../../config');
 const eloService = require('../../services/eloService');
 
 module.exports = {
@@ -20,7 +20,7 @@ module.exports = {
             const guildId = interaction.guild.id;
 
             // ROL KONTROLÜ
-            const REQUIRED_ROLE_ID = '1466189076347486268';
+            const REQUIRED_ROLE_ID = config.ROLES.VALORANT;
             let member = null;
             try {
                 member = await interaction.guild.members.fetch(targetUser.id);

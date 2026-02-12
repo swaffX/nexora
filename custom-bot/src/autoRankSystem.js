@@ -1,4 +1,5 @@
 const rankHandler = require('./handlers/rankHandler');
+const config = require('./config');
 const { User } = require('../../shared/models');
 const logger = require('../../shared/logger');
 
@@ -23,7 +24,7 @@ function calculateLevel(elo) {
  * Ses kaydındaki isteğe göre loglar ve çalışma mantığı optimize edildi.
  */
 module.exports = (client) => {
-    const REQUIRED_VALORANT_ROLE = '1466189076347486268';
+    const REQUIRED_VALORANT_ROLE = config.ROLES.VALORANT;
     const GUILD_ID = process.env.GUILD_ID;
 
     const LEVEL_ROLES = {
