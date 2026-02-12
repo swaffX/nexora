@@ -175,6 +175,9 @@ module.exports = {
         const matchId = interaction.customId.split('_')[2];
         const match = await Match.findOne({ matchId });
 
+        // Draft Timer'ı temizle
+        draftHandler.clearDraftTimer(matchId);
+
         try {
             if (match) {
                 const guild = interaction.guild;
@@ -310,26 +313,9 @@ module.exports = {
             match.status = 'DRAFT_COINFLIP';
             await match.save();
 
-            // Edit the message to show "Ready" instead of deleting immediately
-            const readyEmbed = EmbedBuilder.from(embed)
-                .setDescription(`✅ **Kaptanlar Hazır!**\nMaç kurulumu başlıyor...\n\n👑 **Host:** <@${match.hostId}>`)
-                .setFooter({ text: '3 saniye içinde yetkililer kaptanları dağıtabilir...' });
-
-            const reshuffleRow = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId(`match_reshufflecap_${match.matchId}`).setLabel('Kaptanları Dağıt').setStyle(ButtonStyle.Danger).setEmoji('♻️')
-            );
-
-            await interaction.update({ embeds: [readyEmbed], components: [reshuffleRow], files: [attachment], attachments: [] }).catch(() => { });
-
-            // Wait 3 seconds before moving to Duel
-            setTimeout(async () => {
-                // Check if match still exists and status is still DRAFT_COINFLIP (not reshuffled)
-                const currentMatch = await Match.findOne({ matchId: match.matchId });
-                if (!currentMatch || currentMatch.status !== 'DRAFT_COINFLIP') return;
-
-                await interaction.message.delete().catch(() => { });
-                await this.startDraftCoinFlip(interaction.channel, currentMatch);
-            }, 3000);
+            // Direkt Düello Hazırlığına Geç (Gecikmesiz)
+            await interaction.message.delete().catch(() => { });
+            await this.startDraftCoinFlip(interaction.channel, match);
         } else {
             const voiceChannel = interaction.guild.channels.cache.get(match.lobbyVoiceId);
             const voiceMembers = voiceChannel ? voiceChannel.members.filter(m => !m.user.bot) : new Map();
@@ -522,6 +508,10 @@ module.exports = {
 
     async resetLobby(interaction) {
         const matchId = interaction.customId.split('_')[2];
+
+        // Draft Timer'ı temizle
+        draftHandler.clearDraftTimer(matchId);
+
         const match = await Match.findOne({ matchId });
         if (!match) return;
 
@@ -685,7 +675,10 @@ module.exports = {
 
         const matchId = interaction.customId.split('_')[2];
         const match = await Match.findOne({ matchId });
-        if (!match || match.status !== 'DRAFT_COINFLIP') return;
+        if (!match || (match.status !== 'DRAFT_COINFLIP' && match.status !== 'DRAFT')) return;
+
+        // Draft Timer'ı temizle
+        draftHandler.clearDraftTimer(matchId);
 
         // Kaptanları ve takımları sıfırla
         match.captainA = null;

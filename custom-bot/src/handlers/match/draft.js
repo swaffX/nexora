@@ -7,7 +7,15 @@ const eloService = require('../../services/eloService');
 // Her maç için aktif timer'ı tutar
 const draftTimers = new Map();
 
+const clearDraftTimer = (matchId) => {
+    if (draftTimers.has(matchId)) {
+        clearTimeout(draftTimers.get(matchId));
+        draftTimers.delete(matchId);
+    }
+};
+
 module.exports = {
+    clearDraftTimer,
     async startDraftMode(interaction, match) {
         const member = await interaction.guild.members.fetch(match.hostId).catch(() => null);
         const channel = member?.voice?.channel;
@@ -159,8 +167,9 @@ module.exports = {
         ));
 
         const managementRow = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId(`match_undo_${match.matchId}`).setLabel('Geri Al').setStyle(ButtonStyle.Warning).setEmoji('⏪'),
+            new ButtonBuilder().setCustomId(`match_undo_${match.matchId}`).setLabel('Geri Al').setStyle(ButtonStyle.Secondary).setEmoji('⏪'),
             new ButtonBuilder().setCustomId(`match_resetdraft_${match.matchId}`).setLabel('Takımları Dağıt').setStyle(ButtonStyle.Danger).setEmoji('♻️'),
+            new ButtonBuilder().setCustomId(`match_reshufflecap_${match.matchId}`).setLabel('Kaptanları Dağıt').setStyle(ButtonStyle.Danger).setEmoji('🔄'),
             new ButtonBuilder().setCustomId(`match_refresh_${match.matchId}`).setLabel('Yenile').setStyle(ButtonStyle.Secondary).setEmoji('🔄'),
             new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('İptal').setEmoji('🛑').setStyle(ButtonStyle.Danger)
         );
@@ -355,6 +364,9 @@ module.exports = {
         const matchId = interaction.customId.split('_')[2];
         const match = await Match.findOne({ matchId });
         if (!match || match.status !== 'DRAFT') return;
+
+        // Timer'ı temizle (Sıra sıfırlanacağı için)
+        clearDraftTimer(matchId);
 
         // Ses kanalındaki herkesi çek (oyuncuları havuza döndürmek için)
         const channel = interaction.guild.channels.cache.get(match.lobbyVoiceId) || await interaction.guild.channels.fetch(match.lobbyVoiceId).catch(() => null);
