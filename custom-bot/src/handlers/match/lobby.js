@@ -195,7 +195,7 @@ module.exports = {
                         }
                     }
 
-                    // Ayrıca Team A ve Team B listesindekileri de kontrol et (farklı yerdeyse çek)
+                    // Ayrıca Team A and Team B listesindekileri de kontrol et (farklı yerdeyse çek)
                     const allPlayers = [...(match.teamA || []), ...(match.teamB || [])];
                     for (const pid of allPlayers) {
                         try {
@@ -389,8 +389,8 @@ module.exports = {
             .setDescription(
                 `Kaptanlar Belirlendi!\n` +
                 `Seçim sırasını belirlemek için düelloyu başlatın.\n\n` +
-                `� **Kaptan A:** <@${match.captainA}>\n` +
-                `� **Kaptan B:** <@${match.captainB}>\n\n` +
+                ` **Kaptan A:** <@${match.captainA}>\n` +
+                ` **Kaptan B:** <@${match.captainB}>\n\n` +
                 `*Herhangi bir kaptan butona basarak düelloyu başlatabilir.*`
             )
             .setFooter({ text: 'Kazanan taraf Harita veya Oyuncu seçme hakkına sahip olur.' });
@@ -453,8 +453,8 @@ module.exports = {
 
         const resultEmbed = new EmbedBuilder()
             .setColor(winnerTeam === 'A' ? 0x3498DB : 0xE74C3C)
-            .setTitle('� DÜELLO SONUCU!')
-            .setDescription(`🏁 **Kazanan:** <@${winnerId}> (Team ${winnerTeam})\n\n**Seçim Hakkı Sizde!** Hangi avantajı istersiniz?\n\n👤 **Player Priority:** İlk oyuncuyu sen seçersin.\n�️ **Map Priority:** Haritayı (Oylama/Veto) sen başlatırsın.`);
+            .setTitle(' DÜELLO SONUCU!')
+            .setDescription(`🏁 **Kazanan:** <@${winnerId}> (Team ${winnerTeam})\n\n**Seçim Hakkı Sizde!** Hangi avantajı istersiniz?\n\n👤 **Player Priority:** İlk oyuncuyu sen seçersin.\n️ **Map Priority:** Haritayı (Oylama/Veto) sen başlatırsın.`);
 
         if (attachment) resultEmbed.setImage('attachment://duel-result.png');
 
@@ -551,7 +551,7 @@ module.exports = {
 
         if (memberOptions.length === 0) memberOptions.push({ label: 'Hata', value: 'null', description: 'Odada kimse yok' });
 
-        const lobbyConfig = getLobbyBySetupChannel(interaction.channelId) || { name: 'Lobby' };
+        const lobbyConfig = getLobbyConfig(match.lobbyId) || { name: 'Lobby' };
 
         const canvasData = {
             matchNumber: match.matchNumber || 0,
@@ -685,7 +685,7 @@ module.exports = {
 
         const matchId = interaction.customId.split('_')[2];
         const match = await Match.findOne({ matchId });
-        if (!match) return;
+        if (!match || match.status !== 'DRAFT_COINFLIP') return;
 
         // Kaptanları ve takımları sıfırla
         match.captainA = null;
@@ -695,7 +695,8 @@ module.exports = {
         match.status = 'SETUP';
         await match.save();
 
-        await interaction.reply({ content: '♻️ **Kaptanlar Dağıtıldı!** Yeniden seçim yapabilirsiniz.', flags: MessageFlags.Ephemeral });
+        // Kaptan dağıtma başarılı mesajı ve UI güncelleme
         await this.updateCaptainUI(interaction, match);
+        await interaction.followUp({ content: '♻️ **Kaptanlar Dağıtıldı!** Yeniden seçim yapabilirsiniz.', flags: MessageFlags.Ephemeral });
     }
 };

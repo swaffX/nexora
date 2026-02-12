@@ -310,7 +310,7 @@ module.exports = {
         const { MessageFlags } = require('discord.js');
         const matchId = interaction.customId.split('_')[2];
         const match = await Match.findOne({ matchId });
-        if (!match) return;
+        if (!match || match.status !== 'DRAFT') return;
 
         // Yetki kontrolü: Sadece son seçen kaptan
         const lastCap = match.lastPickTeam === 'A' ? match.captainA : match.captainB;
@@ -354,11 +354,10 @@ module.exports = {
 
         const matchId = interaction.customId.split('_')[2];
         const match = await Match.findOne({ matchId });
-        if (!match) return;
+        if (!match || match.status !== 'DRAFT') return;
 
         // Ses kanalındaki herkesi çek (oyuncuları havuza döndürmek için)
-        const member = await interaction.guild.members.fetch(match.hostId).catch(() => null);
-        const channel = member?.voice?.channel;
+        const channel = interaction.guild.channels.cache.get(match.lobbyVoiceId) || await interaction.guild.channels.fetch(match.lobbyVoiceId).catch(() => null);
 
         if (channel) {
             const players = channel.members
