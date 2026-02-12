@@ -1,4 +1,5 @@
 const { Events, ActivityType } = require('discord.js');
+const path = require('path');
 const { User } = require('../../../shared/models');
 const logger = require('../../../shared/logger');
 const config = require('../config');
