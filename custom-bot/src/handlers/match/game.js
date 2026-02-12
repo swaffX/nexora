@@ -581,11 +581,17 @@ module.exports = {
     },
 
     async finishMatch(interaction, match) {
+        // RACE CONDITION KONTROLÜ (Çift ELO işlemini önlemek için)
+        const checkMatch = await Match.findOneAndUpdate(
+            { matchId: match.matchId, status: { $ne: 'FINISHED' } },
+            { $set: { status: 'FINISHED' } },
+            { new: true }
+        );
+        if (!checkMatch) return; // Zaten bitmiş
+
         const scoreA = match.scoreA;
         const scoreB = match.scoreB;
         const roundDiff = Math.abs(scoreA - scoreB);
-        // Maksimum +10 round bonusu
-        const roundBonus = Math.min(roundDiff, eloService.ELO_CONFIG.MAX_ROUND_BONUS);
 
         let winnerTeam = 'DRAW';
         if (scoreA > scoreB) winnerTeam = 'A';
@@ -593,9 +599,7 @@ module.exports = {
 
         match.winner = winnerTeam;
         match.status = 'FINISHED';
-        await match.save();
 
-        // ELO Hesaplama (eloService kullanarak)
         const allPlayerIds = [...match.teamA, ...match.teamB];
         const eloChanges = []; // ELO değişimlerini loglamak için dizi
 
