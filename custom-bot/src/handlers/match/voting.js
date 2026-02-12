@@ -59,7 +59,7 @@ module.exports = {
             .setDescription(
                 `**Mücadele hangi haritada geçecek?**\n` +
                 `Favori haritanı seçerek takımına destek ol!\n\n` +
-                `⏰ **Oylama Süresi:** 60 saniye`
+                `⏰ **Oylama Süresi:** <t:${Math.floor(match.voteEndTime.getTime() / 1000)}:R>`
             )
             .setImage(`attachment://${fileName}`)
             .setFooter({ text: `Nexora Voting • 0/${totalPlayers} Oy Kullanıldı` });
@@ -138,6 +138,7 @@ module.exports = {
                 const oldEmbed = votingMsg.embeds[0];
                 const newEmbed = EmbedBuilder.from(oldEmbed)
                     .setImage(`attachment://${fileName}`)
+                    .setDescription(oldEmbed.description) // Ensure description (including timer) is preserved
                     .setFooter({ text: `Nexora Voting • ${match.votes.length}/${totalPlayers} Oy Kullanıldı` });
 
                 await votingMsg.edit({

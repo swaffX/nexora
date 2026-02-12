@@ -313,14 +313,22 @@ module.exports = {
             // Edit the message to show "Ready" instead of deleting immediately
             const readyEmbed = EmbedBuilder.from(embed)
                 .setDescription(`✅ **Kaptanlar Hazır!**\nMaç kurulumu başlıyor...\n\n👑 **Host:** <@${match.hostId}>`)
-                .setFooter({ text: 'Yönlendiriliyorsunuz...' });
+                .setFooter({ text: '3 saniye içinde yetkililer kaptanları dağıtabilir...' });
 
-            await interaction.update({ embeds: [readyEmbed], components: [], files: [attachment], attachments: [] }).catch(() => { });
+            const reshuffleRow = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId(`match_reshufflecap_${match.matchId}`).setLabel('Kaptanları Dağıt').setStyle(ButtonStyle.Danger).setEmoji('♻️')
+            );
+
+            await interaction.update({ embeds: [readyEmbed], components: [reshuffleRow], files: [attachment], attachments: [] }).catch(() => { });
 
             // Wait 3 seconds before moving to Duel
             setTimeout(async () => {
+                // Check if match still exists and status is still DRAFT_COINFLIP (not reshuffled)
+                const currentMatch = await Match.findOne({ matchId: match.matchId });
+                if (!currentMatch || currentMatch.status !== 'DRAFT_COINFLIP') return;
+
                 await interaction.message.delete().catch(() => { });
-                await this.startDraftCoinFlip(interaction.channel, match);
+                await this.startDraftCoinFlip(interaction.channel, currentMatch);
             }, 3000);
         } else {
             const voiceChannel = interaction.guild.channels.cache.get(match.lobbyVoiceId);
@@ -665,5 +673,29 @@ module.exports = {
         );
 
         await interaction.update({ embeds: [embed], components: [row] });
+    },
+
+    async handleReshuffleCaptains(interaction) {
+        const { MessageFlags } = require('discord.js');
+        const REQUIRED_ROLE_ID = '1463875325019557920';
+
+        if (!interaction.member.roles.cache.has(REQUIRED_ROLE_ID) && !interaction.member.permissions.has('Administrator')) {
+            return interaction.reply({ content: '❌ Bu işlemi sadece yetkililer yapabilir.', flags: MessageFlags.Ephemeral });
+        }
+
+        const matchId = interaction.customId.split('_')[2];
+        const match = await Match.findOne({ matchId });
+        if (!match) return;
+
+        // Kaptanları ve takımları sıfırla
+        match.captainA = null;
+        match.captainB = null;
+        match.teamA = [];
+        match.teamB = [];
+        match.status = 'SETUP';
+        await match.save();
+
+        await interaction.reply({ content: '♻️ **Kaptanlar Dağıtıldı!** Yeniden seçim yapabilirsiniz.', flags: MessageFlags.Ephemeral });
+        await this.updateCaptainUI(interaction, match);
     }
 };

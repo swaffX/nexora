@@ -24,7 +24,7 @@ module.exports = {
             action = parts[1];
         } else return;
 
-        const ADMIN_ACTIONS = ['create', 'cancel', 'endmatch', 'endlobby', 'reset', 'rematch', 'enddraft', 'randomcap', 'cap', 'captainA', 'captainB'];
+        const ADMIN_ACTIONS = ['create', 'cancel', 'endmatch', 'endlobby', 'reset', 'resetdraft', 'reshufflecap', 'rematch', 'enddraft', 'randomcap', 'cap', 'captainA', 'captainB'];
         const REQUIRED_ROLE_ID = '1463875325019557920';
 
         if (ADMIN_ACTIONS.includes(action)) {
@@ -139,6 +139,15 @@ module.exports = {
                     // Manuel bitiriş (oyuncu kalmadıysa)
                     const mDraft = await Match.findOne({ matchId: interaction.customId.split('_')[2] });
                     if (mDraft) await voting.prepareVoting(interaction, mDraft, true);
+                    break;
+                case 'undo':
+                    await draft.handleUndoPick(interaction);
+                    break;
+                case 'resetdraft':
+                    await draft.handleResetTeams(interaction);
+                    break;
+                case 'reshufflecap':
+                    await lobby.handleReshuffleCaptains(interaction);
                     break;
 
                 // --- VOTING ---

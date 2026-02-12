@@ -22,6 +22,8 @@ const matchSchema = new mongoose.Schema({
     pickTurn: { type: String, enum: ['A', 'B'], default: 'A' },
     availablePlayerIds: [{ type: String }],
     draftMessageId: { type: String },
+    undoCount: { type: Number, default: 0 },
+    lastPickTeam: { type: String, enum: ['A', 'B'], default: null },
 
     // Map Oylama (Yeni Sistem)
     votes: [{

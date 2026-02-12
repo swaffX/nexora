@@ -118,14 +118,13 @@ module.exports = {
         const formatTeam = (teamIds) => {
             const maxSlots = 5;
             const lines = [];
-            const padding = '\u2000\u2000\u2000\u2000';
 
             for (let i = 0; i < maxSlots; i++) {
                 if (teamIds[i]) {
                     const emoji = getLevelEmoji(teamIds[i]);
-                    lines.push(`\`${i + 1}.\` ${emoji} <@${teamIds[i]}>${padding}`);
+                    lines.push(`\`${i + 1}.\` ${emoji} <@${teamIds[i]}>`);
                 }
-                else lines.push(`\`${i + 1}.\` ▫️ _Boş_${padding}`);
+                else lines.push(`\`${i + 1}.\` ▫️ _Boş_`);
             }
             return lines.join('\n');
         };
@@ -137,7 +136,7 @@ module.exports = {
             .setDescription(
                 `**Sıra:** <@${currentTurnCaptain}> (Team ${match.pickTurn})\n` +
                 `Lütfen takımınıza bir oyuncu seçin.\n\n` +
-                `⏰ **Kalan Süre:** 30 saniye`
+                `⏰ **Kalan Süre:** <t:${Math.floor(Date.now() / 1000) + 30}:R>`
             )
             .addFields(
                 { name: `🔵 Team A`, value: formatTeam(match.teamA), inline: true },
@@ -158,10 +157,14 @@ module.exports = {
                 ? new StringSelectMenuBuilder().setCustomId(`match_pick_${match.matchId}`).setPlaceholder(`Oyuncu Seç (Team ${match.pickTurn})`).addOptions(poolOptions.slice(0, 25))
                 : new ButtonBuilder().setCustomId(`match_enddraft_${match.matchId}`).setLabel('Seçimi Bitir').setStyle(ButtonStyle.Success)
         ));
-        components.push(new ActionRowBuilder().addComponents(
+
+        const managementRow = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId(`match_undo_${match.matchId}`).setLabel('Geri Al').setStyle(ButtonStyle.Warning).setEmoji('⏪'),
+            new ButtonBuilder().setCustomId(`match_resetdraft_${match.matchId}`).setLabel('Takımları Dağıt').setStyle(ButtonStyle.Danger).setEmoji('♻️'),
             new ButtonBuilder().setCustomId(`match_refresh_${match.matchId}`).setLabel('Yenile').setStyle(ButtonStyle.Secondary).setEmoji('🔄'),
             new ButtonBuilder().setCustomId(`match_cancel_${match.matchId}`).setLabel('İptal').setEmoji('🛑').setStyle(ButtonStyle.Danger)
-        ));
+        );
+        components.push(managementRow);
 
         try {
             if (sendNew) {
@@ -200,8 +203,15 @@ module.exports = {
 
         const randomPlayer = match.availablePlayerIds[Math.floor(Math.random() * match.availablePlayerIds.length)];
 
-        if (match.pickTurn === 'A') { match.teamA.push(randomPlayer); match.pickTurn = 'B'; }
-        else { match.teamB.push(randomPlayer); match.pickTurn = 'A'; }
+        if (match.pickTurn === 'A') {
+            match.teamA.push(randomPlayer);
+            match.lastPickTeam = 'A'; // Sistem A takımına seçti, A kaptanı geri alabilir
+            match.pickTurn = 'B';
+        } else {
+            match.teamB.push(randomPlayer);
+            match.lastPickTeam = 'B'; // Sistem B takımına seçti, B kaptanı geri alabilir
+            match.pickTurn = 'A';
+        }
 
         match.availablePlayerIds = match.availablePlayerIds.filter(id => id !== randomPlayer);
         await match.save();
@@ -257,8 +267,15 @@ module.exports = {
             }
 
             const pickedId = interaction.values[0];
-            if (match.pickTurn === 'A') { match.teamA.push(pickedId); match.pickTurn = 'B'; }
-            else { match.teamB.push(pickedId); match.pickTurn = 'A'; }
+            if (match.pickTurn === 'A') {
+                match.teamA.push(pickedId);
+                match.lastPickTeam = 'A';
+                match.pickTurn = 'B';
+            } else {
+                match.teamB.push(pickedId);
+                match.lastPickTeam = 'B';
+                match.pickTurn = 'A';
+            }
 
             match.availablePlayerIds = match.availablePlayerIds.filter(id => id !== pickedId);
             await match.save();
@@ -286,6 +303,78 @@ module.exports = {
             console.error('Refresh error:', e.message);
         }
 
+        await this.updateDraftUI(interaction, match);
+    },
+
+    async handleUndoPick(interaction) {
+        const { MessageFlags } = require('discord.js');
+        const matchId = interaction.customId.split('_')[2];
+        const match = await Match.findOne({ matchId });
+        if (!match) return;
+
+        // Yetki kontrolü: Sadece son seçen kaptan
+        const lastCap = match.lastPickTeam === 'A' ? match.captainA : match.captainB;
+        if (interaction.user.id !== lastCap) {
+            return interaction.reply({ content: '❌ Sadece son seçimi yapan kaptan geri alabilir!', flags: MessageFlags.Ephemeral });
+        }
+
+        // Limit kontrolü
+        if (match.undoCount >= 2) {
+            return interaction.reply({ content: '⚠️ **Hata:** Geri alma hakkınız kalmadı! (Limit: 2)', flags: MessageFlags.Ephemeral });
+        }
+
+        if (!match.lastPickTeam) {
+            return interaction.reply({ content: '❌ Geri alınacak bir seçim bulunamadı.', flags: MessageFlags.Ephemeral });
+        }
+
+        // Geri Al İşlemi
+        const team = match.lastPickTeam === 'A' ? match.teamA : match.teamB;
+        if (team.length <= 1) { // Sadece kaptan kaldıysa (kaptanlar team'in ilk elemanı)
+            return interaction.reply({ content: '❌ Takımda geri alınacak oyuncu yok.', flags: MessageFlags.Ephemeral });
+        }
+
+        const removedPlayerId = team.pop();
+        match.availablePlayerIds.push(removedPlayerId);
+        match.pickTurn = match.lastPickTeam; // Sırayı geri ver
+        match.lastPickTeam = null; // Zincirleme geri alma engeli (tek tek geri alım için state sıfırlanmalı)
+        match.undoCount++;
+        await match.save();
+
+        await interaction.reply({ content: `⏪ **Geri Alındı:** <@${removedPlayerId}> havuza döndü. (${match.undoCount}/2)`, flags: MessageFlags.Ephemeral });
+        await this.updateDraftUI(interaction, match);
+    },
+
+    async handleResetTeams(interaction) {
+        const { MessageFlags } = require('discord.js');
+        const REQUIRED_ROLE_ID = '1463875325019557920';
+
+        if (!interaction.member.roles.cache.has(REQUIRED_ROLE_ID) && !interaction.member.permissions.has('Administrator')) {
+            return interaction.reply({ content: '❌ Bu işlemi sadece yetkililer yapabilir.', flags: MessageFlags.Ephemeral });
+        }
+
+        const matchId = interaction.customId.split('_')[2];
+        const match = await Match.findOne({ matchId });
+        if (!match) return;
+
+        // Ses kanalındaki herkesi çek (oyuncuları havuza döndürmek için)
+        const member = await interaction.guild.members.fetch(match.hostId).catch(() => null);
+        const channel = member?.voice?.channel;
+
+        if (channel) {
+            const players = channel.members
+                .filter(m => !m.user.bot && m.id !== match.captainA && m.id !== match.captainB)
+                .map(m => m.id);
+            match.availablePlayerIds = players;
+        }
+
+        match.teamA = [match.captainA];
+        match.teamB = [match.captainB];
+        match.pickTurn = 'A';
+        match.undoCount = 0;
+        match.lastPickTeam = null;
+        await match.save();
+
+        await interaction.reply({ content: '♻️ **Takımlar Dağıtıldı!** Kaptanlar hariç herkes havuza döndü.', flags: MessageFlags.Ephemeral });
         await this.updateDraftUI(interaction, match);
     }
 };
