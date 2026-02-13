@@ -28,7 +28,7 @@ const MAIN_LOBBY = {
     name: 'Ana Lobi',
     voiceId: '1469371485855547587', // Lobi Bekleme kanalı (güncel)
     categoryId: '1463883244436197397', // COMPETITIVE kategorisi
-    setupChannelId: '1464222855398166612' // maç-panel kanalı
+    setupChannelId: '1469371484739866889' // maç-panel kanalı (güncel)
 };
 
 // Ek lobiler (admin tarafından açılabilir)
