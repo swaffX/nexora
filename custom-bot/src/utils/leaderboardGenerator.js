@@ -338,9 +338,10 @@ module.exports = {
                 ctx.lineWidth = 1;
                 ctx.stroke();
                 
-                // Badge text
+                // Badge text (perfect vertical center)
                 ctx.fillStyle = titleColor;
-                ctx.fillText(titleText, pillX + 12, pillY + 23);
+                const textY = pillY + (pillH / 2) + 8;
+                ctx.fillText(titleText, pillX + 12, textY);
             }
 
             // 5. Stats Boxes

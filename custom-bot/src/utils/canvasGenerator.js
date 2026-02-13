@@ -959,10 +959,40 @@ module.exports = {
         if (mainName.length > 15) mainName = mainName.substring(0, 15) + '...';
         ctx.fillText(mainName, nameX, footerMid - (stats.activeTitle ? 15 : 0));
 
+        // Active title pill badge (same style as /elo & top10)
+        let footerTitlePillW = 0;
         if (stats.activeTitle) {
-            ctx.font = 'bold 22px Arial, sans-serif';
-            ctx.fillStyle = eloService.getTitleColor(stats.activeTitle);
-            ctx.fillText(stats.activeTitle.toUpperCase(), 140, footerMid + 25);
+            const titleColor = eloService.getTitleColor(stats.activeTitle);
+            const titleText = stats.activeTitle.toUpperCase();
+            ctx.font = 'bold 18px Arial, sans-serif';
+            const titleW = ctx.measureText(titleText).width;
+            const pillW = titleW + 24;
+            const pillH = 26;
+            const pillX = 140;
+            const pillY = footerMid + 12;
+            footerTitlePillW = pillW;
+
+            const tr = parseInt(titleColor.slice(1, 3), 16);
+            const tg = parseInt(titleColor.slice(3, 5), 16);
+            const tb = parseInt(titleColor.slice(5, 7), 16);
+
+            // Badge background
+            ctx.beginPath();
+            ctx.roundRect(pillX, pillY, pillW, pillH, 13);
+            ctx.fillStyle = `rgba(${tr}, ${tg}, ${tb}, 0.15)`;
+            ctx.fill();
+
+            // Badge border
+            ctx.beginPath();
+            ctx.roundRect(pillX, pillY, pillW, pillH, 13);
+            ctx.strokeStyle = `rgba(${tr}, ${tg}, ${tb}, 0.4)`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Badge text (centered)
+            ctx.fillStyle = titleColor;
+            const textY = pillY + (pillH / 2) + 6;
+            ctx.fillText(titleText, pillX + 12, textY);
         }
 
         // ÃƒÂ¢Ã‚ÂÃ‚Â³ Ãƒâ€Ã‚Â°NAKTÃƒâ€Ã‚Â°F BADGE
@@ -970,7 +1000,8 @@ module.exports = {
             const badgeText = '⏳ İNAKTİF';
             ctx.font = 'bold 18px Arial, sans-serif';
             const badgeWidth = ctx.measureText(badgeText).width + 20;
-            const badgeX = stats.activeTitle ? 140 + ctx.measureText(stats.activeTitle.toUpperCase()).width + 20 : 140;
+            const baseX = 140 + (footerTitlePillW > 0 ? footerTitlePillW + 16 : 0);
+            const badgeX = baseX;
             const badgeY = footerMid + 12;
 
             // Badge background (pill shape)
