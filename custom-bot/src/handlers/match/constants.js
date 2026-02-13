@@ -26,7 +26,7 @@ const MAPS = [
 const MAIN_LOBBY = {
     id: 'main',
     name: 'Ana Lobi',
-    voiceId: '1463922466467483801', // Lobi Bekleme kanalı
+    voiceId: '1469371485855547587', // Lobi Bekleme kanalı (güncel)
     categoryId: '1463883244436197397', // COMPETITIVE kategorisi
     setupChannelId: '1464222855398166612' // maç-panel kanalı
 };

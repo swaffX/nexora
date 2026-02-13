@@ -8,15 +8,13 @@ module.exports = {
 
     // 📂 Kategori ID'leri
     CATEGORIES: {
-        LOBBY_PANEL: '1463883244436197397', // Lobi Paneli Kategorisi
+        LOBBY_PANEL: '1463883244436197397', // Ana Lobi Kategorisi
         VOICE_MASTER: '🔊 • VOICE MASTER' // Voice Master Kategori İsmi (ID yerine isim kullanılıyor)
     },
 
     // 🔊 Ses Kanalı ID'leri
     CHANNELS: {
-        LOBBY_VOICE_1: '1469371485855547587',
-        LOBBY_VOICE_2: '1469371487965286400',
-        LOBBY_VOICE_3: '1469371490163097600',
+        LOBBY_VOICE_MAIN: '1469371485855547587', // Ana Lobi Bekleme (güncel)
         LOGS: '1463875325019557920' // Log Kanalı (Opsiyonel)
     },
 

@@ -13,23 +13,26 @@ module.exports = {
         let deletedCount = 0;
 
         try {
-            // Eski lobi ID'leri (constants.js'den önceki)
-            const oldLobby2CategoryId = '1467987284623233218';
-            const oldLobby3CategoryId = '1467987452039004346';
+            // Eski lobi ID'leri (manuel silinen kanallar)
+            const oldChannelIds = [
+                '1469371487965286400', // Eski Lobi 2 Bekleme
+                '1469371490163097600', // Eski Lobi 3 Bekleme
+                '1467987284623233218', // Eski Lobby 2 Kategorisi
+                '1467987452039004346'  // Eski Lobby 3 Kategorisi
+            ];
 
-            const oldCategories = [oldLobby2CategoryId, oldLobby3CategoryId];
-
-            for (const categoryId of oldCategories) {
-                const category = guild.channels.cache.get(categoryId);
-                if (category) {
-                    // Kategori içindeki tüm kanalları sil
-                    const channels = category.children.cache;
-                    for (const [id, channel] of channels) {
-                        await channel.delete().catch(() => {});
-                        deletedCount++;
+            for (const channelId of oldChannelIds) {
+                const channel = guild.channels.cache.get(channelId);
+                if (channel) {
+                    // Eğer kategori ise içindeki kanalları da sil
+                    if (channel.type === 4) { // GuildCategory
+                        const children = channel.children.cache;
+                        for (const [id, child] of children) {
+                            await child.delete().catch(() => {});
+                            deletedCount++;
+                        }
                     }
-                    // Kategoriyi sil
-                    await category.delete().catch(() => {});
+                    await channel.delete().catch(() => {});
                     deletedCount++;
                 }
             }
@@ -40,7 +43,7 @@ module.exports = {
                 });
             } else {
                 await interaction.editReply({ 
-                    content: '✅ Temizlenecek eski kanal bulunamadı. Sistem zaten güncel!' 
+                    content: '✅ Temizlenecek eski kanal bulunamadı. Sistem zaten güncel!\n\n📌 Mevcut yapı:\n- Lobi Bekleme: <#1469371485855547587>\n- Maç Panel: <#1464222855398166612>' 
                 });
             }
 
