@@ -49,14 +49,9 @@ module.exports = {
 
                 // Panel mesajını gönder (Canvas ile)
                 const canvasGenerator = require('../utils/canvasGenerator');
-                const canvasData = {
-                    matchNumber: 0,
-                    lobbyName: lobby.name.toUpperCase(),
-                    captainA: null,
-                    captainB: null
-                };
-
-                const buffer = await canvasGenerator.createLobbySetupImage(canvasData);
+                
+                // createMatchPanelImage kullan (setup-match.js'deki gibi)
+                const buffer = await canvasGenerator.createMatchPanelImage();
                 const fileName = `lobby-${lobbyId}-panel.png`;
                 const attachment = new AttachmentBuilder(buffer, { name: fileName });
 

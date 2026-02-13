@@ -113,7 +113,8 @@ module.exports = {
             }
 
             // Resmi Üret
-            const buffer = await canvasGenerator.createLeaderboardImage(usersWithNames);
+            const leaderboardGenerator = require('../utils/leaderboardGenerator');
+            const buffer = await leaderboardGenerator.createLeaderboardImage(usersWithNames);
             const attachment = new AttachmentBuilder(buffer, { name: 'leaderboard.png' });
 
             // Mesajı güncelle veya yeniden at

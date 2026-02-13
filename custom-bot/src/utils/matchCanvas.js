@@ -31,18 +31,28 @@ async function createLobbyImage(teamA, teamB, bgMapName = 'Abyss', nameA = 'TEAM
     // 1. Arkaplan
     try {
         const mapUrl = MAPS[bgMapName] || MAPS['Abyss'];
-        const bg = await loadImage(mapUrl);
-        ctx.filter = 'blur(3px) brightness(0.4)';
-        ctx.drawImage(bg, 0, 0, width, height);
-        ctx.filter = 'none';
+        const bg = await loadImage(mapUrl).catch(e => {
+            console.error('Map image load error:', e.message);
+            return null;
+        });
+        
+        if (bg) {
+            ctx.filter = 'blur(3px) brightness(0.4)';
+            ctx.drawImage(bg, 0, 0, width, height);
+            ctx.filter = 'none';
 
-        // Harita Adı (Arkaplanda silik)
-        ctx.font = 'bold 150px sans-serif'; // Valorant
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-        ctx.textAlign = 'center';
-        ctx.fillText(bgMapName.toUpperCase(), width / 2, height / 2 + 50);
+            // Harita Adı (Arkaplanda silik)
+            ctx.font = 'bold 150px sans-serif'; // Valorant
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.textAlign = 'center';
+            ctx.fillText(bgMapName.toUpperCase(), width / 2, height / 2 + 50);
+        } else {
+            ctx.fillStyle = '#111';
+            ctx.fillRect(0, 0, width, height);
+        }
 
     } catch (e) {
+        console.error('Lobby image background error:', e);
         ctx.fillStyle = '#111';
         ctx.fillRect(0, 0, width, height);
     }
