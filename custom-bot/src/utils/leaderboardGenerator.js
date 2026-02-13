@@ -343,48 +343,7 @@ module.exports = {
                 ctx.fillText(titleText, pillX + 12, pillY + 23);
             }
 
-            // 5. ELO Progress Bar (larger, aligned with name)
-            const barW = 420;
-            const barH = 18;
-            const barX = nameX + 20;
-            const barY = nameBaselineY - barH / 2;
-            let progress = 0;
-
-            if (lvlInfo.lv < 10) {
-                const range = lvlInfo.max - lvlInfo.min;
-                const current = stats.elo - lvlInfo.min;
-                progress = range > 0 ? Math.min(1, Math.max(0, current / range)) : 0;
-            } else {
-                progress = 1;
-            }
-
-            // Bar background
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
-            ctx.beginPath();
-            ctx.roundRect(barX, barY, barW, barH, 5);
-            ctx.fill();
-
-            // Bar fill
-            if (progress > 0) {
-                const fillGrad = ctx.createLinearGradient(barX, barY, barX + barW * progress, barY);
-                fillGrad.addColorStop(0, lvlInfo.color);
-                fillGrad.addColorStop(1, hexToRgba(lvlInfo.color, 0.6));
-                ctx.fillStyle = fillGrad;
-                ctx.beginPath();
-                ctx.roundRect(barX, barY, barW * progress, barH, 5);
-                ctx.fill();
-            }
-
-            // Progress text (vertically centered to bar)
-            ctx.font = '18px Arial, sans-serif';
-            ctx.fillStyle = '#52525b';
-            ctx.fillText(
-                `${stats.elo} / ${lvlInfo.lv < 10 ? lvlInfo.max : 'MAX'}`,
-                barX + barW + 25,
-                barY + barH / 2 + 6
-            );
-
-            // 6. Stats Boxes
+            // 5. Stats Boxes
             const w = stats.totalWins || 0;
             const l = stats.totalLosses || 0;
             const t = w + l;
