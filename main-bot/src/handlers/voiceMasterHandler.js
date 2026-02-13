@@ -21,7 +21,7 @@ const { TempVoice } = require(path.join(__dirname, '..', '..', '..', 'shared', '
 // Voice Hub Ayarları (Setup scripti ile DB'den veya .env'den çekilebilir ama şimdilik burada sabitliyoruz)
 const CONFIG = {
     CATEGORY_NAME: '🔊 • VOICE MASTER', // Bu isimdeki kategoriyi arar
-    GENERATOR_CHANNEL_NAME: '➕ • Oda Oluştur', // Bu isimdeki kanala girince oda kurar
+    GENERATOR_CHANNEL_NAME: '➕ • Kendi Odanı Oluştur', // Bu isimdeki kanala girince oda kurar
 };
 
 // Alternatif: Kanal ismini normalize et (emoji ve boşlukları temizle)
