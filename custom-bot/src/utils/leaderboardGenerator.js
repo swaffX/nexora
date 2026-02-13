@@ -350,7 +350,7 @@ module.exports = {
                 ctx.fillText(titleText, pillX + 12, textY);
             }
 
-            // 5. Stats Boxes
+            // 5. Stats Boxes (mode-based)
             const w = stats.totalWins || 0;
             const l = stats.totalLosses || 0;
             const t = w + l;
@@ -361,45 +361,78 @@ module.exports = {
             const statsAreaX = width - 900;
             const statBoxY = y + (rowHeight - statBoxH) / 2;
 
-            // Wins Box
-            ctx.fillStyle = 'rgba(46, 204, 113, 0.06)';
-            ctx.beginPath();
-            ctx.roundRect(statsAreaX, statBoxY, statBoxW, statBoxH, 10);
-            ctx.fill();
-            ctx.font = 'bold 42px Arial, sans-serif';
-            ctx.fillStyle = '#2ecc71';
-            ctx.textAlign = 'center';
-            ctx.fillText(`${w}`, statsAreaX + statBoxW / 2, statBoxY + 45);
-            ctx.font = 'bold 16px Arial, sans-serif';
-            ctx.fillStyle = '#2ecc7180';
-            ctx.fillText('WINS', statsAreaX + statBoxW / 2, statBoxY + 70);
+            if (mode === 'streak') {
+                // Show only win streak count
+                const streak = stats.winStreak || 0;
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.06)';
+                ctx.beginPath();
+                ctx.roundRect(statsAreaX, statBoxY, statBoxW + 40, statBoxH, 10);
+                ctx.fill();
 
-            // Losses Box
-            const lossBoxX = statsAreaX + statBoxW + 30;
-            ctx.fillStyle = 'rgba(239, 68, 68, 0.06)';
-            ctx.beginPath();
-            ctx.roundRect(lossBoxX, statBoxY, statBoxW, statBoxH, 10);
-            ctx.fill();
-            ctx.font = 'bold 42px Arial, sans-serif';
-            ctx.fillStyle = '#ef4444';
-            ctx.fillText(`${l}`, lossBoxX + statBoxW / 2, statBoxY + 45);
-            ctx.font = 'bold 16px Arial, sans-serif';
-            ctx.fillStyle = '#ef444480';
-            ctx.fillText('LOSSES', lossBoxX + statBoxW / 2, statBoxY + 70);
+                ctx.font = 'bold 42px Arial, sans-serif';
+                ctx.fillStyle = '#38bdf8';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${streak}`, statsAreaX + (statBoxW + 40) / 2, statBoxY + 45);
+                ctx.font = 'bold 16px Arial, sans-serif';
+                ctx.fillStyle = '#38bdf880';
+                ctx.fillText('WIN STREAK', statsAreaX + (statBoxW + 40) / 2, statBoxY + 70);
+            } else if (mode === 'mvp') {
+                // Show only total MVP count
+                const mvps = stats.totalMVPs || 0;
+                ctx.fillStyle = 'rgba(251, 191, 36, 0.06)';
+                ctx.beginPath();
+                ctx.roundRect(statsAreaX, statBoxY, statBoxW + 40, statBoxH, 10);
+                ctx.fill();
 
-            // Win Rate Box
-            const wrBoxX = lossBoxX + statBoxW + 30;
-            const wrColor = wr >= 50 ? '#2ecc71' : '#e74c3c';
-            ctx.fillStyle = wr >= 50 ? 'rgba(46, 204, 113, 0.06)' : 'rgba(231, 76, 60, 0.06)';
-            ctx.beginPath();
-            ctx.roundRect(wrBoxX, statBoxY, statBoxW + 20, statBoxH, 10);
-            ctx.fill();
-            ctx.font = 'bold 42px Arial, sans-serif';
-            ctx.fillStyle = wrColor;
-            ctx.fillText(`${wr}%`, wrBoxX + (statBoxW + 20) / 2, statBoxY + 45);
-            ctx.font = 'bold 16px Arial, sans-serif';
-            ctx.fillStyle = `${wrColor}80`;
-            ctx.fillText('WIN RATE', wrBoxX + (statBoxW + 20) / 2, statBoxY + 70);
+                ctx.font = 'bold 42px Arial, sans-serif';
+                ctx.fillStyle = '#fbbf24';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${mvps}`, statsAreaX + (statBoxW + 40) / 2, statBoxY + 45);
+                ctx.font = 'bold 16px Arial, sans-serif';
+                ctx.fillStyle = '#fbbf2480';
+                ctx.fillText('TOTAL MVP', statsAreaX + (statBoxW + 40) / 2, statBoxY + 70);
+            } else {
+                // Default: show wins / losses / win rate
+                // Wins Box
+                ctx.fillStyle = 'rgba(46, 204, 113, 0.06)';
+                ctx.beginPath();
+                ctx.roundRect(statsAreaX, statBoxY, statBoxW, statBoxH, 10);
+                ctx.fill();
+                ctx.font = 'bold 42px Arial, sans-serif';
+                ctx.fillStyle = '#2ecc71';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${w}`, statsAreaX + statBoxW / 2, statBoxY + 45);
+                ctx.font = 'bold 16px Arial, sans-serif';
+                ctx.fillStyle = '#2ecc7180';
+                ctx.fillText('WINS', statsAreaX + statBoxW / 2, statBoxY + 70);
+
+                // Losses Box
+                const lossBoxX = statsAreaX + statBoxW + 30;
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.06)';
+                ctx.beginPath();
+                ctx.roundRect(lossBoxX, statBoxY, statBoxW, statBoxH, 10);
+                ctx.fill();
+                ctx.font = 'bold 42px Arial, sans-serif';
+                ctx.fillStyle = '#ef4444';
+                ctx.fillText(`${l}`, lossBoxX + statBoxW / 2, statBoxY + 45);
+                ctx.font = 'bold 16px Arial, sans-serif';
+                ctx.fillStyle = '#ef444480';
+                ctx.fillText('LOSSES', lossBoxX + statBoxW / 2, statBoxY + 70);
+
+                // Win Rate Box
+                const wrBoxX = lossBoxX + statBoxW + 30;
+                const wrColor = wr >= 50 ? '#2ecc71' : '#e74c3c';
+                ctx.fillStyle = wr >= 50 ? 'rgba(46, 204, 113, 0.06)' : 'rgba(231, 76, 60, 0.06)';
+                ctx.beginPath();
+                ctx.roundRect(wrBoxX, statBoxY, statBoxW + 20, statBoxH, 10);
+                ctx.fill();
+                ctx.font = 'bold 42px Arial, sans-serif';
+                ctx.fillStyle = wrColor;
+                ctx.fillText(`${wr}%`, wrBoxX + (statBoxW + 20) / 2, statBoxY + 45);
+                ctx.font = 'bold 16px Arial, sans-serif';
+                ctx.fillStyle = `${wrColor}80`;
+                ctx.fillText('WIN RATE', wrBoxX + (statBoxW + 20) / 2, statBoxY + 70);
+            }
 
             // 7. ELO (Far Right)
             const eloX = width - 110;
