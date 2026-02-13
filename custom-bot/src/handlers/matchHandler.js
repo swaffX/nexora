@@ -15,7 +15,7 @@ module.exports = {
 
         if (interaction.commandName === 'setup-match' || (interaction.customId && interaction.customId.startsWith('match_create'))) {
             action = 'create';
-            // Custom ID: match_create_1
+            // Custom ID: match_create_main veya match_create_2
             if (interaction.customId) {
                 parts = interaction.customId.split('_');
             }
@@ -71,10 +71,11 @@ module.exports = {
                 }
 
                 case 'create': {
-                    // parts[2] = lobbyId (1, 2, 3)
+                    // parts[2] = lobbyId ('main', 2, 3)
+                    const lobbyId = parts && parts[2] ? parts[2] : 'main';
                     const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
                     const modal = new ModalBuilder()
-                        .setCustomId(`modal_create_match_${parts ? parts[2] : '1'}`)
+                        .setCustomId(`modal_create_match_${lobbyId}`)
                         .setTitle('Maç Oluştur');
 
                     const codeInput = new TextInputBuilder()

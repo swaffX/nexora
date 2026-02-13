@@ -32,6 +32,15 @@ module.exports = {
             return interaction.reply({ content: '❌ Geçersiz Lobi ID veya konfigürasyon bulunamadı.', flags: MessageFlags.Ephemeral });
         }
 
+        // Ek lobiler için enabled kontrolü
+        const { isLobbyEnabled } = require('./constants');
+        if (targetLobbyId !== 'main' && targetLobbyId !== 1 && !isLobbyEnabled(targetLobbyId)) {
+            return interaction.reply({ 
+                content: `❌ **${lobbyConfig.name}** şu anda kapalı!\n\n💡 Admin \`/lobby-manager enable ${targetLobbyId}\` komutuyla açabilir.`, 
+                flags: MessageFlags.Ephemeral 
+            });
+        }
+
         const REQUIRED_VOICE_ID = lobbyConfig.voiceId;
         const MATCH_CATEGORY_ID = lobbyConfig.categoryId;
 

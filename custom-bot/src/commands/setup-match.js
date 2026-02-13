@@ -1,42 +1,68 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField, MessageFlags } = require('discord.js');
-const { getLobbyBySetupChannel } = require('../handlers/match/constants');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionsBitField, MessageFlags, AttachmentBuilder } = require('discord.js');
+const { MAIN_LOBBY, ADDITIONAL_LOBBIES } = require('../handlers/match/constants');
+const path = require('path');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('setup-match')
-        .setDescription('Oda için özel maç panelini kurar (Sadece tanımlı lobi kanallarında çalışır)'),
+        .setDescription('Ana lobi için maç panelini kurar'),
     async execute(interaction) {
         if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return interaction.reply({ content: 'Yetkin yok!', flags: MessageFlags.Ephemeral });
         }
 
         const currentChannelId = interaction.channelId;
-        const lobbyConfig = getLobbyBySetupChannel(currentChannelId);
-
-        if (!lobbyConfig) {
+        
+        // Sadece ana lobi panelinde çalışır
+        if (currentChannelId !== MAIN_LOBBY.setupChannelId) {
             return interaction.reply({
-                content: `❌ Bu komut sadece tanımlı **Lobi Kurulum Kanallarında** çalışır.\n\nTanımlı Kanallar:\n• Lobby 1\n• Lobby 2\n• Lobby 3`,
+                content: `❌ Bu komut sadece **Ana Lobi Panel Kanalında** (<#${MAIN_LOBBY.setupChannelId}>) çalışır.`,
                 flags: MessageFlags.Ephemeral
             });
         }
 
-        const embed = new EmbedBuilder()
-            .setColor(0x2F3136) // Dark Theme Background
-            .setAuthor({ name: `NEXORA COMPETITIVE • ${lobbyConfig.name}`, iconURL: 'https://cdn.discordapp.com/emojis/1467546027518197915.webp?size=96&quality=lossless' })
-            .setDescription(`## <:valo:1468313683469013206> ARENAYA HOŞ GELDİN <a:tacticbear:1467545426009002055>\n\nTakımını topla, stratejini belirle ve mücadeleye başla.\nOdanı kurmak için aşağıdaki butonu kullan.\n\n> <a:jetto:1467545477221318750> **Dikkat:** Odamızı kurmadan önce **<#${lobbyConfig.voiceId}>** ses kanalına giriş yapınız.`)
-            .setImage('https://cdn.discordapp.com/attachments/531892263652032522/1464235225818075147/standard_2.gif?ex=69833b52&is=6981e9d2&hm=c0f38e95cf39afdabbfa335c87c9b85ee19be62255a529c26e2605bccf9459d7&')
-            .setFooter({ text: 'Nexora Systems' });
+        const lobbyConfig = MAIN_LOBBY;
 
-        const row = new ActionRowBuilder().addComponents(
+        // Canvas görseli oluştur
+        const canvasGenerator = require('../utils/canvasGenerator');
+        const canvasData = {
+            matchNumber: 0,
+            lobbyName: 'ANA LOBİ',
+            captainA: null,
+            captainB: null
+        };
+
+        const buffer = await canvasGenerator.createLobbySetupImage(canvasData);
+        const fileName = 'lobby-panel.png';
+        const attachment = new AttachmentBuilder(buffer, { name: fileName });
+
+        const embed = new EmbedBuilder()
+            .setColor(0x2F3136)
+            .setDescription(`## <:valo:1468313683469013206> ARENAYA HOŞ GELDİN <a:tacticbear:1467545426009002055>\n\nTakımını topla, stratejini belirle ve mücadeleye başla.\nOdanı kurmak için aşağıdaki butonu kullan.\n\n> <a:jetto:1467545477221318750> **Dikkat:** Odamızı kurmadan önce **<#${lobbyConfig.voiceId}>** ses kanalına giriş yapınız.`)
+            .setImage(`attachment://${fileName}`)
+            .setFooter({ text: 'Nexora Competitive Systems' });
+
+        // Butonlar: Maç Oluştur + Ek Lobiler
+        const row1 = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
-                .setCustomId(`match_create_${lobbyConfig.id}`) // Örn: match_create_1
+                .setCustomId(`match_create_main`)
                 .setLabel('Maç Oluştur')
                 .setEmoji('1467546027518197915')
-                .setStyle(ButtonStyle.Secondary)
+                .setStyle(ButtonStyle.Success)
         );
 
-        // Kanal temizliği yapmıyorum, sadece mesaj atıyorum
-        await interaction.channel.send({ embeds: [embed], components: [row] });
-        return interaction.reply({ content: `✅ **${lobbyConfig.name}** Paneli başarıyla kuruldu!`, flags: MessageFlags.Ephemeral });
+        const row2 = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId(`lobby_toggle_2`)
+                .setLabel(ADDITIONAL_LOBBIES[2].enabled ? '🟢 Lobby 2 Kapat' : '🔴 Lobby 2 Aç')
+                .setStyle(ADDITIONAL_LOBBIES[2].enabled ? ButtonStyle.Danger : ButtonStyle.Secondary),
+            new ButtonBuilder()
+                .setCustomId(`lobby_toggle_3`)
+                .setLabel(ADDITIONAL_LOBBIES[3].enabled ? '🟢 Lobby 3 Kapat' : '🔴 Lobby 3 Aç')
+                .setStyle(ADDITIONAL_LOBBIES[3].enabled ? ButtonStyle.Danger : ButtonStyle.Secondary)
+        );
+
+        await interaction.channel.send({ embeds: [embed], components: [row1, row2], files: [attachment] });
+        return interaction.reply({ content: `✅ **Ana Lobi** Paneli başarıyla kuruldu!`, flags: MessageFlags.Ephemeral });
     }
 };

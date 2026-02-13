@@ -22,28 +22,40 @@ const MAPS = [
 ];
 
 
-const LOBBY_CONFIG = {
-    1: {
-        id: 1,
-        name: 'Lobby 1',
-        voiceId: '1463922466467483801',
-        categoryId: '1463883244436197397',
-        setupChannelId: '1464222855398166612'
-    },
+// Ana lobi (her zaman aktif)
+const MAIN_LOBBY = {
+    id: 'main',
+    name: 'Ana Lobi',
+    voiceId: '1463922466467483801', // Lobi Bekleme kanalı
+    categoryId: '1463883244436197397', // COMPETITIVE kategorisi
+    setupChannelId: '1464222855398166612' // maç-panel kanalı
+};
+
+// Ek lobiler (admin tarafından açılabilir)
+const ADDITIONAL_LOBBIES = {
     2: {
         id: 2,
         name: 'Lobby 2',
-        voiceId: '1467987380530184194',
-        categoryId: '1467987284623233218',
-        setupChannelId: '1467987345461743638'
+        voiceId: null, // Dinamik oluşturulacak
+        categoryId: null, // Dinamik oluşturulacak
+        setupChannelId: null, // Dinamik oluşturulacak
+        enabled: false // Varsayılan kapalı
     },
     3: {
         id: 3,
         name: 'Lobby 3',
-        voiceId: '1467987533039403119',
-        categoryId: '1467987452039004346',
-        setupChannelId: '1467987505792946196'
+        voiceId: null,
+        categoryId: null,
+        setupChannelId: null,
+        enabled: false
     }
+};
+
+// Geriye dönük uyumluluk için eski LOBBY_CONFIG
+const LOBBY_CONFIG = {
+    1: MAIN_LOBBY,
+    main: MAIN_LOBBY,
+    ...ADDITIONAL_LOBBIES
 };
 
 const BLOCKED_ROLE_ID = '1463875341553635553';
@@ -51,7 +63,14 @@ const BLOCKED_ROLE_ID = '1463875341553635553';
 module.exports = {
     MAPS,
     LOBBY_CONFIG,
+    MAIN_LOBBY,
+    ADDITIONAL_LOBBIES,
     BLOCKED_ROLE_ID,
-    getLobbyConfig: (lobbyId) => LOBBY_CONFIG[lobbyId],
-    getLobbyBySetupChannel: (channelId) => Object.values(LOBBY_CONFIG).find(l => l.setupChannelId === channelId)
+    getLobbyConfig: (lobbyId) => LOBBY_CONFIG[lobbyId] || LOBBY_CONFIG['main'],
+    getLobbyBySetupChannel: (channelId) => Object.values(LOBBY_CONFIG).find(l => l.setupChannelId === channelId),
+    getActiveLobby: () => MAIN_LOBBY, // Ana lobi her zaman aktif
+    isLobbyEnabled: (lobbyId) => {
+        if (lobbyId === 'main' || lobbyId === 1) return true;
+        return ADDITIONAL_LOBBIES[lobbyId]?.enabled || false;
+    }
 };

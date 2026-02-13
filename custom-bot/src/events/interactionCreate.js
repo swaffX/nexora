@@ -89,7 +89,11 @@ module.exports = {
                 await panelHandler.handleInteraction(interaction, client);
             }
 
-
+            // Lobby Toggle (Lobby 2/3 Aç/Kapat)
+            if (customId.startsWith('lobby_toggle_')) {
+                const lobbyHandler = require('../handlers/lobbyToggleHandler');
+                await lobbyHandler.handleToggle(interaction);
+            }
 
         } catch (error) {
             logger.error('Custom Bot Interaction Error:', error);
