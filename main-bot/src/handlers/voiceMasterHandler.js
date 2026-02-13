@@ -24,20 +24,70 @@ const CONFIG = {
     GENERATOR_CHANNEL_NAME: '➕ • Oda Oluştur', // Bu isimdeki kanala girince oda kurar
 };
 
+// Alternatif: Kanal ismini normalize et (emoji ve boşlukları temizle)
+function normalizeChannelName(name) {
+    if (!name) return '';
+    // Emoji ve özel karakterleri temizle, küçük harfe çevir
+    return name.toLowerCase().replace(/[^\w\s]/gi, '').trim();
+}
+
 async function handleJoin(newState, user) {
     const member = newState.member;
     const guild = newState.guild;
 
+    console.log('[VoiceMaster] handleJoin çağrıldı:', {
+        userId: member.id,
+        username: member.user.username,
+        channelName: newState.channel?.name,
+        categoryName: newState.channel?.parent?.name
+    });
+
     // 1. Generator kanalına mı girdi?
-    if (!newState.channel || newState.channel.name !== CONFIG.GENERATOR_CHANNEL_NAME) return;
+    if (!newState.channel) {
+        console.log('[VoiceMaster] newState.channel yok, çıkılıyor');
+        return;
+    }
+
+    // Kanal ismini normalize ederek karşılaştır
+    const normalizedChannelName = normalizeChannelName(newState.channel.name);
+    const normalizedGeneratorName = normalizeChannelName(CONFIG.GENERATOR_CHANNEL_NAME);
+    
+    console.log('[VoiceMaster] Normalize edilmiş isimler:', {
+        channel: normalizedChannelName,
+        generator: normalizedGeneratorName
+    });
+
+    if (normalizedChannelName !== normalizedGeneratorName) {
+        console.log('[VoiceMaster] Kanal adı eşleşmiyor');
+        return;
+    }
 
     // 2. Kategori kontrolü
     const category = newState.channel.parent;
-    if (!category || category.name !== CONFIG.CATEGORY_NAME) return;
+    if (!category) {
+        console.log('[VoiceMaster] Kategori yok');
+        return;
+    }
+    
+    const normalizedCategoryName = normalizeChannelName(category.name);
+    const normalizedConfigCategory = normalizeChannelName(CONFIG.CATEGORY_NAME);
+    
+    console.log('[VoiceMaster] Normalize edilmiş kategori isimleri:', {
+        category: normalizedCategoryName,
+        config: normalizedConfigCategory
+    });
+    
+    if (normalizedCategoryName !== normalizedConfigCategory) {
+        console.log('[VoiceMaster] Kategori adı eşleşmiyor');
+        return;
+    }
+
+    console.log('[VoiceMaster] Kontroller geçti, oda oluşturuluyor...');
 
     // 3. Kullanıcının zaten odası var mı?
     const existingChannel = await TempVoice.findOne({ ownerId: member.id, odaId: guild.id });
     if (existingChannel) {
+        console.log('[VoiceMaster] Kullanıcının zaten odası var:', existingChannel.channelId);
         // Var olan odasına taşı
         const channel = guild.channels.cache.get(existingChannel.channelId);
         if (channel) {
@@ -45,6 +95,7 @@ async function handleJoin(newState, user) {
             return;
         } else {
             // Veritabanında var ama Discord'da yoksa sil
+            console.log('[VoiceMaster] Oda DB\'de var ama Discord\'da yok, siliniyor');
             await TempVoice.deleteOne({ _id: existingChannel._id });
         }
     }
@@ -53,6 +104,7 @@ async function handleJoin(newState, user) {
     const newChannelName = `🔊 • ${member.user.username}'s Room`;
 
     try {
+        console.log('[VoiceMaster] Yeni kanal oluşturuluyor:', newChannelName);
         const voiceChannel = await guild.channels.create({
             name: newChannelName,
             type: ChannelType.GuildVoice,
@@ -63,8 +115,11 @@ async function handleJoin(newState, user) {
             ]
         });
 
+        console.log('[VoiceMaster] Kanal oluşturuldu:', voiceChannel.id);
+
         // 5. Kullanıcıyı Taşı
         await member.voice.setChannel(voiceChannel);
+        console.log('[VoiceMaster] Kullanıcı taşındı');
 
         // 6. Veritabanına Kaydet
         await TempVoice.create({
@@ -73,12 +128,14 @@ async function handleJoin(newState, user) {
             ownerId: member.id,
             name: newChannelName
         });
+        console.log('[VoiceMaster] DB\'ye kaydedildi');
 
         // 7. Kontrol Panelini Gönder (Interface)
         await sendControlPanel(voiceChannel, member);
+        console.log('[VoiceMaster] Kontrol paneli gönderildi');
 
     } catch (error) {
-        console.error('Master Voice Hatası:', error);
+        console.error('[VoiceMaster] Hata:', error);
     }
 }
 
