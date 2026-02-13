@@ -261,8 +261,8 @@ module.exports = {
             ctx.fillText(`#${rank}`, cardX + 110, y + rowHeight / 2 + 28);
             ctx.shadowBlur = 0;
 
-            // 2. Level Icon (PROMINENT)
-            const lvlIconSize = 120;
+            // 2. Level Icon (PROMINENT, slightly smaller for all modes)
+            const lvlIconSize = 110;
             const lvlIconX = cardX + 210;
             const lvlIconY = y + (rowHeight - lvlIconSize) / 2;
 
@@ -315,14 +315,14 @@ module.exports = {
             const nameBaselineY = y + rowHeight / 2 - 10;
             ctx.fillText(name, nameX, nameBaselineY);
 
-            // Title Badge
+            // Title Badge (slightly larger for all modes)
             if (user.matchStats && user.matchStats.activeTitle) {
                 const titleColor = eloService.getTitleColor(user.matchStats.activeTitle);
                 const titleText = user.matchStats.activeTitle.toUpperCase();
-                ctx.font = 'bold 24px Arial, sans-serif';
+                ctx.font = 'bold 26px Arial, sans-serif';
                 const titleW = ctx.measureText(titleText).width;
-                const pillW = titleW + 24;
-                const pillH = 40;
+                const pillW = titleW + 32;
+                const pillH = 46;
                 const pillX = nameX;
                 const pillY = nameBaselineY + 20;
                 
@@ -347,7 +347,7 @@ module.exports = {
                 // Badge text (perfect vertical center)
                 ctx.fillStyle = titleColor;
                 const textY = pillY + (pillH / 2) + 8;
-                ctx.fillText(titleText, pillX + 12, textY);
+                ctx.fillText(titleText, pillX + 16, textY);
             }
 
             // 5. Stats Boxes (mode-based)
@@ -356,41 +356,69 @@ module.exports = {
             const t = w + l;
             const wr = t > 0 ? Math.round((w / t) * 100) : 0;
 
-            const statBoxW = 140;
-            const statBoxH = 80;
+            const statBoxW = 170;
+            const statBoxH = 90;
             const statsAreaX = width - 900;
             const statBoxY = y + (rowHeight - statBoxH) / 2;
 
             if (mode === 'streak') {
-                // Show only win streak count
+                // Show only win streak count (large glowing card with star)
                 const streak = stats.winStreak || 0;
-                ctx.fillStyle = 'rgba(56, 189, 248, 0.06)';
+                const cardWidth = statBoxW + 120;
+
+                // Card background
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.10)';
                 ctx.beginPath();
-                ctx.roundRect(statsAreaX, statBoxY, statBoxW + 40, statBoxH, 10);
+                ctx.roundRect(statsAreaX, statBoxY, cardWidth, statBoxH, 16);
                 ctx.fill();
 
-                ctx.font = 'bold 42px Arial, sans-serif';
+                // Star icon on the left
+                ctx.font = 'bold 46px Arial, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.shadowColor = '#38bdf8';
+                ctx.shadowBlur = 25;
                 ctx.fillStyle = '#38bdf8';
+                ctx.fillText('★', statsAreaX + 24, statBoxY + 55);
+
+                // Streak value
+                ctx.font = 'bold 40px Arial, sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText(`${streak}`, statsAreaX + (statBoxW + 40) / 2, statBoxY + 45);
+                ctx.fillText(`${streak}`, statsAreaX + cardWidth / 2 + 10, statBoxY + 50);
+
+                // Label
                 ctx.font = 'bold 16px Arial, sans-serif';
                 ctx.fillStyle = '#38bdf880';
-                ctx.fillText('WIN STREAK', statsAreaX + (statBoxW + 40) / 2, statBoxY + 70);
+                ctx.fillText('WIN STREAK', statsAreaX + cardWidth / 2 + 10, statBoxY + 74);
+                ctx.shadowBlur = 0;
             } else if (mode === 'mvp') {
-                // Show only total MVP count
+                // Show only total MVP count (large glowing card with star)
                 const mvps = stats.totalMVPs || 0;
-                ctx.fillStyle = 'rgba(251, 191, 36, 0.06)';
+                const cardWidth = statBoxW + 120;
+
+                // Card background
+                ctx.fillStyle = 'rgba(251, 191, 36, 0.10)';
                 ctx.beginPath();
-                ctx.roundRect(statsAreaX, statBoxY, statBoxW + 40, statBoxH, 10);
+                ctx.roundRect(statsAreaX, statBoxY, cardWidth, statBoxH, 16);
                 ctx.fill();
 
-                ctx.font = 'bold 42px Arial, sans-serif';
-                ctx.fillStyle = '#fbbf24';
+                // Star icon on the left
+                ctx.font = 'bold 46px Arial, sans-serif';
+                ctx.textAlign = 'left';
+                ctx.shadowColor = '#facc15';
+                ctx.shadowBlur = 25;
+                ctx.fillStyle = '#facc15';
+                ctx.fillText('★', statsAreaX + 24, statBoxY + 55);
+
+                // MVP value
+                ctx.font = 'bold 40px Arial, sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText(`${mvps}`, statsAreaX + (statBoxW + 40) / 2, statBoxY + 45);
+                ctx.fillText(`${mvps}`, statsAreaX + cardWidth / 2 + 10, statBoxY + 50);
+
+                // Label
                 ctx.font = 'bold 16px Arial, sans-serif';
                 ctx.fillStyle = '#fbbf2480';
-                ctx.fillText('TOTAL MVP', statsAreaX + (statBoxW + 40) / 2, statBoxY + 70);
+                ctx.fillText('TOTAL MVP', statsAreaX + cardWidth / 2 + 10, statBoxY + 74);
+                ctx.shadowBlur = 0;
             } else {
                 // Default: show wins / losses / win rate
                 // Wins Box
