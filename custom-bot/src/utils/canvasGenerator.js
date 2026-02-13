@@ -2860,6 +2860,124 @@ module.exports = {
         ctx.globalAlpha = 1;
 
         return canvas.toBuffer('image/png');
+    },
+
+    // Setup Match Panel Görseli (Yeni)
+    async createMatchPanelImage() {
+        const width = 1200;
+        const height = 400;
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext('2d');
+
+        // Dark Modern Background
+        const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+        bgGrad.addColorStop(0, '#0a0a0f');
+        bgGrad.addColorStop(1, '#06060a');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, width, height);
+
+        // Subtle Grid Pattern
+        ctx.strokeStyle = '#ffffff05';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < width; i += 50) {
+            ctx.beginPath();
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i, height);
+            ctx.stroke();
+        }
+        for (let i = 0; i < height; i += 50) {
+            ctx.beginPath();
+            ctx.moveTo(0, i);
+            ctx.lineTo(width, i);
+            ctx.stroke();
+        }
+
+        // Top Accent Line
+        const topGrad = ctx.createLinearGradient(0, 0, width, 0);
+        topGrad.addColorStop(0, '#3b82f6');
+        topGrad.addColorStop(0.5, '#8b5cf6');
+        topGrad.addColorStop(1, '#ef4444');
+        ctx.fillStyle = topGrad;
+        ctx.fillRect(0, 0, width, 4);
+
+        // Center Glow Effect
+        const centerGlow = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, 400);
+        centerGlow.addColorStop(0, 'rgba(139, 92, 246, 0.15)');
+        centerGlow.addColorStop(1, 'transparent');
+        ctx.fillStyle = centerGlow;
+        ctx.fillRect(0, 0, width, height);
+
+        // Main Title
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 70px Arial, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = '#8b5cf6';
+        ctx.shadowBlur = 20;
+        ctx.fillText('NEXORA COMPETITIVE', width / 2, 120);
+        ctx.shadowBlur = 0;
+
+        // Subtitle
+        ctx.font = 'bold 32px Arial, sans-serif';
+        ctx.fillStyle = '#71717a';
+        ctx.fillText('ARENAYA HOŞ GELDİN', width / 2, 170);
+
+        // Decorative Lines
+        const lineY = 200;
+        const lineGrad = ctx.createLinearGradient(0, 0, width, 0);
+        lineGrad.addColorStop(0, 'transparent');
+        lineGrad.addColorStop(0.5, '#8b5cf6');
+        lineGrad.addColorStop(1, 'transparent');
+        ctx.strokeStyle = lineGrad;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(100, lineY);
+        ctx.lineTo(width - 100, lineY);
+        ctx.stroke();
+
+        // Info Text
+        ctx.font = 'bold 24px Arial, sans-serif';
+        ctx.fillStyle = '#a1a1aa';
+        ctx.fillText('Takımını topla, stratejini belirle ve mücadeleye başla', width / 2, 250);
+
+        // Warning Box
+        const boxY = 280;
+        const boxWidth = 700;
+        const boxHeight = 60;
+        const boxX = (width - boxWidth) / 2;
+
+        // Box Background
+        ctx.beginPath();
+        ctx.roundRect(boxX, boxY, boxWidth, boxHeight, 10);
+        ctx.fillStyle = 'rgba(139, 92, 246, 0.1)';
+        ctx.fill();
+
+        // Box Border
+        ctx.beginPath();
+        ctx.roundRect(boxX, boxY, boxWidth, boxHeight, 10);
+        ctx.strokeStyle = 'rgba(139, 92, 246, 0.3)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Warning Icon (!)
+        ctx.font = 'bold 32px Arial, sans-serif';
+        ctx.fillStyle = '#8b5cf6';
+        ctx.fillText('⚠️', boxX + 40, boxY + 40);
+
+        // Warning Text
+        ctx.font = 'bold 20px Arial, sans-serif';
+        ctx.fillStyle = '#d4d4d8';
+        ctx.textAlign = 'left';
+        ctx.fillText('Maç oluşturmadan önce Lobi Bekleme ses kanalına giriş yapınız', boxX + 80, boxY + 38);
+
+        // Bottom Accent
+        const bottomGrad = ctx.createLinearGradient(0, height - 4, width, height - 4);
+        bottomGrad.addColorStop(0, '#3b82f6');
+        bottomGrad.addColorStop(0.5, '#8b5cf6');
+        bottomGrad.addColorStop(1, '#ef4444');
+        ctx.fillStyle = bottomGrad;
+        ctx.fillRect(0, height - 4, width, 4);
+
+        return canvas.toBuffer('image/png');
     }
 };
 

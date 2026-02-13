@@ -60,11 +60,10 @@ module.exports = {
                 const fileName = `lobby-${lobbyId}-panel.png`;
                 const attachment = new AttachmentBuilder(buffer, { name: fileName });
 
+                // Sadece görsel, yazı yok
                 const embed = new EmbedBuilder()
                     .setColor(0x2F3136)
-                    .setDescription(`## <:valo:1468313683469013206> ${lobby.name.toUpperCase()} ARENAYA HOŞ GELDİN <a:tacticbear:1467545426009002055>\n\nTakımını topla, stratejini belirle ve mücadeleye başla.\nOdanı kurmak için aşağıdaki butonu kullan.\n\n> <a:jetto:1467545477221318750> **Dikkat:** Odamızı kurmadan önce **<#${voiceChannel.id}>** ses kanalına giriş yapınız.`)
-                    .setImage(`attachment://${fileName}`)
-                    .setFooter({ text: 'Nexora Competitive Systems' });
+                    .setImage(`attachment://${fileName}`);
 
                 const row = new ActionRowBuilder().addComponents(
                     new ButtonBuilder()
@@ -127,21 +126,25 @@ module.exports = {
 
         if (!panelMessage) return;
 
-        // Butonları güncelle
-        const row2 = new ActionRowBuilder().addComponents(
+        // Tüm butonları tek satırda güncelle
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId(`match_create_main`)
+                .setLabel('Maç Oluştur')
+                .setEmoji('1467546027518197915')
+                .setStyle(ButtonStyle.Success),
             new ButtonBuilder()
                 .setCustomId(`lobby_toggle_2`)
-                .setLabel(ADDITIONAL_LOBBIES[2].enabled ? '🟢 Lobby 2 Kapat' : '🔴 Lobby 2 Aç')
+                .setLabel(ADDITIONAL_LOBBIES[2].enabled ? 'Lobby 2 Kapat' : 'Lobby 2 Aç')
+                .setEmoji(ADDITIONAL_LOBBIES[2].enabled ? '🟢' : '🔴')
                 .setStyle(ADDITIONAL_LOBBIES[2].enabled ? ButtonStyle.Danger : ButtonStyle.Secondary),
             new ButtonBuilder()
                 .setCustomId(`lobby_toggle_3`)
-                .setLabel(ADDITIONAL_LOBBIES[3].enabled ? '🟢 Lobby 3 Kapat' : '🔴 Lobby 3 Aç')
+                .setLabel(ADDITIONAL_LOBBIES[3].enabled ? 'Lobby 3 Kapat' : 'Lobby 3 Aç')
+                .setEmoji(ADDITIONAL_LOBBIES[3].enabled ? '🟢' : '🔴')
                 .setStyle(ADDITIONAL_LOBBIES[3].enabled ? ButtonStyle.Danger : ButtonStyle.Secondary)
         );
 
-        // İlk row'u koru (Maç Oluştur butonu)
-        const row1 = panelMessage.components[0];
-
-        await panelMessage.edit({ components: [row1, row2] }).catch(() => {});
+        await panelMessage.edit({ components: [row] }).catch(() => {});
     }
 };
