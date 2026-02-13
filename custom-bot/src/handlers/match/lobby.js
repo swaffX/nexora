@@ -49,6 +49,17 @@ module.exports = {
             return interaction.reply({ content: `❌ Bu lobi için maç oluşturmak adına **<#${REQUIRED_VOICE_ID}>** ses kanalında olmalısınız!`, flags: MessageFlags.Ephemeral });
         }
 
+        // Ses kanalındaki oyuncu sayısı kontrolü
+        const voiceChannel = interaction.guild.channels.cache.get(REQUIRED_VOICE_ID);
+        if (!voiceChannel) {
+            return interaction.reply({ content: '❌ Lobi ses kanalı bulunamadı!', flags: MessageFlags.Ephemeral });
+        }
+
+        const voiceMembers = voiceChannel.members.filter(m => !m.user.bot);
+        if (voiceMembers.size < 2) {
+            return interaction.reply({ content: '❌ Maç oluşturmak için ses kanalında **en az 2 oyuncu** olmalı!', flags: MessageFlags.Ephemeral });
+        }
+
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         try {
@@ -270,7 +281,7 @@ module.exports = {
         if (!voiceChannel) return interaction.reply({ content: 'Lobi ses kanalı bulunamadı!', flags: MessageFlags.Ephemeral });
 
         const members = voiceChannel.members.filter(m => !m.user.bot).map(m => m.id);
-        if (members.length < 2) return interaction.reply({ content: 'Ses kanalında en az 2 oyuncu olmalı.', flags: MessageFlags.Ephemeral });
+        if (members.length < 2) return interaction.reply({ content: '❌ Ses kanalında **en az 2 oyuncu** olmalı!', flags: MessageFlags.Ephemeral });
 
         const shuffled = members.sort(() => 0.5 - Math.random());
         match.captainA = shuffled[0]; match.teamA = [shuffled[0]];
