@@ -29,7 +29,7 @@ async function handleJoin(newState, user) {
     const guild = newState.guild;
 
     // 1. Generator kanalına mı girdi?
-    if (newState.channel.name !== CONFIG.GENERATOR_CHANNEL_NAME) return;
+    if (!newState.channel || newState.channel.name !== CONFIG.GENERATOR_CHANNEL_NAME) return;
 
     // 2. Kategori kontrolü
     const category = newState.channel.parent;
@@ -84,6 +84,9 @@ async function handleJoin(newState, user) {
 
 async function handleLeave(oldState) {
     const channel = oldState.channel;
+    
+    // Kanal kontrolü
+    if (!channel) return;
 
     // Geçici oda mı kontrol et
     const tempChannelDir = await TempVoice.findOne({ channelId: channel.id });
