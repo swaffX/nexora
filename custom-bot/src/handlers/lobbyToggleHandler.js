@@ -1,4 +1,4 @@
-const { ChannelType, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } = require('discord.js');
+const { ChannelType, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder, MessageFlags } = require('discord.js');
 const { ADDITIONAL_LOBBIES, MAIN_LOBBY } = require('./match/constants');
 const path = require('path');
 
@@ -7,17 +7,17 @@ module.exports = {
         // Yetki kontrolü
         const REQUIRED_ROLE_ID = '1463875325019557920';
         if (!interaction.member.permissions.has('Administrator') && !interaction.member.roles.cache.has(REQUIRED_ROLE_ID)) {
-            return interaction.reply({ content: '❌ Bu işlemi sadece yetkililer yapabilir!', ephemeral: true });
+            return interaction.reply({ content: '❌ Bu işlemi sadece yetkililer yapabilir!', flags: MessageFlags.Ephemeral });
         }
 
         const lobbyId = parseInt(interaction.customId.split('_')[2]); // 2 veya 3
         const lobby = ADDITIONAL_LOBBIES[lobbyId];
 
         if (!lobby) {
-            return interaction.reply({ content: '❌ Geçersiz lobi!', ephemeral: true });
+            return interaction.reply({ content: '❌ Geçersiz lobi!', flags: MessageFlags.Ephemeral });
         }
 
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         try {
             if (!lobby.enabled) {

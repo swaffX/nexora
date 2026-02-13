@@ -29,30 +29,40 @@ async function createLobbyImage(teamA, teamB, bgMapName = 'Abyss', nameA = 'TEAM
     const ctx = canvas.getContext('2d');
 
     // 1. Arkaplan
+    let bg = null;
     try {
-        const mapUrl = MAPS[bgMapName] || MAPS['Abyss'];
-        const bg = await loadImage(mapUrl).catch(e => {
-            console.error('Map image load error:', e.message);
-            return null;
-        });
-        
-        if (bg) {
-            ctx.filter = 'blur(3px) brightness(0.4)';
-            ctx.drawImage(bg, 0, 0, width, height);
-            ctx.filter = 'none';
-
-            // Harita Adı (Arkaplanda silik)
-            ctx.font = 'bold 150px sans-serif'; // Valorant
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-            ctx.textAlign = 'center';
-            ctx.fillText(bgMapName.toUpperCase(), width / 2, height / 2 + 50);
-        } else {
-            ctx.fillStyle = '#111';
-            ctx.fillRect(0, 0, width, height);
+        // Önce local assets'ten yükle
+        const fs = require('fs');
+        const path = require('path');
+        const assetsPath = path.join(__dirname, '..', '..', 'assets', 'maps');
+        let mapPath = path.join(assetsPath, `${bgMapName}.png`);
+        if (!fs.existsSync(mapPath)) {
+            mapPath = path.join(assetsPath, `${bgMapName.toLowerCase()}.png`);
         }
-
+        
+        if (fs.existsSync(mapPath)) {
+            bg = await loadImage(mapPath);
+        } else {
+            // Fallback: API'den yükle (hata olursa sessiz geç)
+            const mapUrl = MAPS[bgMapName] || MAPS['Abyss'];
+            bg = await loadImage(mapUrl).catch(() => null);
+        }
     } catch (e) {
-        console.error('Lobby image background error:', e);
+        console.error('Map image load error:', e.message);
+        bg = null;
+    }
+    
+    if (bg) {
+        ctx.filter = 'blur(3px) brightness(0.4)';
+        ctx.drawImage(bg, 0, 0, width, height);
+        ctx.filter = 'none';
+
+        // Harita Adı (Arkaplanda silik)
+        ctx.font = 'bold 150px sans-serif';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.textAlign = 'center';
+        ctx.fillText(bgMapName.toUpperCase(), width / 2, height / 2 + 50);
+    } else {
         ctx.fillStyle = '#111';
         ctx.fillRect(0, 0, width, height);
     }
@@ -158,15 +168,35 @@ async function createVoteResultImage(allMapNames, votes) { // votes: { 'Ascent':
         const isWinner = (winnerMap === mapName && !tie && maxVotes > 0);
 
         // Resim
+        let img = null;
         try {
-            const img = await loadImage(MAPS[mapName]);
+            // Önce local assets'ten yükle
+            const fs = require('fs');
+            const path = require('path');
+            const assetsPath = path.join(__dirname, '..', '..', 'assets', 'maps');
+            let mapPath = path.join(assetsPath, `${mapName}.png`);
+            if (!fs.existsSync(mapPath)) {
+                mapPath = path.join(assetsPath, `${mapName.toLowerCase()}.png`);
+            }
+            
+            if (fs.existsSync(mapPath)) {
+                img = await loadImage(mapPath);
+            } else {
+                // Fallback: API'den yükle (hata olursa sessiz geç)
+                img = await loadImage(MAPS[mapName]).catch(() => null);
+            }
+        } catch (e) {
+            img = null;
+        }
+        
+        if (img) {
             ctx.save();
             // Kazanan belli ise diğerlerini karart
             if (winnerMap && !isWinner && !tie) ctx.filter = 'grayscale(100%) brightness(0.4)';
 
             ctx.drawImage(img, x, y, cardW, cardH);
             ctx.restore();
-        } catch (e) {
+        } else {
             ctx.fillStyle = '#333';
             ctx.fillRect(x, y, cardW, cardH);
         }

@@ -58,7 +58,7 @@ const getLevelInfo = (elo) => {
 module.exports = {
     async createLeaderboardImage(users) {
         const width = 2800;
-        const rowHeight = 220;
+        const rowHeight = 240;
         const gap = 25;
         const headerHeight = 360;
         const footerHeight = 100;
@@ -256,7 +256,7 @@ module.exports = {
             ctx.shadowBlur = 0;
 
             // 2. Level Icon (PROMINENT)
-            const lvlIconSize = 120;
+            const lvlIconSize = 100;
             const lvlIconX = cardX + 200;
             const lvlIconY = y + (rowHeight - lvlIconSize) / 2;
 
@@ -281,9 +281,9 @@ module.exports = {
             ctx.fillText(`LVL ${lvlInfo.lv}`, lvlIconX + lvlIconSize / 2, lvlIconY + lvlIconSize + 22);
 
             // 3. Avatar
-            const avSize = 100;
-            const avX = cardX + 370;
-            const avY = y + (rowHeight - avSize) / 2 - 5;
+            const avSize = 120;
+            const avX = cardX + 350;
+            const avY = y + (rowHeight - avSize) / 2;
 
             // Avatar ring
             ctx.beginPath();
@@ -308,22 +308,22 @@ module.exports = {
             // 4. Username + Title Badge
             const nameX = avX + avSize + 35;
             ctx.textAlign = 'left';
-            ctx.font = 'bold 52px Arial, sans-serif';
+            ctx.font = 'bold 60px Arial, sans-serif';
             ctx.fillStyle = '#ffffff';
             let name = user.username ? user.username.toUpperCase() : 'UNKNOWN';
             if (name.length > 14) name = name.substring(0, 14) + '..';
-            ctx.fillText(name, nameX, y + rowHeight / 2 + 5);
+            ctx.fillText(name, nameX, y + rowHeight / 2 - 10);
 
             // Title Badge
             if (user.matchStats && user.matchStats.activeTitle) {
                 const titleColor = eloService.getTitleColor(user.matchStats.activeTitle);
                 const titleText = user.matchStats.activeTitle.toUpperCase();
-                ctx.font = 'bold 18px Arial, sans-serif';
+                ctx.font = 'bold 20px Arial, sans-serif';
                 const titleW = ctx.measureText(titleText).width;
-                const pillW = titleW + 20;
-                const pillH = 28;
+                const pillW = titleW + 24;
+                const pillH = 32;
                 const pillX = nameX;
-                const pillY = y + rowHeight / 2 + 12;
+                const pillY = y + rowHeight / 2 + 15;
                 
                 // Parse title color for rgba
                 const tr = parseInt(titleColor.slice(1, 3), 16);
@@ -332,27 +332,27 @@ module.exports = {
                 
                 // Badge background
                 ctx.beginPath();
-                ctx.roundRect(pillX, pillY, pillW, pillH, 14);
+                ctx.roundRect(pillX, pillY, pillW, pillH, 16);
                 ctx.fillStyle = `rgba(${tr}, ${tg}, ${tb}, 0.15)`;
                 ctx.fill();
                 
                 // Badge border
                 ctx.beginPath();
-                ctx.roundRect(pillX, pillY, pillW, pillH, 14);
+                ctx.roundRect(pillX, pillY, pillW, pillH, 16);
                 ctx.strokeStyle = `rgba(${tr}, ${tg}, ${tb}, 0.4)`;
                 ctx.lineWidth = 1;
                 ctx.stroke();
                 
                 // Badge text
                 ctx.fillStyle = titleColor;
-                ctx.fillText(titleText, pillX + 10, pillY + 20);
+                ctx.fillText(titleText, pillX + 12, pillY + 23);
             }
 
-            // 5. ELO Progress Bar (under name)
-            const barX = nameX;
-            const barY = y + rowHeight / 2 + 22;
-            const barW = 280;
-            const barH = 8;
+            // 5. ELO Progress Bar (next to name, not under)
+            const barX = nameX + 450;
+            const barY = y + rowHeight / 2 - 8;
+            const barW = 320;
+            const barH = 10;
             let progress = 0;
 
             if (lvlInfo.lv < 10) {
@@ -366,7 +366,7 @@ module.exports = {
             // Bar background
             ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
             ctx.beginPath();
-            ctx.roundRect(barX, barY, barW, barH, 4);
+            ctx.roundRect(barX, barY, barW, barH, 5);
             ctx.fill();
 
             // Bar fill
@@ -376,14 +376,14 @@ module.exports = {
                 fillGrad.addColorStop(1, hexToRgba(lvlInfo.color, 0.6));
                 ctx.fillStyle = fillGrad;
                 ctx.beginPath();
-                ctx.roundRect(barX, barY, barW * progress, barH, 4);
+                ctx.roundRect(barX, barY, barW * progress, barH, 5);
                 ctx.fill();
             }
 
             // Progress text
             ctx.font = '18px Arial, sans-serif';
             ctx.fillStyle = '#52525b';
-            ctx.fillText(`${stats.elo} / ${lvlInfo.lv < 10 ? lvlInfo.max : 'MAX'}`, barX + barW + 12, barY + 8);
+            ctx.fillText(`${stats.elo} / ${lvlInfo.lv < 10 ? lvlInfo.max : 'MAX'}`, barX + barW + 15, barY + 8);
 
             // 6. Stats Boxes
             const w = stats.totalWins || 0;

@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChannelType } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChannelType, MessageFlags } = require('discord.js');
 const { ADDITIONAL_LOBBIES, MAIN_LOBBY } = require('../../handlers/match/constants');
 
 module.exports = {
@@ -65,22 +65,22 @@ module.exports = {
                 });
             }
 
-            return interaction.reply({ embeds: [embed], ephemeral: true });
+            return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
         const lobbyId = interaction.options.getInteger('lobby');
         const lobby = ADDITIONAL_LOBBIES[lobbyId];
 
         if (!lobby) {
-            return interaction.reply({ content: '❌ Geçersiz lobi!', ephemeral: true });
+            return interaction.reply({ content: '❌ Geçersiz lobi!', flags: MessageFlags.Ephemeral });
         }
 
         if (subcommand === 'enable') {
             if (lobby.enabled) {
-                return interaction.reply({ content: `⚠️ ${lobby.name} zaten aktif!`, ephemeral: true });
+                return interaction.reply({ content: `⚠️ ${lobby.name} zaten aktif!`, flags: MessageFlags.Ephemeral });
             }
 
-            await interaction.deferReply({ ephemeral: true });
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
             try {
                 // Kategori oluştur
@@ -144,10 +144,10 @@ module.exports = {
 
         } else if (subcommand === 'disable') {
             if (!lobby.enabled) {
-                return interaction.reply({ content: `⚠️ ${lobby.name} zaten kapalı!`, ephemeral: true });
+                return interaction.reply({ content: `⚠️ ${lobby.name} zaten kapalı!`, flags: MessageFlags.Ephemeral });
             }
 
-            await interaction.deferReply({ ephemeral: true });
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
             try {
                 // Kategoriyi ve içindeki tüm kanalları sil
