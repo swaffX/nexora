@@ -56,7 +56,7 @@ const getLevelInfo = (elo) => {
 };
 
 module.exports = {
-    async createLeaderboardImage(users) {
+    async createLeaderboardImage(users, mode = 'elo') {
         const width = 2800;
         const rowHeight = 240;
         const gap = 25;
@@ -118,10 +118,16 @@ module.exports = {
         ctx.fillText('LEADERBOARD', width / 2, 170);
         ctx.shadowBlur = 0;
 
-        // Subtitle
+        // Subtitle (mode-based)
         ctx.font = '42px Arial, sans-serif';
         ctx.fillStyle = '#71717a';
-        ctx.fillText(`SEASON 1  •  TOP ${users.length} PLAYERS`, width / 2, 235);
+        let subtitle = `SEASON 1  •  TOP ${users.length} PLAYERS`;
+        if (mode === 'streak') {
+            subtitle = `SEASON 1  •  TOP WIN STREAKS`;
+        } else if (mode === 'mvp') {
+            subtitle = `SEASON 1  •  TOP MVP PLAYERS`;
+        }
+        ctx.fillText(subtitle, width / 2, 235);
 
         // Accent bar
         const barGrad = ctx.createLinearGradient(width / 2 - 120, 0, width / 2 + 120, 0);

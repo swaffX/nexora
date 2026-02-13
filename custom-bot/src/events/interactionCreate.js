@@ -95,6 +95,12 @@ module.exports = {
                 await lobbyHandler.handleToggle(interaction);
             }
 
+            // Leaderboard mode buttons (Top ELO / Win Streak / MVP)
+            if (customId.startsWith('lb_mode_') && interaction.isButton()) {
+                const leaderboard = require('../handlers/leaderboard');
+                await leaderboard.handleModeInteraction(interaction, client);
+            }
+
         } catch (error) {
             logger.error('Custom Bot Interaction Error:', error);
         }
