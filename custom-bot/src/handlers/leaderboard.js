@@ -173,19 +173,19 @@ module.exports = {
             if (!channel || channel.id !== LEADERBOARD_CHANNEL_ID) return;
 
             const guild = channel.guild;
-            const { empty, attachment } = await buildLeaderboardPayload(client, guild, mode);
+            const { empty, attachment, components } = await buildLeaderboardPayload(client, guild, mode);
 
             if (empty) {
-                await interaction.reply({ content: 'Bu leaderboard için gösterilecek oyuncu yok.', ephemeral: true });
+                await interaction.reply({ content: 'Bu leaderboard için gösterilecek oyuncu yok.', flags: require('discord.js').MessageFlags.Ephemeral });
                 return;
             }
 
-            // Kullanıcıya özel, ana mesajı bozmayan ephemeral görünüm
-            await interaction.reply({ files: [attachment], ephemeral: true });
+            // Mesajı güncelle (ephemeral değil, ana mesajı değiştir)
+            await interaction.update({ files: [attachment], components });
         } catch (e) {
             console.error('Leaderboard mode interaction error:', e);
             if (!interaction.replied && !interaction.deferred) {
-                await interaction.reply({ content: 'Leaderboard güncellenirken hata oluştu.', ephemeral: true }).catch(() => { });
+                await interaction.reply({ content: 'Leaderboard güncellenirken hata oluştu.', flags: require('discord.js').MessageFlags.Ephemeral }).catch(() => { });
             }
         }
     }
