@@ -36,6 +36,40 @@ const hexToRgba = (hex, alpha) => {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
+function drawStar(ctx, cx, cy, outerRadius, innerRadius, fillStyle, shadowColor) {
+    const spikes = 5;
+    let rot = Math.PI / 2 * 3;
+    let x = cx;
+    let y = cy;
+    const step = Math.PI / spikes;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - outerRadius);
+    for (let i = 0; i < spikes; i++) {
+        x = cx + Math.cos(rot) * outerRadius;
+        y = cy + Math.sin(rot) * outerRadius;
+        ctx.lineTo(x, y);
+        rot += step;
+
+        x = cx + Math.cos(rot) * innerRadius;
+        y = cy + Math.sin(rot) * innerRadius;
+        ctx.lineTo(x, y);
+        rot += step;
+    }
+    ctx.closePath();
+
+    if (shadowColor) {
+        ctx.shadowColor = shadowColor;
+        ctx.shadowBlur = 25;
+    }
+
+    ctx.fillStyle = fillStyle;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+}
+
 const getLevelInfo = (elo) => {
     const level = eloService.getLevelFromElo(elo);
     const thresholds = eloService.ELO_CONFIG.LEVEL_THRESHOLDS;
@@ -372,13 +406,10 @@ module.exports = {
                 ctx.roundRect(statsAreaX, statBoxY, cardWidth, statBoxH, 16);
                 ctx.fill();
 
-                // Star icon on the left
-                ctx.font = 'bold 46px Arial, sans-serif';
-                ctx.textAlign = 'left';
-                ctx.shadowColor = '#38bdf8';
-                ctx.shadowBlur = 25;
-                ctx.fillStyle = '#38bdf8';
-                ctx.fillText('★', statsAreaX + 24, statBoxY + 55);
+                // Star icon on the left (vector, not emoji)
+                const starCenterX = statsAreaX + 50;
+                const starCenterY = statBoxY + statBoxH / 2;
+                drawStar(ctx, starCenterX, starCenterY, 24, 12, '#38bdf8', '#38bdf8');
 
                 // Streak value
                 ctx.font = 'bold 40px Arial, sans-serif';
@@ -401,13 +432,10 @@ module.exports = {
                 ctx.roundRect(statsAreaX, statBoxY, cardWidth, statBoxH, 16);
                 ctx.fill();
 
-                // Star icon on the left
-                ctx.font = 'bold 46px Arial, sans-serif';
-                ctx.textAlign = 'left';
-                ctx.shadowColor = '#facc15';
-                ctx.shadowBlur = 25;
-                ctx.fillStyle = '#facc15';
-                ctx.fillText('★', statsAreaX + 24, statBoxY + 55);
+                // Star icon on the left (vector, not emoji)
+                const starCenterX2 = statsAreaX + 50;
+                const starCenterY2 = statBoxY + statBoxH / 2;
+                drawStar(ctx, starCenterX2, starCenterY2, 24, 12, '#facc15', '#facc15');
 
                 // MVP value
                 ctx.font = 'bold 40px Arial, sans-serif';
