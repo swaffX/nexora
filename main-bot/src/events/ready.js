@@ -34,22 +34,10 @@ module.exports = {
         // });
 
         // Dinamik Durum (Yayınlıyor)
-        const activities = [
-            { name: 'discord.gg/nexorahub', type: 1, url: 'https://www.twitch.tv/swaffval' },
-            { name: 'made by swaff', type: 1, url: 'https://www.twitch.tv/swaffval' }
-        ];
-
-        let i = 0;
-        // İlk açılışta hemen ayarla
-        client.user.setPresence({ activities: [activities[0]], status: 'dnd' });
-
-        setInterval(() => {
-            i = (i + 1) % activities.length;
-            client.user.setPresence({
-                activities: [activities[i]],
-                status: 'dnd'
-            });
-        }, 30000);
+        client.user.setPresence({
+            activities: [{ name: 'made by swaff', type: 1, url: 'https://www.twitch.tv/swaffval' }],
+            status: 'dnd'
+        });
 
         // Auto Join Voice
         try {
