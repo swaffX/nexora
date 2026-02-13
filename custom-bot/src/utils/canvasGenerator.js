@@ -2869,35 +2869,12 @@ module.exports = {
         const canvas = createCanvas(width, height);
         const ctx = canvas.getContext('2d');
 
-        // Background GIF
-        let bgImg = null;
-        try {
-            const gifUrl = 'https://cdn.discordapp.com/attachments/531892263652032522/1464235225818075147/standard_2.gif';
-            bgImg = await loadImage(gifUrl);
-        } catch (e) {
-            console.error('Background image load error:', e);
-        }
-
-        if (bgImg) {
-            // GIF'i canvas'a sığdır
-            const scale = Math.max(width / bgImg.width, height / bgImg.height);
-            const w = bgImg.width * scale;
-            const h = bgImg.height * scale;
-            const x = (width - w) / 2;
-            const y = (height - h) / 2;
-            ctx.drawImage(bgImg, x, y, w, h);
-
-            // Koyu overlay
-            ctx.fillStyle = 'rgba(9, 9, 11, 0.85)';
-            ctx.fillRect(0, 0, width, height);
-        } else {
-            // Fallback gradient
-            const bgGrad = ctx.createLinearGradient(0, 0, width, height);
-            bgGrad.addColorStop(0, '#09090b');
-            bgGrad.addColorStop(1, '#18181b');
-            ctx.fillStyle = bgGrad;
-            ctx.fillRect(0, 0, width, height);
-        }
+        // Background (removed remote GIF to avoid 404 errors)
+        const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+        bgGrad.addColorStop(0, '#09090b');
+        bgGrad.addColorStop(1, '#18181b');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, width, height);
 
         // Subtle Grid Pattern
         ctx.strokeStyle = 'rgba(239, 68, 68, 0.03)';

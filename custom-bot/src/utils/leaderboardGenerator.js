@@ -256,8 +256,8 @@ module.exports = {
             ctx.shadowBlur = 0;
 
             // 2. Level Icon (PROMINENT)
-            const lvlIconSize = 100;
-            const lvlIconX = cardX + 200;
+            const lvlIconSize = 120;
+            const lvlIconX = cardX + 210;
             const lvlIconY = y + (rowHeight - lvlIconSize) / 2;
 
             try {
@@ -274,15 +274,9 @@ module.exports = {
                 }
             } catch (e) { }
 
-            // Level number label under the icon
-            ctx.font = 'bold 20px Arial, sans-serif';
-            ctx.fillStyle = lvlInfo.color;
-            ctx.textAlign = 'center';
-            ctx.fillText(`LVL ${lvlInfo.lv}`, lvlIconX + lvlIconSize / 2, lvlIconY + lvlIconSize + 22);
-
             // 3. Avatar
-            const avSize = 120;
-            const avX = cardX + 350;
+            const avSize = 150;
+            const avX = cardX + 380;
             const avY = y + (rowHeight - avSize) / 2;
 
             // Avatar ring
@@ -306,24 +300,25 @@ module.exports = {
             }
 
             // 4. Username + Title Badge
-            const nameX = avX + avSize + 35;
+            const nameX = avX + avSize + 40;
             ctx.textAlign = 'left';
-            ctx.font = 'bold 60px Arial, sans-serif';
+            ctx.font = 'bold 72px Arial, sans-serif';
             ctx.fillStyle = '#ffffff';
             let name = user.username ? user.username.toUpperCase() : 'UNKNOWN';
             if (name.length > 14) name = name.substring(0, 14) + '..';
-            ctx.fillText(name, nameX, y + rowHeight / 2 - 10);
+            const nameBaselineY = y + rowHeight / 2 - 10;
+            ctx.fillText(name, nameX, nameBaselineY);
 
             // Title Badge
             if (user.matchStats && user.matchStats.activeTitle) {
                 const titleColor = eloService.getTitleColor(user.matchStats.activeTitle);
                 const titleText = user.matchStats.activeTitle.toUpperCase();
-                ctx.font = 'bold 20px Arial, sans-serif';
+                ctx.font = 'bold 24px Arial, sans-serif';
                 const titleW = ctx.measureText(titleText).width;
                 const pillW = titleW + 24;
-                const pillH = 32;
+                const pillH = 40;
                 const pillX = nameX;
-                const pillY = y + rowHeight / 2 + 15;
+                const pillY = nameBaselineY + 20;
                 
                 // Parse title color for rgba
                 const tr = parseInt(titleColor.slice(1, 3), 16);
@@ -348,11 +343,11 @@ module.exports = {
                 ctx.fillText(titleText, pillX + 12, pillY + 23);
             }
 
-            // 5. ELO Progress Bar (next to name, not under)
-            const barX = nameX + 450;
-            const barY = y + rowHeight / 2 - 8;
-            const barW = 320;
-            const barH = 10;
+            // 5. ELO Progress Bar (larger, aligned with name)
+            const barW = 420;
+            const barH = 18;
+            const barX = nameX + 20;
+            const barY = nameBaselineY - barH / 2;
             let progress = 0;
 
             if (lvlInfo.lv < 10) {
@@ -380,10 +375,14 @@ module.exports = {
                 ctx.fill();
             }
 
-            // Progress text
+            // Progress text (vertically centered to bar)
             ctx.font = '18px Arial, sans-serif';
             ctx.fillStyle = '#52525b';
-            ctx.fillText(`${stats.elo} / ${lvlInfo.lv < 10 ? lvlInfo.max : 'MAX'}`, barX + barW + 15, barY + 8);
+            ctx.fillText(
+                `${stats.elo} / ${lvlInfo.lv < 10 ? lvlInfo.max : 'MAX'}`,
+                barX + barW + 25,
+                barY + barH / 2 + 6
+            );
 
             // 6. Stats Boxes
             const w = stats.totalWins || 0;
