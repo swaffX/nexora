@@ -173,15 +173,15 @@ module.exports = {
             if (!channel || channel.id !== LEADERBOARD_CHANNEL_ID) return;
 
             const guild = channel.guild;
-            const { empty, attachment, components } = await buildLeaderboardPayload(client, guild, mode);
+            const { empty, attachment } = await buildLeaderboardPayload(client, guild, mode);
 
             if (empty) {
                 await interaction.reply({ content: 'Bu leaderboard için gösterilecek oyuncu yok.', ephemeral: true });
                 return;
             }
 
-            // Ana leaderboard mesajını güncelle, sekme görünümü herkes için değişsin
-            await interaction.update({ files: [attachment], components, embeds: [], content: null });
+            // Kullanıcıya özel, ana mesajı bozmayan ephemeral görünüm
+            await interaction.reply({ files: [attachment], ephemeral: true });
         } catch (e) {
             console.error('Leaderboard mode interaction error:', e);
             if (!interaction.replied && !interaction.deferred) {
