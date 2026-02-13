@@ -2917,7 +2917,7 @@ module.exports = {
 
         // Main Text - "NEXORA"
         ctx.shadowColor = '#ef4444';
-        ctx.shadowBlur = 25;
+        ctx.shadowBlur = 12;
         ctx.fillStyle = '#ef4444';
         ctx.font = 'bold 110px Arial, sans-serif';
         ctx.textAlign = 'center';

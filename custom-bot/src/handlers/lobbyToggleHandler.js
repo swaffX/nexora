@@ -25,7 +25,7 @@ module.exports = {
                 const category = await interaction.guild.channels.create({
                     name: `🎮 ${lobby.name.toUpperCase()}`,
                     type: ChannelType.GuildCategory,
-                    position: 1
+                    position: 2 // Lobby 1'in altında (position 1)
                 });
 
                 const panelChannel = await interaction.guild.channels.create({
