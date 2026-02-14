@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Collection } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, Options } = require('discord.js');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
 const db = require(path.join(__dirname, '..', '..', 'shared', 'database'));
@@ -10,7 +10,20 @@ const client = new Client({
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildVoiceStates // Ses kanalı takibi için şart
-    ]
+    ],
+    // WebSocket ayarları (bağlantı sorunları için)
+    ws: {
+        large_threshold: 250
+    },
+    // Cache optimizasyonu
+    makeCache: Options.cacheWithLimits({
+        MessageManager: 200,
+        PresenceManager: 0,
+        GuildMemberManager: {
+            maxSize: 200,
+            keepOverLimit: member => member.id === client.user?.id
+        }
+    })
 });
 
 client.commands = new Collection();
@@ -95,20 +108,57 @@ if (fs.existsSync(eventsPath)) {
     if (!token) {
         logger.error('CUSTOM_BOT_TOKEN bulunamadı!');
     } else {
-        await client.login(token);
-
-        // Arka Plan Rank Sistemi (5 Saniyede bir otomatik tarama)
-        require('./autoRankSystem')(client);
+        // Retry mekanizması ile login
+        let retries = 0;
+        const maxRetries = 5;
+        
+        const attemptLogin = async () => {
+            try {
+                await client.login(token);
+                logger.success('[Custom] Bot başarıyla giriş yaptı!');
+                
+                // Arka Plan Rank Sistemi (5 Saniyede bir otomatik tarama)
+                require('./autoRankSystem')(client);
+            } catch (error) {
+                retries++;
+                if (retries < maxRetries) {
+                    const delay = Math.min(1000 * Math.pow(2, retries), 30000); // Exponential backoff, max 30s
+                    logger.warn(`[Custom] Bağlantı hatası (${retries}/${maxRetries}). ${delay/1000}s sonra tekrar denenecek...`);
+                    logger.error(`[Custom] Hata detayı: ${error.message}`);
+                    setTimeout(attemptLogin, delay);
+                } else {
+                    logger.error('[Custom] Maksimum deneme sayısına ulaşıldı. Bot başlatılamadı.');
+                    logger.error('[Custom] Hata:', error);
+                    process.exit(1);
+                }
+            }
+        };
+        
+        await attemptLogin();
     }
 })();
 
 // Hata Yakalama
 process.on('unhandledRejection', (reason, p) => {
     logger.error('[Custom] Unhandled Rejection:', reason);
+    // Discord bağlantı hatalarında otomatik yeniden başlatma
+    if (reason?.message?.includes('Unexpected server response')) {
+        logger.warn('[Custom] Discord bağlantı hatası tespit edildi. 10 saniye sonra yeniden başlatılıyor...');
+        setTimeout(() => {
+            process.exit(1); // PM2 otomatik restart yapacak
+        }, 10000);
+    }
 });
 
 process.on('uncaughtException', (err) => {
     logger.error('[Custom] Uncaught Exception:', err);
+    // Kritik hatalarda yeniden başlat
+    if (err?.message?.includes('ECONNRESET') || err?.message?.includes('ETIMEDOUT')) {
+        logger.warn('[Custom] Ağ hatası tespit edildi. 10 saniye sonra yeniden başlatılıyor...');
+        setTimeout(() => {
+            process.exit(1);
+        }, 10000);
+    }
 });
 
 module.exports = client;

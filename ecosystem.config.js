@@ -44,7 +44,16 @@ module.exports = {
             ignore_watch: ["node_modules", "logs"],
             env: {
                 NODE_ENV: "production"
-            }
+            },
+            // Otomatik restart ayarları
+            max_restarts: 10,
+            min_uptime: "10s",
+            restart_delay: 5000,
+            exp_backoff_restart_delay: 100,
+            // Crash durumunda otomatik restart
+            autorestart: true,
+            // Memory limit (opsiyonel)
+            max_memory_restart: "500M"
         },
         {
             name: "status-bot",
