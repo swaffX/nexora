@@ -611,9 +611,11 @@ module.exports = {
             ctx.strokeStyle = `rgba(${tr}, ${tg}, ${tb}, 0.4)`;
             ctx.lineWidth = 1;
             ctx.stroke();
-            // Badge text
+            // Badge text (vertically centered)
             ctx.fillStyle = titleColor;
-            ctx.fillText(titleText, pillX + 12, pillY + 18);
+            ctx.textBaseline = 'middle';
+            ctx.fillText(titleText, pillX + 12, pillY + (pillH / 2));
+            ctx.textBaseline = 'alphabetic';
         }
 
         // â”€â”€â”€ PROGRESS BAR â”€â”€â”€
@@ -989,10 +991,11 @@ module.exports = {
             ctx.lineWidth = 1;
             ctx.stroke();
 
-            // Badge text (centered)
+            // Badge text (vertically centered)
             ctx.fillStyle = titleColor;
-            const textY = pillY + (pillH / 2) + 6;
-            ctx.fillText(titleText, pillX + 12, textY);
+            ctx.textBaseline = 'middle';
+            ctx.fillText(titleText, pillX + 12, pillY + (pillH / 2));
+            ctx.textBaseline = 'alphabetic';
         }
 
         // ÃƒÂ¢Ã‚ÂÃ‚Â³ Ãƒâ€Ã‚Â°NAKTÃƒâ€Ã‚Â°F BADGE
@@ -1386,10 +1389,12 @@ module.exports = {
                 ctx.strokeStyle = `rgba(${tr}, ${tg}, ${tb}, 0.4)`;
                 ctx.lineWidth = 1;
                 ctx.stroke();
-                // Badge text
+                // Badge text (vertically centered)
                 ctx.textAlign = 'center';
                 ctx.fillStyle = titleColor;
-                ctx.fillText(titleText, midX, pillY + 18);
+                ctx.textBaseline = 'middle';
+                ctx.fillText(titleText, midX, pillY + (pillH / 2));
+                ctx.textBaseline = 'alphabetic';
             }
 
             const statsY = 400;
